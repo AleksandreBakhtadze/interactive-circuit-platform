@@ -77,4 +77,4 @@ SELECT id, 'Lamp 6V' , 1 FROM problems WHERE code = 'ST.L1.2'
 UNION ALL
 SELECT id, 'Wire',200 FROM problems WHERE code = 'ST.L1.2';
 
-SELECT '✅ init.sql executed successfully - Problems initialized!' AS message;
+SELECT 'init.sql executed successfully - Problems initialized!' AS message;

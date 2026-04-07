@@ -1,7 +1,25 @@
 * auto-generated circuit
-V1 n1 0 DC 10
-R1 n1 n2 1000
-R2 n2 0 2000
+V_V1 n1 0 DC 12
+R_RB n1 n2 1000000
+R_RC n1 n3 1000
+Q_Q1 n3 n2 0 NPN_DARLINGTON
+R_GND_n1 n1 0 1e12
+R_GND_n2 n2 0 1e12
+R_GND_n3 n3 0 1e12
+.model DIODE_MODEL    D (IS=1e-10 N=1.0  RS=1  BV=100)
+.model LEDMODEL_RED   D (IS=1e-30 N=2.5  RS=3  BV=5)
+.model LEDMODEL_GREEN D (IS=1e-40 N=3.0  RS=3  BV=5)
+.model LEDMODEL_BLUE  D (IS=1e-50 N=3.5  RS=3  BV=5)
+.model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)
+.model PNP_MODEL PNP (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)
+.model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)
+.model PNP_DARLINGTON PNP (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)
+.options savecurrents
 
-.op
+.control
+op
+print all
+
+quit
+.endc
 .end

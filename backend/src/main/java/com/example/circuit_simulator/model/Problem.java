@@ -13,30 +13,34 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "problems")
 public class Problem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
-    private String code;        // e.g. "GEN.4", "GEN.5A"
+    private String code;
 
     @Column(nullable = false, length = 200)
     private String title;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chapter_id")
+    private Chapter chapter;
 
     @ElementCollection
     @CollectionTable(
             name = "problem_required_components",
             joinColumns = @JoinColumn(name = "problem_id")
     )
-
     @Column(name = "component_name")
-    private List<String> requiredComponents; // components the student must use
+    private List<String> requiredComponents;
 
     @Column(columnDefinition = "TEXT")
-    private String description; // problem statement in Georgian
+    private String description;
 
     @Column(columnDefinition = "TEXT")
-    private String hint;        // the help text
+    private String hint;
 
     @Column(columnDefinition = "TEXT")
     private String questions;
@@ -45,7 +49,7 @@ public class Problem {
     private String methodology;
 
     @Column(length = 50)
-    private String difficulty;  // "beginner", "intermediate", "advanced"
+    private String difficulty;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

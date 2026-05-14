@@ -1,8 +1,13 @@
 package com.example.circuit_simulator.service;
 
+import com.example.circuit_simulator.dto.LoginRequest;
+import com.example.circuit_simulator.dto.LoginResponse;
+import com.example.circuit_simulator.dto.RegisterRequest;
+import com.example.circuit_simulator.dto.RegisterResponse;
 import com.example.circuit_simulator.model.User;
 import com.example.circuit_simulator.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +16,42 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public RegisterResponse register(RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("USERNAME_TAKEN");
+        }
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("EMAIL_TAKEN");
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        User saved = userRepository.save(user);
+        return new RegisterResponse(saved.getId(), saved.getUsername(), saved.getEmail());
+    }
+
+    public LoginResponse login(LoginRequest request) {
+        String identifier = request.getIdentifier();
+
+        User user = identifier.contains("@")
+                ? userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new RuntimeException("INVALID_IDENTIFIER"))
+                : userRepository.findByUsername(identifier)
+                .orElseThrow(() -> new RuntimeException("INVALID_IDENTIFIER"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("INVALID_PASSWORD");
+        }
+
+        return new LoginResponse(user.getId(), user.getUsername(), user.getEmail());
+    }
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -29,18 +70,6 @@ public class UserService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-    }
-
-    public User createUser(User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists: " + user.getUsername());
-        }
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists: " + user.getEmail());
-        }
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        return userRepository.save(user);
     }
 
     public User updateUser(Long id, User updatedUser) {

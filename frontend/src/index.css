@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #111d35;
+  --bg-secondary: #162040;
+  --bg-card: #1c2d55;
+  --accent-electric: #60c5f1;
+  --accent-amber: #ffd166;
+  --accent-green: #43d9a2;
+  --accent-pink: #f78fb3;
+  --text-primary: #eaf4ff;
+  --text-secondary: #92b8d8;
+  --text-muted: #4a6a8a;
+  --border: #243a5e;
+  --border-bright: #2e4d7a;
+  --font-display: 'Nunito', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: var(--font-display); }

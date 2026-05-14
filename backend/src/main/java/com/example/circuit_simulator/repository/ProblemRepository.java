@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface ProblemRepository extends JpaRepository<Problem, Long> {
     Optional<Problem> findByCode(String code);
     List<Problem> findByDifficulty(String difficulty);
+    List<Problem> findByChapterCode(String chapterCode);
+    long countByChapterId(Long chapterId);
 }

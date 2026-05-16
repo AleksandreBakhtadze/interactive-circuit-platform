@@ -5,7 +5,9 @@ import Navbar from './components/Navbar/Navbar';
 import HomePage from './pages/HomePage/HomePage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import LoginPage from './pages/LoginPage/LoginPage';
-import TasksPage from './pages/TasksPage/TasksPage';
+import ChallengesPage from './pages/ChallengesPage/ChallengesPage';
+import ChapterChallengesPage from './pages/ChapterChallengesPage/ChapterChallengesPage';
+import ChallengeDetailPage from './pages/ChallengeDetailPage/ChallengeDetailPage';
 
 function App() {
     return (
@@ -17,7 +19,9 @@ function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/login" element={<LoginPage />} />
-                        <Route path="/tasks" element={<TasksPage />} />
+                        <Route path="/challenges" element={<ChallengesPage />} />
+                        <Route path="/challenges/:chapterCode/:problemSlug" element={<ChallengeDetailPage />} />
+                        <Route path="/challenges/:chapterCode" element={<ChapterChallengesPage />} />
                     </Routes>
                 </BrowserRouter>
             </LangProvider>

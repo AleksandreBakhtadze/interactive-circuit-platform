@@ -18,7 +18,7 @@ public class DataSeeder implements CommandLineRunner {
         if (chapterRepository.count() > 0) return; // already seeded
 
         List<Chapter> chapters = List.of(
-                new Chapter(null, "ST",  "გაცნობითი ამოცანები, მთავარი დეტალების გამოყენებით", "Introductory Tasks", 1),
+                new Chapter(null, "ST",  "გაცნობითი ამოცანები, მთავარი დეტალების გამოყენებით", "Introductory Challenges", 1),
                 new Chapter(null, "LR",  "შუქდიოდები და რეზისტორები", "LEDs and Resistors", 2),
                 new Chapter(null, "SW",  "გადამრთველი", "Switch", 3),
                 new Chapter(null, "DM",  "მუდმივი დენის ძრავი", "DC Motor", 4),

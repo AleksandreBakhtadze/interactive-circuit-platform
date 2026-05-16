@@ -1,6 +1,6 @@
 export const translations = {
     ka: {
-        nav_tasks: 'დავალებები',
+        nav_challenges: 'ამოცანები',
         nav_register: 'რეგისტრაცია',
         nav_login: 'შესვლა',
 
@@ -25,7 +25,7 @@ export const translations = {
 
         tasks_label: 'ამოცანების სახეები',
         task1_tag: 'გაცნობითი',
-        task1_desc: 'მარტივი დავალებები კომპონენტების მუშაობის პრინციპის გასარკვევად.',
+        task1_desc: 'მარტივი ამოცანები კომპონენტების მუშაობის პრინციპის გასარკვევად.',
         task2_tag: 'სავარჯიშო',
         task2_desc: 'ძირითადი ამოცანები წრედების სრულყოფილად ასათვისებლად.',
         task3_tag: 'რთული',
@@ -76,36 +76,36 @@ export const translations = {
         err_INVALID_PASSWORD:   'პაროლი არასწორია.',
     },
     en: {
-        nav_tasks: 'Tasks',
+        nav_challenges: 'Challenges',
         nav_register: 'Register',
         nav_login: 'Login',
 
         eyebrow: 'Electronics Learning Platform',
         hero_title_1: 'Learn Electric Circuits.',
         hero_accent: 'By doing.',
-        hero_sub: 'Build and simulate real electronic circuits in your browser — from home. Components, analysis, tasks — everything in one place.',
+        hero_sub: 'Build and simulate real electronic circuits in your browser — from home. Components, analysis, challenges — everything in one place.',
         hero_cta: 'Get Started — Free',
 
         about_label: 'About the Platform',
-        about_body: 'CircuitLab was built for students who want to learn electronics quickly and enjoyably. Designed specifically for young learners — safe, clear, and engaging. After learning each new component, you can immediately test your knowledge with tasks of varying difficulty.',
+        about_body: 'CircuitLab was built for students who want to learn electronics quickly and enjoyably. Designed specifically for young learners — safe, clear, and engaging. After learning each new component, you can immediately test your knowledge with challenges of varying difficulty.',
         stat1: 'difficulty levels',
-        stat2: 'tasks',
-        stat3: 'task types',
+        stat2: 'challenges',
+        stat3: 'challenge types',
 
         feat1_title: 'Build Circuits',
         feat1_desc: 'Place components and connect them in your browser. Resistors, capacitors, diodes and more — everything is at your fingertips.',
-        feat2_title: 'Solve Tasks',
+        feat2_title: 'Solve Challenges',
         feat2_desc: 'Work through guided challenges that teach you step by step how to build, analyze and debug circuits.',
         feat3_title: 'See It Live',
         feat3_desc: 'Watch voltage, current and power update in real time as you modify your circuit.',
 
-        tasks_label: 'Task Types',
+        tasks_label: 'Challenge Types',
         task1_tag: 'Introductory',
-        task1_desc: 'Simple tasks to understand how each component works.',
+        task1_desc: 'Simple challenges to understand how each component works.',
         task2_tag: 'Practice',
-        task2_desc: 'Core tasks to fully master components and circuits.',
+        task2_desc: 'Core challenges to fully master components and circuits.',
         task3_tag: 'Advanced',
-        task3_desc: 'High difficulty tasks — requires logical thinking.',
+        task3_desc: 'High difficulty challenges — requires logical thinking.',
         task4_tag: 'Test',
         task4_desc: 'Analyze a given circuit and answer questions correctly.',
 

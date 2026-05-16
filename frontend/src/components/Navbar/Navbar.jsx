@@ -27,8 +27,8 @@ export default function Navbar() {
         <div className={styles.inner}>
           <Link to="/" className={styles.logo}>CircuitLab</Link>
           <div className={styles.actions}>
-            <Link to="/tasks" className={`${styles.navLink} ${location.pathname === '/tasks' ? styles.active : ''}`}>
-              {t.nav_tasks}
+            <Link to="/challenges" className={`${styles.navLink} ${location.pathname.startsWith('/challenges') ? styles.active : ''}`}>
+              {t.nav_challenges}
             </Link>
 
             {user ? (

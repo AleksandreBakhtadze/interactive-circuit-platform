@@ -5,6 +5,8 @@ com/example/circuit_simulator/dto/ProblemDTO.class
 com/example/circuit_simulator/model/Chapter.class
 com/example/circuit_simulator/exception/ErrorResponse$ErrorResponseBuilder.class
 com/example/circuit_simulator/model/SimulationResult.class
+com/example/circuit_simulator/dto/ChapterDetailDTO.class
+com/example/circuit_simulator/service/ProblemDataSeeder$ProblemSeed.class
 com/example/circuit_simulator/controller/ComponentController.class
 com/example/circuit_simulator/controller/CircuitController.class
 com/example/circuit_simulator/model/Component.class
@@ -17,10 +19,12 @@ com/example/circuit_simulator/model/User.class
 com/example/circuit_simulator/CircuitSimulatorApplication.class
 com/example/circuit_simulator/exception/ErrorResponse.class
 com/example/circuit_simulator/dto/LoginResponse.class
+com/example/circuit_simulator/service/ProblemDataSeeder.class
 com/example/circuit_simulator/dto/RegisterResponse.class
 com/example/circuit_simulator/controller/ProblemController.class
 com/example/circuit_simulator/model/Circuit$CircuitBuilder.class
 com/example/circuit_simulator/service/SimulationResultService.class
+com/example/circuit_simulator/dto/ProblemListItemDTO.class
 com/example/circuit_simulator/model/Problem.class
 com/example/circuit_simulator/service/DataSeeder.class
 com/example/circuit_simulator/model/Circuit.class

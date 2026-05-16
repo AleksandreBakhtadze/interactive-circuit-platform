@@ -24,6 +24,9 @@ public class Problem {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(name = "display_order")
+    private Integer displayOrder = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chapter_id")
     private Chapter chapter;

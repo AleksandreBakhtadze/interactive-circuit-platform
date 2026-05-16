@@ -1,5 +1,7 @@
 package com.example.circuit_simulator.service;
 
+import com.example.circuit_simulator.dto.ProblemDTO;
+import com.example.circuit_simulator.dto.ProblemListItemDTO;
 import com.example.circuit_simulator.model.Problem;
 import com.example.circuit_simulator.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +27,45 @@ public class ProblemService {
                 .orElseThrow(() -> new RuntimeException("Problem not found with code: " + code));
     }
 
+    public Problem getProblemByChapterAndSlug(String chapterCode, String slug) {
+        String problemCode = chapterCode.toUpperCase() + "." + slug;
+        return getProblemByCode(problemCode);
+    }
+
+    public ProblemDTO getProblemDtoByChapterAndSlug(String chapterCode, String slug) {
+        return toDto(getProblemByChapterAndSlug(chapterCode, slug));
+    }
+
+    public ProblemDTO toDto(Problem problem) {
+        ProblemDTO dto = new ProblemDTO();
+        dto.setId(problem.getId());
+        dto.setCode(problem.getCode());
+        dto.setTitle(problem.getTitle());
+        dto.setRequiredComponents(problem.getRequiredComponents());
+        dto.setDescription(problem.getDescription());
+        dto.setHint(problem.getHint());
+        dto.setQuestions(problem.getQuestions());
+        dto.setMethodology(problem.getMethodology());
+        dto.setDifficulty(problem.getDifficulty());
+        dto.setCreatedAt(problem.getCreatedAt());
+        dto.setUpdatedAt(problem.getUpdatedAt());
+        return dto;
+    }
+
     public List<Problem> getProblemsByDifficulty(String difficulty) {
         return problemRepository.findByDifficulty(difficulty);
+    }
+
+    public List<ProblemListItemDTO> getProblemListByChapterCode(String chapterCode) {
+        return problemRepository.findAllByChapterCode(chapterCode.toUpperCase())
+                .stream()
+                .map(p -> new ProblemListItemDTO(
+                        p.getId(),
+                        p.getCode(),
+                        p.getTitle(),
+                        p.getDisplayOrder()
+                ))
+                .toList();
     }
 
     public Problem createProblem(Problem problem) {

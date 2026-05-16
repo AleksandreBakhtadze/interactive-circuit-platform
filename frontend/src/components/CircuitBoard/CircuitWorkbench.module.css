@@ -1,0 +1,136 @@
+.workbench {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.palette {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    border-radius: 8px;
+}
+
+.paletteTitle {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #60c5f1;
+    margin: 0 0 12px;
+}
+
+.paletteItems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.paletteItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    min-width: 88px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    color: var(--text-primary);
+    transition: border-color 0.15s, opacity 0.15s;
+}
+
+.paletteItem:hover:not(:disabled) {
+    border-color: #60c5f1;
+}
+
+.paletteItem:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.paletteImg {
+    height: 48px;
+    width: auto;
+    max-width: 100px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.paletteFallback {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.paletteLabel {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.paletteCount {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.boardHost {
+    width: 100%;
+}
+
+.dropPreview,
+.placedPart {
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: auto;
+}
+
+.dropPreview {
+    opacity: 0.45;
+    outline: 2px dashed #60c5f1;
+    outline-offset: 2px;
+    pointer-events: none;
+}
+
+.placedPart {
+    cursor: grab;
+}
+
+.placedPartDragging {
+    opacity: 0.35;
+}
+
+.partImg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+    user-select: none;
+}
+
+.partFallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px;
+    background: rgba(96, 197, 241, 0.15);
+    border: 1px solid var(--border);
+}
+
+.message {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #f0a050;
+    margin: 0;
+}

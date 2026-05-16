@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import CircuitBoard from '../../components/CircuitBoard/CircuitBoard';
+import CircuitWorkbench from '../../components/CircuitBoard/CircuitWorkbench';
+import { supportsSimulator } from '../../constants/componentCatalog';
 import { useLang } from '../../context/LangContext';
 import styles from './ChallengeDetailPage.module.css';
 
@@ -107,7 +109,11 @@ export default function ChallengeDetailPage() {
                     )}
 
                 <div className={styles.boardColumn}>
-                    <CircuitBoard label={problem.code} />
+                    {supportsSimulator(problem.code) ? (
+                        <CircuitWorkbench problemCode={problem.code} />
+                    ) : (
+                        <CircuitBoard label={problem.code} />
+                    )}
                 </div>
                 </div>
             </div>

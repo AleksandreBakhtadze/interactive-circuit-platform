@@ -1,16 +1,98 @@
 import { Fragment } from 'react';
+import { BOARD_IMAGE } from '../../constants/componentAssets';
+import { DOT_COL_X, DOT_ROW_Y } from './boardLayout';
 import styles from './CircuitBoard.module.css';
 
 const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const COLS = Array.from({ length: 10 }, (_, i) => i + 1);
 const SNAP_COLS = 9;
 
-/** Pin columns: 1, 3, 5, … 19 */
 const pinCol = (index) => index * 2 + 1;
-/** Snap columns between pins: 2, 4, 6, … 18 */
 const snapCol = (index) => index * 2 + 2;
 
-export default function CircuitBoard({ label }) {
+function SimulatorDotGrid() {
+    return ROWS.map((row, rowIndex) =>
+        COLS.map((col, colIndex) => (
+            <span
+                key={`${row}${col}`}
+                className={styles.hitPin}
+                data-pin={`${row}${col}`}
+                style={{
+                    left: `${DOT_COL_X[colIndex] * 100}%`,
+                    top: `${DOT_ROW_Y[rowIndex] * 100}%`,
+                }}
+                role="gridcell"
+                aria-label={`Pin ${row}${col}`}
+            />
+        ))
+    );
+}
+
+function GridPins({ simulator }) {
+    if (simulator) {
+        return <SimulatorDotGrid />;
+    }
+
+    return ROWS.map((row, rowIndex) => (
+        <Fragment key={row}>
+            <div className={styles.pinRow} role="row">
+                {COLS.map((col, colIndex) => (
+                    <span
+                        key={`${row}${col}`}
+                        className={styles.pin}
+                        style={{ gridColumn: pinCol(colIndex) }}
+                        data-pin={`${row}${col}`}
+                        role="gridcell"
+                        aria-label={`Pin ${row}${col}`}
+                    />
+                ))}
+            </div>
+
+            {rowIndex < ROWS.length - 1 && (
+                <div className={styles.circleRow} aria-hidden>
+                    {Array.from({ length: SNAP_COLS }, (_, i) => (
+                        <span
+                            key={`${row}-snap-${i}`}
+                            className={styles.snapCircle}
+                            style={{ gridColumn: snapCol(i) }}
+                            data-snap={`${row}${COLS[i]}-${ROWS[rowIndex + 1]}${COLS[i + 1]}`}
+                        />
+                    ))}
+                </div>
+            )}
+        </Fragment>
+    ));
+}
+
+export default function CircuitBoard({ label, gridRef, children, simulator = false }) {
+    if (simulator) {
+        return (
+            <div className={styles.wrapperSimulator}>
+                <div className={styles.boardStage} data-board-stage>
+                    <img
+                        src={BOARD_IMAGE}
+                        className={styles.boardImage}
+                        alt=""
+                        draggable={false}
+                    />
+
+                    <div
+                        className={styles.dotLayer}
+                        ref={gridRef}
+                        role="grid"
+                        aria-label="Circuit board"
+                    >
+                        <SimulatorDotGrid />
+                    </div>
+
+                    {children && (
+                        <div className={styles.componentsLayer}>{children}</div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={styles.wrapper}>
             <div className={styles.boardArea}>
@@ -38,36 +120,14 @@ export default function CircuitBoard({ label }) {
                         ))}
                     </div>
 
-                    <div className={styles.grid} role="grid" aria-label="Circuit board">
-                        {ROWS.map((row, rowIndex) => (
-                            <Fragment key={row}>
-                                <div className={styles.pinRow} role="row">
-                                    {COLS.map((col, colIndex) => (
-                                        <span
-                                            key={`${row}${col}`}
-                                            className={styles.pin}
-                                            style={{ gridColumn: pinCol(colIndex) }}
-                                            data-pin={`${row}${col}`}
-                                            role="gridcell"
-                                            aria-label={`Pin ${row}${col}`}
-                                        />
-                                    ))}
-                                </div>
-
-                                {rowIndex < ROWS.length - 1 && (
-                                    <div className={styles.circleRow} aria-hidden>
-                                        {Array.from({ length: SNAP_COLS }, (_, i) => (
-                                            <span
-                                                key={`${row}-snap-${i}`}
-                                                className={styles.snapCircle}
-                                                style={{ gridColumn: snapCol(i) }}
-                                                data-snap={`${row}${COLS[i]}-${ROWS[rowIndex + 1]}${COLS[i + 1]}`}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </Fragment>
-                        ))}
+                    <div
+                        className={styles.grid}
+                        ref={gridRef}
+                        role="grid"
+                        aria-label="Circuit board"
+                    >
+                        <GridPins simulator={false} />
+                        {children}
                     </div>
                 </div>
             </div>

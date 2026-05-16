@@ -7,6 +7,53 @@
     max-width: 100%;
 }
 
+.wrapperSimulator {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+}
+
+.boardStage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1082 / 757;
+}
+
+.boardImage {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    border-radius: 16px;
+}
+
+.dotLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+}
+
+.hitPin {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    pointer-events: auto;
+    cursor: crosshair;
+}
+
+.componentsLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+}
+
 .boardArea {
     display: flex;
     gap: 12px;
@@ -67,6 +114,7 @@
 .grid {
     --snap-circle-size: 52px;
 
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -95,7 +143,6 @@
     overflow: visible;
 }
 
-/* Main dots at A–G / 1–10 — small, darker */
 .pin {
     justify-self: center;
     align-self: center;
@@ -107,7 +154,6 @@
     z-index: 2;
 }
 
-/* Snap zones — size from --snap-circle-size (not min(100%, …); cells are too narrow) */
 .snapCircle {
     justify-self: center;
     align-self: center;
@@ -132,15 +178,12 @@
     .grid {
         min-height: 280px;
         padding: 10px;
+        --snap-circle-size: 40px;
     }
 
     .pin {
         width: 4px;
         height: 4px;
-    }
-
-    .grid {
-        --snap-circle-size: 40px;
     }
 
     .rowLabel,

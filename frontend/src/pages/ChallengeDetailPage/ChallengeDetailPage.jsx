@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import CircuitBoard from '../../components/CircuitBoard/CircuitBoard';
 import { useLang } from '../../context/LangContext';
 import styles from './ChallengeDetailPage.module.css';
 
@@ -73,7 +74,9 @@ export default function ChallengeDetailPage() {
 
     return (
         <main className={styles.main}>
-            <div className={styles.header}>
+            <div className={styles.layout}>
+                <div className={styles.contentColumn}>
+                    <div className={styles.header}>
                 <Link to={listPath} className={styles.backLink}>
                     {lang === 'ka' ? `← ${chapterCode} ამოცანები` : `← ${chapterCode} challenges`}
                 </Link>
@@ -101,7 +104,13 @@ export default function ChallengeDetailPage() {
                         ? 'ამოცანის აღწერა მალე დაემატება.'
                         : 'Challenge details will be added soon.'}
                 </p>
-            )}
+                    )}
+
+                <div className={styles.boardColumn}>
+                    <CircuitBoard label={problem.code} />
+                </div>
+                </div>
+            </div>
         </main>
     );
 }

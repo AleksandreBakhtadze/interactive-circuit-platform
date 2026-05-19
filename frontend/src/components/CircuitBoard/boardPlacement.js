@@ -51,6 +51,38 @@ function clampCellIndex(index, maxIndex) {
     return Math.max(0, Math.min(index, maxIndex));
 }
 
+/** Pin position in stage pixels; extrapolates past board edges (no clamp shrink). */
+function getDotPx(col, row, rect) {
+    const stepX =
+        DOT_COL_X.length > 1 ? DOT_COL_X[1] - DOT_COL_X[0] : 0.108;
+    const stepY =
+        DOT_ROW_Y.length > 1 ? DOT_ROW_Y[1] - DOT_ROW_Y[0] : 0.143;
+
+    let nx;
+    if (col < 0) {
+        nx = DOT_COL_X[0] + col * stepX;
+    } else if (col >= DOT_COL_X.length) {
+        nx =
+            DOT_COL_X[DOT_COL_X.length - 1] +
+            (col - (DOT_COL_X.length - 1)) * stepX;
+    } else {
+        nx = DOT_COL_X[col];
+    }
+
+    let ny;
+    if (row < 0) {
+        ny = DOT_ROW_Y[0] + row * stepY;
+    } else if (row >= DOT_ROW_Y.length) {
+        ny =
+            DOT_ROW_Y[DOT_ROW_Y.length - 1] +
+            (row - (DOT_ROW_Y.length - 1)) * stepY;
+    } else {
+        ny = DOT_ROW_Y[row];
+    }
+
+    return { x: nx * rect.width, y: ny * rect.height };
+}
+
 /** Bounding box for w×h small-dot cells */
 function getDotCellBounds(rect, row, col, w, h) {
     const { pitchX, pitchY } = getDotPitch();
@@ -84,32 +116,39 @@ function getDotCellBounds(rect, row, col, w, h) {
  *   4. Average top from both pin constraints for sub-pixel accuracy.
  */
 function layoutPowerSupply(rect, row, col, s0, s1) {
-    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
-    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
-    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
-    const boardY0 = DOT_ROW_Y[r0] * rect.height;
-    const boardY1 = DOT_ROW_Y[r1] * rect.height;
-    const boardX0 = DOT_COL_X[c0] * rect.width;
+    const p0 = getDotPx(col + s0.dc, row + s0.dr, rect);
+    const p1 = getDotPx(col + s1.dc, row + s1.dr, rect);
 
+    const imgDu = s1.u - s0.u;
     const imgDv = s1.v - s0.v;
-    const boardDy = boardY1 - boardY0;
+    const boardDx = p1.x - p0.x;
+    const boardDy = p1.y - p0.y;
 
-    // Height: scale so the two v-fractions span the real pin distance
-    const height =
-        Math.abs(imgDv) > 0.02 ? boardDy / imgDv : boardDy || 1;
-
-    // Width: preserve SVG aspect ratio (svgWidth/svgHeight in COMPONENT_ART_SNAPS)
     const art = COMPONENT_ART_SNAPS[COMPONENT_TYPES.POWER_SUPPLY];
     const aspectRatio = (art.svgWidth ?? 271) / (art.svgHeight ?? 326);
+
+    const boardSpan =
+        Math.abs(boardDy) >= Math.abs(boardDx)
+            ? Math.abs(boardDy)
+            : Math.abs(boardDx);
+
+    const imgSpan =
+        Math.abs(imgDv) >= Math.abs(imgDu)
+            ? Math.abs(imgDv)
+            : Math.abs(imgDu);
+
+    const height = imgSpan > 0.02 ? boardSpan / imgSpan : boardSpan || 1;
     const width = height * aspectRatio;
 
-    // Left: u0 fraction of width must align with the anchor pin x
-    const left = boardX0 - s0.u * width;
+    const leftFrom0 = p0.x - s0.u * width;
+    const leftFrom1 = p1.x - s1.u * width;
+    const left =
+        Math.abs(imgDu) > 0.02 ? (leftFrom0 + leftFrom1) / 2 : leftFrom0;
 
-    // Top: average of both pin constraints for best accuracy
-    const topFromTop    = boardY0 - s0.v * height;
-    const topFromBottom = boardY1 - s1.v * height;
-    const top = (topFromTop + topFromBottom) / 2;
+    const topFrom0 = p0.y - s0.v * height;
+    const topFrom1 = p1.y - s1.v * height;
+    const top =
+        Math.abs(imgDv) > 0.02 ? (topFrom0 + topFrom1) / 2 : topFrom0;
 
     return { left, top, width, height };
 }
@@ -144,15 +183,12 @@ function layoutPartFromSnaps(
     const baseFp = getFootprint(type);
     const baseBounds = getDotCellBounds(rect, row, col, baseFp.w, baseFp.h);
 
-    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
-    const c1 = clampCellIndex(col + s1.dc, DOT_COL_X.length - 1);
-    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
-    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
-
-    const boardX0 = DOT_COL_X[c0] * rect.width;
-    const boardY0 = DOT_ROW_Y[r0] * rect.height;
-    const boardX1 = DOT_COL_X[c1] * rect.width;
-    const boardY1 = DOT_ROW_Y[r1] * rect.height;
+    const p0 = getDotPx(col + s0.dc, row + s0.dr, rect);
+    const p1 = getDotPx(col + s1.dc, row + s1.dr, rect);
+    const boardX0 = p0.x;
+    const boardY0 = p0.y;
+    const boardX1 = p1.x;
+    const boardY1 = p1.y;
 
     const imgDx = Math.abs(s1.u - s0.u);
     const imgDy = Math.abs(s1.v - s0.v);
@@ -218,11 +254,11 @@ function getRotatedPartStyle(stageEl, row, col, footprintW, footprintH, type, ro
 
     const [s0, s1] = art.points;
 
-    if (type === COMPONENT_TYPES.POWER_SUPPLY && rot === 0) {
+    if (type === COMPONENT_TYPES.POWER_SUPPLY) {
         const box = layoutPowerSupply(rect, row, col, s0, s1);
         return toPxStyle({
             ...box,
-            rotation: 0,
+            rotation: rot,
             transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
         });
     }
@@ -271,15 +307,12 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
     }
 
     // General case: solve width from horizontal snap span, height from vertical
-    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
-    const c1 = clampCellIndex(col + s1.dc, DOT_COL_X.length - 1);
-    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
-    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
-
-    const boardX0 = DOT_COL_X[c0] * rect.width;
-    const boardY0 = DOT_ROW_Y[r0] * rect.height;
-    const boardX1 = DOT_COL_X[c1] * rect.width;
-    const boardY1 = DOT_ROW_Y[r1] * rect.height;
+    const p0 = getDotPx(col + s0.dc, row + s0.dr, rect);
+    const p1 = getDotPx(col + s1.dc, row + s1.dr, rect);
+    const boardX0 = p0.x;
+    const boardY0 = p0.y;
+    const boardX1 = p1.x;
+    const boardY1 = p1.y;
 
     const imgDx = s1.u - s0.u;
     const imgDy = s1.v - s0.v;
@@ -380,6 +413,36 @@ export function getFootprintStyle(gridEl, row, col, w, h) {
         width:  `${right - left}px`,
         height: `${bottom - top}px`,
     };
+}
+
+/** CSS box for a placed or preview part (includes rotation transform). */
+export function partStyleToCss(partStyle) {
+    if (!partStyle) return null;
+
+    const rotDeg = partStyle.rotation ?? 0;
+    return {
+        position: 'absolute',
+        left: partStyle.left,
+        top: partStyle.top,
+        width: partStyle.width,
+        height: partStyle.height,
+        boxSizing: 'border-box',
+        ...(rotDeg
+            ? {
+                  transform: `rotate(${rotDeg}deg)`,
+                  transformOrigin:
+                      partStyle.transformOrigin ?? 'center center',
+              }
+            : {}),
+    };
+}
+
+/** Hide the browser’s default unrotated drag snapshot; use on-board preview instead. */
+export function setTransparentDragGhost(dataTransfer) {
+    const blank = new Image();
+    blank.src =
+        'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    dataTransfer.setDragImage(blank, 0, 0);
 }
 
 export function parseDragPayload(dataTransfer) {

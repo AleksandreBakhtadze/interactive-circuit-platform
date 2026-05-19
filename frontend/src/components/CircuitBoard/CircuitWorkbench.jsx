@@ -11,10 +11,11 @@ import {
 import CircuitBoard from './CircuitBoard';
 import {
     getPartStyle,
-    getFootprintStyle,
     parseDragPayload,
+    partStyleToCss,
     pointerToPin,
     setDragPayload,
+    setTransparentDragGhost,
 } from './boardPlacement';
 import styles from './CircuitWorkbench.module.css';
 
@@ -86,6 +87,7 @@ export default function CircuitWorkbench({ problemCode }) {
         const rotation = getPaletteRotation(type);
         setActiveDrag({ type, rotation });
         setDragPayload(e.dataTransfer, { source: 'palette', type, rotation });
+        setTransparentDragGhost(e.dataTransfer);
     };
 
     const handlePlacedDragStart = (e, comp) => {
@@ -97,6 +99,7 @@ export default function CircuitWorkbench({ problemCode }) {
             rotation,
         });
         setActiveDrag({ id: comp.id, type: comp.type, rotation });
+        setTransparentDragGhost(e.dataTransfer);
     };
 
     const handleDragEnd = () => {
@@ -171,16 +174,22 @@ export default function CircuitWorkbench({ problemCode }) {
             ? getRotatedFootprint(activeDrag.type, previewRotation)
             : null;
 
-    const previewStyle =
-        previewFootprint && hoverPin
-            ? getFootprintStyle(
+    const previewPartStyle =
+        activeDrag && hoverPin && previewFootprint
+            ? getPartStyle(
                   gridRef.current,
                   hoverPin.row,
                   hoverPin.col,
                   previewFootprint.w,
-                  previewFootprint.h
+                  previewFootprint.h,
+                  activeDrag.type,
+                  previewRotation
               )
             : null;
+
+    const previewCss = previewPartStyle
+        ? partStyleToCss(previewPartStyle)
+        : null;
 
     return (
         <div className={styles.workbench}>
@@ -270,12 +279,23 @@ export default function CircuitWorkbench({ problemCode }) {
                 onDrop={handleBoardDrop}
             >
                 <CircuitBoard gridRef={gridRef} simulator>
-                    {previewStyle && activeDrag && (
+                    {previewCss && activeDrag && (
                         <div
                             className={styles.dropPreview}
-                            style={previewStyle}
+                            style={{ ...previewCss, zIndex: 25 }}
                             aria-hidden
-                        />
+                        >
+                            {getComponentImage(activeDrag.type) ? (
+                                <div className={styles.partInner}>
+                                    <img
+                                        src={getComponentImage(activeDrag.type)}
+                                        alt=""
+                                        className={styles.partImgAligned}
+                                        draggable={false}
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
                     )}
                     {placed.map((comp, index) => {
                         const rotation = comp.rotation ?? 0;
@@ -295,21 +315,9 @@ export default function CircuitWorkbench({ problemCode }) {
                         const img = getComponentImage(comp.type);
                         if (!partStyle) return null;
 
-                        const rotDeg = partStyle.rotation ?? 0;
                         const boxStyle = {
-                            left: partStyle.left,
-                            top: partStyle.top,
-                            width: partStyle.width,
-                            height: partStyle.height,
+                            ...partStyleToCss(partStyle),
                             zIndex: 10 + index,
-                            ...(rotDeg
-                                ? {
-                                      transform: `rotate(${rotDeg}deg)`,
-                                      transformOrigin:
-                                          partStyle.transformOrigin ??
-                                          'center center',
-                                  }
-                                : {}),
                         };
 
                         return (

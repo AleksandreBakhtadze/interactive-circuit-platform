@@ -75,7 +75,55 @@ SELECT id, 'Connector 5', 10 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
 SELECT id, 'Connector 6', 10 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
-SELECT id, 'Connector 7', 10 FROM problems WHERE code = 'ST.L1.1';
+SELECT id, 'Connector 7', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 20 Ω', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 100 Ω', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 1 kΩ', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 5.1 kΩ', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 10 kΩ', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 100 kΩ', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Resistor 510 kΩ', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'LED Red', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'LED Green', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'LED Blue', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Switch', 1 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Motor', 1 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Capacitor 1 µF', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Capacitor 10 µF', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Capacitor 100 µF', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Capacitor 470 µF', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Diode', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Relay', 1 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Slide Switch', 1 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Var. Resistor 10k', 1 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'NPN Q1', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'PNP Q2', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'NPN Q3', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'PNP Q4', 10 FROM problems WHERE code = 'ST.L1.1';
 
 -- Insert required components for ST.L1.2
 INSERT INTO problem_required_components (problem_id, component_name,quantity)

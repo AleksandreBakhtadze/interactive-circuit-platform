@@ -1,5 +1,10 @@
 import { COMPONENT_ART_SNAPS } from '../../constants/componentArt';
-import { COMPONENT_TYPES, getFootprint } from '../../constants/componentCatalog';
+import {
+    COMPONENT_TYPES,
+    getArtLayoutPair,
+    getFootprint,
+    usesVerticalSpanLayout,
+} from '../../constants/componentCatalog';
 import {
     getRotatedArtSnapPoints,
     normalizeRotation,
@@ -252,9 +257,12 @@ function getRotatedPartStyle(stageEl, row, col, footprintW, footprintH, type, ro
         });
     }
 
-    const [s0, s1] = art.points;
+    const [s0, s1] = getArtLayoutPair(type, art.points);
 
-    if (type === COMPONENT_TYPES.POWER_SUPPLY) {
+    if (
+        type === COMPONENT_TYPES.POWER_SUPPLY ||
+        usesVerticalSpanLayout(s0, s1)
+    ) {
         const box = layoutPowerSupply(rect, row, col, s0, s1);
         return toPxStyle({
             ...box,
@@ -293,9 +301,12 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
         };
     }
 
-    const [s0, s1] = art.points;
+    const [s0, s1] = getArtLayoutPair(type, art.points);
 
-    if (type === COMPONENT_TYPES.POWER_SUPPLY) {
+    if (
+        type === COMPONENT_TYPES.POWER_SUPPLY ||
+        usesVerticalSpanLayout(s0, s1)
+    ) {
         const box = layoutPowerSupply(rect, row, col, s0, s1);
         return {
             left: `${box.left}px`,

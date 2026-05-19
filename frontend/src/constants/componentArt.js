@@ -14,7 +14,19 @@
  * pixel position and size so the circles land exactly on the board's dark pins.
  */
 
-import { COMPONENT_TYPES, CONNECTOR_LENGTHS, connectorType } from './componentCatalog';
+import {
+    CAPACITOR_SPECS,
+    capacitorType,
+    COMPONENT_TYPES,
+    CONNECTOR_LENGTHS,
+    connectorType,
+    LED_SPECS,
+    ledType,
+    RESISTOR_SPECS,
+    resistorType,
+    TRANSISTOR_SPECS,
+    transistorType,
+} from './componentCatalog';
 
 const PIN_X_START = 54;
 const PIN_X_STEP = 108;
@@ -36,6 +48,65 @@ function buildConnectorArtSnap(length) {
 const CONNECTOR_ART_SNAPS = Object.fromEntries(
     CONNECTOR_LENGTHS.map((n) => [connectorType(n), buildConnectorArtSnap(n)])
 );
+
+const RESISTOR_ART_SNAP = {
+    svgWidth: 325,
+    svgHeight: 109,
+    points: [
+        { u: 54 / 325, v: 54 / 109, dr: 0, dc: 0 },
+        { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 },
+    ],
+};
+
+const RESISTOR_ART_SNAPS = Object.fromEntries(
+    RESISTOR_SPECS.map((s) => [resistorType(s.key), RESISTOR_ART_SNAP])
+);
+
+const LED_ART_SNAPS = Object.fromEntries(
+    LED_SPECS.map((s) => [ledType(s.key), RESISTOR_ART_SNAP])
+);
+
+const CAPACITOR_ART_SNAPS = Object.fromEntries(
+    CAPACITOR_SPECS.map((s) => [capacitorType(s.key), RESISTOR_ART_SNAP])
+);
+
+/** Vertical triangle (217×326): collector top, emitter bottom, base left. */
+const TRIANGLE_ART_VERTICAL = {
+    svgWidth: 217,
+    svgHeight: 326,
+    points: [
+        { u: 162 / 217, v: 54.17 / 326, dr: 0, dc: 1 },
+        { u: 162 / 217, v: 270.83 / 326, dr: 2, dc: 1 },
+        { u: 54 / 217, v: 162.5 / 326, dr: 1, dc: 0 },
+    ],
+};
+
+/** Horizontal triangle (326×217): ends on the right column, base on the left. */
+const TRIANGLE_ART_HORIZONTAL = {
+    svgWidth: 326,
+    svgHeight: 217,
+    points: [
+        { u: 217 / 326, v: 0.17 / 217, dr: 0, dc: 2 },
+        { u: 217 / 326, v: 216.83 / 217, dr: 2, dc: 2 },
+        { u: 109 / 326, v: 108.5 / 217, dr: 1, dc: 0 },
+    ],
+};
+
+const TRANSISTOR_ART_SNAPS = Object.fromEntries(
+    TRANSISTOR_SPECS.map((s) => [transistorType(s.key), TRIANGLE_ART_VERTICAL])
+);
+
+const RELAY_ART_SNAP = {
+    svgWidth: 217,
+    svgHeight: 326,
+    points: [
+        { u: 54 / 217, v: 54.17 / 326, dr: 0, dc: 0 },
+        { u: 162 / 217, v: 54.17 / 326, dr: 0, dc: 1 },
+        { u: 162 / 217, v: 162.5 / 326, dr: 1, dc: 1 },
+        { u: 54 / 217, v: 270.83 / 326, dr: 2, dc: 0 },
+        { u: 162 / 217, v: 270.83 / 326, dr: 2, dc: 1 },
+    ],
+};
 
 export const COMPONENT_ART_SNAPS = {
     [COMPONENT_TYPES.POWER_SUPPLY]: {
@@ -65,5 +136,35 @@ export const COMPONENT_ART_SNAPS = {
         ],
     },
 
+    [COMPONENT_TYPES.SWITCH]: {
+        svgWidth:  325,
+        svgHeight: 109,
+        points: [
+            { u:  54 / 325, v: 54 / 109, dr: 0, dc: 0 },
+            { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 },
+        ],
+    },
+
+    [COMPONENT_TYPES.MOTOR]: {
+        svgWidth:  325,
+        svgHeight: 109,
+        points: [
+            { u:  54 / 325, v: 54 / 109, dr: 0, dc: 0 },
+            { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 },
+        ],
+    },
+
+    [COMPONENT_TYPES.DIODE]: RESISTOR_ART_SNAP,
+
+    [COMPONENT_TYPES.RELAY]: RELAY_ART_SNAP,
+
+    [COMPONENT_TYPES.SLIDE_SWITCH]: TRIANGLE_ART_HORIZONTAL,
+
+    [COMPONENT_TYPES.VAR_RESISTOR]: TRIANGLE_ART_HORIZONTAL,
+
     ...CONNECTOR_ART_SNAPS,
+    ...RESISTOR_ART_SNAPS,
+    ...CAPACITOR_ART_SNAPS,
+    ...TRANSISTOR_ART_SNAPS,
+    ...LED_ART_SNAPS,
 };

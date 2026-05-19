@@ -12,6 +12,14 @@
     border-radius: 8px;
 }
 
+.paletteHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
 .paletteTitle {
     font-family: var(--font-mono);
     font-size: 0.72rem;
@@ -19,7 +27,61 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #60c5f1;
-    margin: 0 0 8px;
+    margin: 0;
+}
+
+.simulateBtn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid #60c5f1;
+    border-radius: 6px;
+    background: rgba(96, 197, 241, 0.12);
+    color: #60c5f1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.simulateBtn:hover:not(:disabled) {
+    background: rgba(96, 197, 241, 0.25);
+}
+
+.simulateBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.actionBtns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.submitBtn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1px solid #6fcf97;
+    border-radius: 6px;
+    background: rgba(111, 207, 151, 0.15);
+    color: #6fcf97;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.submitBtn:hover:not(:disabled) {
+    background: rgba(111, 207, 151, 0.3);
+}
+
+.submitBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .paletteHint {
@@ -152,6 +214,17 @@
     overflow: visible;
 }
 
+.placedPartInteractive {
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+}
+
+.placedPartPressed {
+    outline: 2px solid #6fcf97;
+    outline-offset: 2px;
+}
+
 .placedPartDragging {
     opacity: 0.35;
 }
@@ -192,4 +265,12 @@
     font-size: 0.8rem;
     color: #f0a050;
     margin: 0;
+}
+
+.messagePass {
+    color: #6fcf97;
+}
+
+.messageFail {
+    color: #e07070;
 }

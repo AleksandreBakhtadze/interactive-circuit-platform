@@ -1,8 +1,15 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { simulateCircuit, validateCircuit } from '../../api';
 import { useLang } from '../../context/LangContext';
 import { getComponentImage } from '../../constants/componentAssets';
 import { getPaletteForProblem } from '../../constants/componentCatalog';
 import { getRotatedFootprint, normalizeRotation } from '../../constants/componentRotation';
+import {
+    buildCircuitJson,
+    createInitialSwitchStates,
+    isBoardComplete,
+    isInteractivePart,
+} from '../../utils/circuitNetlist';
 import {
     canPlaceAt,
     countPlacedByType,
@@ -23,12 +30,28 @@ export default function CircuitWorkbench({ problemCode }) {
     const { lang } = useLang();
     const palette = getPaletteForProblem(problemCode);
     const gridRef = useRef(null);
+    const heldButtonIdRef = useRef(null);
+    const switchStatesRef = useRef({});
 
     const [placed, setPlaced] = useState([]);
     const [paletteRotations, setPaletteRotations] = useState({});
     const [message, setMessage] = useState('');
+    const [simulating, setSimulating] = useState(false);
+    const [liveSimMode, setLiveSimMode] = useState(false);
+    const [switchStates, setSwitchStates] = useState({});
+
+    useEffect(() => {
+        switchStatesRef.current = switchStates;
+    }, [switchStates]);
+    const [submitting, setSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState(null);
     const [activeDrag, setActiveDrag] = useState(null);
     const [hoverPin, setHoverPin] = useState(null);
+
+    useEffect(() => {
+        setLiveSimMode(false);
+        setSwitchStates({});
+    }, [placed]);
 
     const getPaletteRotation = (type) => paletteRotations[type] ?? 0;
 
@@ -166,6 +189,160 @@ export default function CircuitWorkbench({ problemCode }) {
         setMessage('');
     };
 
+    const runLiveSimulation = useCallback(
+        async (states, logLabel) => {
+            const circuitJson = buildCircuitJson(placed, states);
+            console.log(
+                logLabel ?? 'Circuit JSON sent to backend:',
+                circuitJson
+            );
+
+            if (!circuitJson.components.length) {
+                setMessage(
+                    lang === 'ka'
+                        ? 'განათავსეთ მაინც ერთი დეტალი (კვება, ღილაკი, ნათურა)'
+                        : 'Place at least one part (supply, button, lamp)'
+                );
+                return;
+            }
+
+            setSimulating(true);
+
+            try {
+                const result = await simulateCircuit(circuitJson);
+                console.log(
+                    logLabel
+                        ? `Simulation (${logLabel}):`
+                        : 'Simulation result:',
+                    result
+                );
+
+                if (result.error) {
+                    setMessage(
+                        lang === 'ka'
+                            ? `სიმულაციის შეცდომა: ${result.error}`
+                            : `Simulation error: ${result.error}`
+                    );
+                } else if (liveSimMode || logLabel) {
+                    setMessage(
+                        lang === 'ka'
+                            ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე — შედეგი კონსოლში (F12)'
+                            : 'Press and hold the button on the board — results in console (F12)'
+                    );
+                } else {
+                    setMessage(
+                        lang === 'ka'
+                            ? 'სიმულაცია დასრულდა — შედეგი კონსოლშია (F12)'
+                            : 'Simulation done — see browser console (F12)'
+                    );
+                }
+            } catch (err) {
+                console.error('Simulation request failed:', err);
+                const detail = err?.message ?? String(err);
+                const isNetwork =
+                    detail.includes('Failed to fetch') ||
+                    detail.includes('NetworkError');
+                setMessage(
+                    isNetwork
+                        ? lang === 'ka'
+                            ? 'სერვერი არ პასუხობს — გაუშვით backend (პორტი 8080)'
+                            : 'Server not reachable — start backend on port 8080'
+                        : lang === 'ka'
+                          ? `შეცდომა: ${detail}`
+                          : `Error: ${detail}`
+                );
+            } finally {
+                setSimulating(false);
+            }
+        },
+        [placed, lang, liveSimMode]
+    );
+
+    const handleSimulate = async () => {
+        const initial = createInitialSwitchStates(placed);
+        setSwitchStates(initial);
+        setLiveSimMode(true);
+        setMessage('');
+        await runLiveSimulation(
+            initial,
+            'initial (switches released / open)'
+        );
+    };
+
+    /** Momentary button: closed only while pointer is held down. */
+    const handleInteractivePointerDown = async (comp, e) => {
+        if (!liveSimMode || !isInteractivePart(comp.type)) return;
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        heldButtonIdRef.current = comp.id;
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: 'closed',
+        };
+        setSwitchStates(nextStates);
+        await runLiveSimulation(nextStates, 'button pressed');
+    };
+
+    const handleInteractivePointerUp = async (comp, e) => {
+        if (!liveSimMode || heldButtonIdRef.current !== comp.id) return;
+        e.stopPropagation();
+        heldButtonIdRef.current = null;
+
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+            /* already released */
+        }
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: 'open',
+        };
+        setSwitchStates(nextStates);
+        await runLiveSimulation(nextStates, 'button released');
+    };
+
+    const handleSubmit = async () => {
+        if (!isBoardComplete(placed, palette)) {
+            setSubmitStatus('fail');
+            setMessage(
+                lang === 'ka'
+                    ? 'განათავსეთ ყველა საჭირო დეტალი (კვება, ღილაკი, ნათურა)'
+                    : 'Place all required parts (supply, button, lamp)'
+            );
+            return;
+        }
+
+        const circuitJson = buildCircuitJson(placed);
+        setSubmitting(true);
+        setSubmitStatus(null);
+        setMessage('');
+
+        try {
+            const result = await validateCircuit(problemCode, circuitJson);
+            console.log('Validation result:', result);
+
+            setSubmitStatus(result.passed ? 'pass' : 'fail');
+            setMessage(
+                lang === 'ka'
+                    ? result.messageKa ?? result.message
+                    : result.message
+            );
+        } catch (err) {
+            console.error('Validation failed:', err);
+            setSubmitStatus('fail');
+            const detail = err?.message ?? String(err);
+            setMessage(
+                lang === 'ka' ? `შეცდომა: ${detail}` : `Error: ${detail}`
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     if (!palette) return null;
 
     const previewRotation = activeDrag?.rotation ?? 0;
@@ -194,13 +371,49 @@ export default function CircuitWorkbench({ problemCode }) {
     return (
         <div className={styles.workbench}>
             <aside className={styles.palette}>
-                <h2 className={styles.paletteTitle}>
-                    {lang === 'ka' ? 'დეტალები' : 'Components'}
-                </h2>
+                <div className={styles.paletteHeader}>
+                    <h2 className={styles.paletteTitle}>
+                        {lang === 'ka' ? 'დეტალები' : 'Components'}
+                    </h2>
+                    <div className={styles.actionBtns}>
+                    <button
+                        type="button"
+                        className={styles.simulateBtn}
+                        onClick={handleSimulate}
+                        disabled={simulating || submitting || placed.length === 0}
+                    >
+                        {simulating
+                            ? lang === 'ka'
+                                ? 'ითვლება...'
+                                : 'Running...'
+                            : lang === 'ka'
+                              ? 'სიმულაცია'
+                              : 'Simulate'}
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.submitBtn}
+                        onClick={handleSubmit}
+                        disabled={submitting || simulating || placed.length === 0}
+                    >
+                        {submitting
+                            ? lang === 'ka'
+                                ? 'იმოწმება...'
+                                : 'Checking...'
+                            : lang === 'ka'
+                              ? 'შემოწმება'
+                              : 'Submit'}
+                    </button>
+                    </div>
+                </div>
                 <p className={styles.paletteHint}>
-                    {lang === 'ka'
-                        ? '↻ — შებრუნება სიაში, შემდეგ გადაიტანეთ ფირზე. მარჯვენა ღილაკი — წაშლა.'
-                        : 'Click ↻ to rotate in the list, then drag onto the board. Right-click to remove.'}
+                    {liveSimMode
+                        ? lang === 'ka'
+                            ? 'სიმულაციის რეჟიმი: დააჭირეთ და არ გაუშვათ ღილაკი (როგორც ნამდვილ ღილაკზე).'
+                            : 'Simulation mode: press and hold the button (release to open).'
+                        : lang === 'ka'
+                          ? '↻ — შებრუნება სიაში, შემდეგ გადაიტანეთ ფირზე. მარჯვენა ღილაკი — წაშლა.'
+                          : 'Click ↻ to rotate in the list, then drag onto the board. Right-click to remove.'}
                 </p>
                 <div className={styles.paletteItems}>
                     {palette.map((item) => {
@@ -315,6 +528,12 @@ export default function CircuitWorkbench({ problemCode }) {
                         const img = getComponentImage(comp.type);
                         if (!partStyle) return null;
 
+                        const interactive =
+                            liveSimMode && isInteractivePart(comp.type);
+                        const isPressed =
+                            interactive &&
+                            switchStates[comp.id] === 'closed';
+
                         const boxStyle = {
                             ...partStyleToCss(partStyle),
                             zIndex: 10 + index,
@@ -323,15 +542,55 @@ export default function CircuitWorkbench({ problemCode }) {
                         return (
                             <div
                                 key={comp.id}
-                                className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''}`}
+                                className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''} ${isPressed ? styles.placedPartPressed : ''}`}
                                 style={boxStyle}
-                                draggable
-                                onDragStart={(e) =>
-                                    handlePlacedDragStart(e, comp)
-                                }
+                                draggable={!interactive}
+                                onDragStart={(e) => {
+                                    if (interactive) {
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    handlePlacedDragStart(e, comp);
+                                }}
                                 onDragEnd={handleDragEnd}
-                                onContextMenu={(e) =>
-                                    removeComponent(comp.id, e)
+                                onPointerDown={
+                                    interactive
+                                        ? (e) =>
+                                              handleInteractivePointerDown(
+                                                  comp,
+                                                  e
+                                              )
+                                        : undefined
+                                }
+                                onPointerUp={
+                                    interactive
+                                        ? (e) =>
+                                              handleInteractivePointerUp(
+                                                  comp,
+                                                  e
+                                              )
+                                        : undefined
+                                }
+                                onPointerCancel={
+                                    interactive
+                                        ? (e) =>
+                                              handleInteractivePointerUp(
+                                                  comp,
+                                                  e
+                                              )
+                                        : undefined
+                                }
+                                onContextMenu={(e) => {
+                                    if (interactive) {
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    removeComponent(comp.id, e);
+                                }}
+                                role={interactive ? 'button' : undefined}
+                                tabIndex={interactive ? 0 : undefined}
+                                aria-pressed={
+                                    interactive ? isPressed : undefined
                                 }
                             >
                                 <div className={styles.partInner}>
@@ -354,7 +613,19 @@ export default function CircuitWorkbench({ problemCode }) {
                 </CircuitBoard>
             </div>
 
-            {message && <p className={styles.message}>{message}</p>}
+            {message && (
+                <p
+                    className={`${styles.message} ${
+                        submitStatus === 'pass'
+                            ? styles.messagePass
+                            : submitStatus === 'fail'
+                              ? styles.messageFail
+                              : ''
+                    }`}
+                >
+                    {message}
+                </p>
+            )}
         </div>
     );
 }

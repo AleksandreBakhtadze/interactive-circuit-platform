@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -39,8 +40,12 @@ public class ProblemDataSeeder implements CommandLineRunner {
     );
 
     @Override
+    @Transactional
     public void run(String... args) {
-        chapterRepository.findByCode("ST").ifPresent(this::seedChapterProblems);
+        chapterRepository.findByCode("ST").ifPresentOrElse(
+                this::seedChapterProblems,
+                () -> System.err.println("ProblemDataSeeder: chapter ST not found — skipping problem seed")
+        );
     }
 
     private void seedChapterProblems(Chapter chapter) {

@@ -1,8 +1,11 @@
 package com.example.circuit_simulator.controller;
 
 import com.example.circuit_simulator.dto.CircuitDTO;
+import com.example.circuit_simulator.dto.ValidateCircuitRequest;
+import com.example.circuit_simulator.dto.ValidationResultDTO;
 import com.example.circuit_simulator.model.Circuit;
 import com.example.circuit_simulator.service.CircuitService;
+import com.example.circuit_simulator.service.CircuitValidationService;
 import com.example.circuit_simulator.service.SimulationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import java.util.List;
 public class CircuitController {
     private final CircuitService circuitService;
     private final SimulationService simulationService;
+    private final CircuitValidationService validationService;
     private final ObjectMapper objectMapper;
 
     @GetMapping
@@ -44,6 +48,14 @@ public class CircuitController {
                 .build();
 
         return circuitService.createCircuit(circuit);
+    }
+
+    @PostMapping("/validate")
+    public ValidationResultDTO validate(@RequestBody ValidateCircuitRequest request)
+            throws Exception {
+        return validationService.validate(
+                request.getProblemCode(),
+                request.getCircuitData());
     }
 
     @GetMapping("/{id}")

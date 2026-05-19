@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { problemToSlug } from '../../utils/problemSlug';
 import { useLang } from '../../context/LangContext';
+import { API_BASE } from '../../api';
 import styles from './ChapterChallengesPage.module.css';
 
-const API = 'http://localhost:8080/api';
-
 async function fetchChapterDetail(chapterCode) {
-    const res = await fetch(`${API}/chapters/${encodeURIComponent(chapterCode)}/detail`);
+    const res = await fetch(`${API_BASE}/chapters/${encodeURIComponent(chapterCode)}/detail`);
     if (!res.ok) {
         const err = new Error('request_failed');
         err.status = res.status;

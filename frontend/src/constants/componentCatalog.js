@@ -8,6 +8,7 @@ export const COMPONENT_TYPES = {
     LAMP: 'lamp',
     RESISTOR: 'resistor',
     WIRE: 'wire',
+    WIRE3: 'wire3',
 };
 
 const FOOTPRINTS = {
@@ -15,6 +16,7 @@ const FOOTPRINTS = {
     [COMPONENT_TYPES.BUTTON]: { w: 3, h: 1 },
     [COMPONENT_TYPES.LAMP]: { w: 3, h: 1 },
     [COMPONENT_TYPES.RESISTOR]: { w: 3, h: 1 },
+    [COMPONENT_TYPES.WIRE3]: { w: 3, h: 1 },
 };
 
 export function getFootprint(type, wireLength) {
@@ -36,6 +38,10 @@ const SNAP_OFFSETS = {
         { dr: 0, dc: 2 },
     ],
     [COMPONENT_TYPES.LAMP]: [
+        { dr: 0, dc: 0 },
+        { dr: 0, dc: 2 },
+    ],
+    [COMPONENT_TYPES.WIRE3]: [
         { dr: 0, dc: 0 },
         { dr: 0, dc: 2 },
     ],
@@ -66,6 +72,12 @@ export const ST_L1_1_PALETTE = [
         labelKa: 'ნათურა 6V',
         labelEn: 'Lamp 6V',
         maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.WIRE3,
+        labelKa: 'გამტარი 3',
+        labelEn: 'Wire 3',
+        maxCount: 10,
     },
 ];
 

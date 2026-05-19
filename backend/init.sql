@@ -65,6 +65,8 @@ SELECT id, 'Button', 1 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
 SELECT id, 'Lamp 6V' ,1 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
+SELECT id, 'Wire 3', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
 SELECT id, 'Wire', 200 FROM problems WHERE code = 'ST.L1.1';
 
 -- Insert required components for ST.L1.2

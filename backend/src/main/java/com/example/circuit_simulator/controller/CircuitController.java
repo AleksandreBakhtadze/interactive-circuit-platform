@@ -13,7 +13,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/circuits")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class CircuitController {
     private final CircuitService circuitService;
     private final SimulationService simulationService;

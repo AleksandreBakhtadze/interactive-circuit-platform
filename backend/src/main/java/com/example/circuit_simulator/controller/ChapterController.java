@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chapters")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class ChapterController {
 

@@ -6,9 +6,12 @@
 }
 
 .palette {
+    --palette-card-w: 96px;
+    --palette-item-h: 112px;
+
     background: var(--bg-card);
     border: 1px solid var(--border);
-    padding: 16px 20px;
+    padding: 12px 16px;
     border-radius: 8px;
 }
 
@@ -19,64 +22,59 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #60c5f1;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
 }
 
 .paletteHint {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--text-muted);
-    margin: 0 0 12px;
+    margin: 0 0 10px;
     line-height: 1.4;
 }
 
 .paletteItems {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px;
+    align-items: stretch;
 }
 
 .paletteCard {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    width: var(--palette-card-w);
+    box-sizing: border-box;
 }
 
-.rotateBtn {
-    display: flex;
-    align-items: center;
+.connectorCard {
+    width: calc(var(--palette-card-w) * 2);
+}
+
+.ledCard {
+    width: calc(var(--palette-card-w) * 2);
+}
+
+.ledOptionsRow {
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 4px;
-    padding: 4px 8px;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #60c5f1;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.rotateBtn:hover {
-    border-color: #60c5f1;
-    background: rgba(96, 197, 241, 0.1);
-}
-
-.rotateDeg {
-    font-size: 0.65rem;
-    color: var(--text-muted);
 }
 
 .paletteItem {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    min-width: 88px;
+    justify-content: space-between;
+    gap: 5px;
+    flex: 1;
+    min-height: var(--palette-item-h);
+    height: var(--palette-item-h);
+    padding: 8px 10px 6px;
+    width: 100%;
+    box-sizing: border-box;
     background: var(--bg-primary);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: grab;
     color: var(--text-primary);
     transition: border-color 0.15s, opacity 0.15s;
@@ -92,40 +90,197 @@
 }
 
 .palettePreview {
-    width: 100px;
-    height: 52px;
+    width: 72px;
+    height: 42px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: visible;
+    overflow: hidden;
+}
+
+.palettePreviewWide {
+    width: 100%;
+    max-width: 140px;
+    height: 36px;
+}
+
+/* Standard cards (not connectors): label on top, preview fills middle */
+.paletteItemStandard .paletteLabel {
+    flex-shrink: 0;
+}
+
+.paletteItemStandard .palettePreview {
+    flex: 1;
+    width: 100%;
+    min-height: 52px;
+    height: auto;
+    max-height: 76px;
+}
+
+.paletteItemStandard .palettePreviewWide {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: 52px;
+}
+
+.paletteItemStandard .paletteCount {
+    flex-shrink: 0;
 }
 
 .paletteImg {
-    max-height: 44px;
-    max-width: 92px;
+    max-height: 36px;
+    max-width: 68px;
     object-fit: contain;
     pointer-events: none;
     transform-origin: center center;
 }
 
+.paletteImgWide {
+    max-height: 28px;
+    max-width: 120px;
+}
+
+.paletteImgRotated {
+    max-height: 26px;
+    max-width: 26px;
+}
+
+.paletteItemStandard .paletteImg {
+    max-height: 40px;
+    max-width: 72px;
+}
+
+.paletteItemStandard .paletteImgWide {
+    max-height: 30px;
+    max-width: 68px;
+}
+
+.paletteItemStandard .paletteImgWide.paletteImgRotated {
+    max-height: 60px;
+    max-width: 44px;
+}
+
+.paletteItemStandard .paletteImg.paletteImgRotated:not(.paletteImgWide) {
+    max-height: 44px;
+    max-width: 44px;
+}
+
 .paletteFallback {
     font-family: var(--font-mono);
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-muted);
 }
 
 .paletteLabel {
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-align: center;
+    line-height: 1.2;
+    width: 100%;
 }
 
 .paletteCount {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text-muted);
+}
+
+.rotateBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 100%;
+    flex-shrink: 0;
+    padding: 4px 6px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #60c5f1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.rotateBtn:hover {
+    border-color: #60c5f1;
+    background: rgba(96, 197, 241, 0.1);
+}
+
+.rotateDeg {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+}
+
+.connectorLengthPicker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.connectorLengthLabel {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.connectorLengthOptions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    max-width: 100%;
+}
+
+.lengthOption {
+    min-width: 1.4rem;
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.lengthOption:hover {
+    border-color: #60c5f1;
+    color: #60c5f1;
+}
+
+.lengthOptionActive {
+    color: #60c5f1;
+    background: rgba(96, 197, 241, 0.15);
+    border-color: #60c5f1;
+}
+
+.ledOptionRedActive {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    border-color: #e04040;
+}
+
+.ledOptionGreenActive {
+    color: #6bcf7f;
+    background: rgba(107, 207, 127, 0.15);
+    border-color: #3cb371;
+}
+
+.ledOptionBlueActive {
+    color: #6bb5ff;
+    background: rgba(107, 181, 255, 0.15);
+    border-color: #4080e0;
 }
 
 .boardHost {

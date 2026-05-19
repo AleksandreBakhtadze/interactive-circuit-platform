@@ -211,4 +211,26 @@ public class SpiceGenerator {
 
         return mapper.writeValueAsString(data);
     }
+
+    /** Set switch / slide_switch state per logical role (e.g. button → open). */
+    public static String applySwitchStates(String json, Map<String, String> statesByRole)
+            throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        for (Map<String, Object> comp : components) {
+            String role = (String) comp.get("role");
+            if (role == null || !statesByRole.containsKey(role)) {
+                continue;
+            }
+            String type = (String) comp.get("type");
+            if ("switch".equals(type) || "slide_switch".equals(type)) {
+                comp.put("state", statesByRole.get(role));
+            }
+        }
+
+        return mapper.writeValueAsString(data);
+    }
 }

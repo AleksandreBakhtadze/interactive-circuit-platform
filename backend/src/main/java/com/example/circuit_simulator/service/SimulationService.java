@@ -17,19 +17,40 @@ public class SimulationService {
 
     public String simulate(String circuitJson) {
         try {
-            Map<String, Double> nodeVoltages = runAndParse(circuitJson);
-
-            Map<String, Object> componentVoltages =
-                    computeComponentVoltages(circuitJson, nodeVoltages);
-
-            return "{ " +
-                    "\"nodes\": " + NgspiceService.toJson(nodeVoltages) + "," +
-                    "\"components\": " + NgspiceService.toJson(componentVoltages) +
-                    "}";
-
+            return toJsonString(simulateToMap(circuitJson));
         } catch (Exception e) {
             return "{ \"error\": \"" + e.getMessage() + "\" }";
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> simulateToMap(String circuitJson) throws Exception {
+        try {
+            Map<String, Double> nodeVoltages = runAndParse(circuitJson);
+            Map<String, Object> componentVoltages =
+                    computeComponentVoltages(circuitJson, nodeVoltages);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("nodes", nodeVoltages);
+            result.put("components", componentVoltages);
+            return result;
+        } catch (Exception e) {
+            return Map.of("error", e.getMessage());
+        }
+    }
+
+    private String toJsonString(Map<String, Object> result) {
+        if (result.containsKey("error")) {
+            return "{ \"error\": \"" + result.get("error") + "\" }";
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Double> nodes = (Map<String, Double>) result.get("nodes");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        return "{ " +
+                "\"nodes\": " + NgspiceService.toJson(nodes) + "," +
+                "\"components\": " + NgspiceService.toJson(components) +
+                "}";
     }
 
     private Map<String, Double> runAndParse(String circuitJson) throws Exception {

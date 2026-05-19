@@ -65,9 +65,17 @@ SELECT id, 'Button', 1 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
 SELECT id, 'Lamp 6V' ,1 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
-SELECT id, 'Wire 3', 10 FROM problems WHERE code = 'ST.L1.1'
+SELECT id, 'Connector 2', 10 FROM problems WHERE code = 'ST.L1.1'
 UNION ALL
-SELECT id, 'Wire', 200 FROM problems WHERE code = 'ST.L1.1';
+SELECT id, 'Connector 3', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Connector 4', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Connector 5', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Connector 6', 10 FROM problems WHERE code = 'ST.L1.1'
+UNION ALL
+SELECT id, 'Connector 7', 10 FROM problems WHERE code = 'ST.L1.1';
 
 -- Insert required components for ST.L1.2
 INSERT INTO problem_required_components (problem_id, component_name,quantity)

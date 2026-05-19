@@ -19,13 +19,52 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #60c5f1;
+    margin: 0 0 8px;
+}
+
+.paletteHint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
     margin: 0 0 12px;
+    line-height: 1.4;
 }
 
 .paletteItems {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+}
+
+.paletteCard {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rotateBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #60c5f1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.rotateBtn:hover {
+    border-color: #60c5f1;
+    background: rgba(96, 197, 241, 0.1);
+}
+
+.rotateDeg {
+    font-size: 0.65rem;
+    color: var(--text-muted);
 }
 
 .paletteItem {
@@ -43,21 +82,30 @@
     transition: border-color 0.15s, opacity 0.15s;
 }
 
-.paletteItem:hover:not(:disabled) {
+.paletteItem:hover {
     border-color: #60c5f1;
 }
 
-.paletteItem:disabled {
+.paletteItemDisabled {
     opacity: 0.4;
     cursor: not-allowed;
 }
 
+.palettePreview {
+    width: 100px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
 .paletteImg {
-    height: 48px;
-    width: auto;
-    max-width: 100px;
+    max-height: 48px;
+    max-width: 96px;
     object-fit: contain;
     pointer-events: none;
+    transform-origin: center center;
 }
 
 .paletteFallback {
@@ -99,13 +147,22 @@
 
 .placedPart {
     cursor: grab;
+    overflow: visible;
 }
 
 .placedPartDragging {
     opacity: 0.35;
 }
 
-.partImg {
+.partInner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.partImgAligned {
     display: block;
     width: 100%;
     height: 100%;

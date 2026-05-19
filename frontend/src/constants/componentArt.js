@@ -14,47 +14,48 @@
  * pixel position and size so the circles land exactly on the board's dark pins.
  */
 
-import { COMPONENT_TYPES } from './componentCatalog';
+import { COMPONENT_TYPES, CONNECTOR_LENGTHS, connectorType } from './componentCatalog';
+
+const PIN_X_START = 54;
+const PIN_X_STEP = 108;
+const SVG_HEIGHT = 109;
+
+function buildConnectorArtSnap(length) {
+    const svgWidth = SVG_HEIGHT + PIN_X_STEP * (length - 1);
+    const rightX = PIN_X_START + PIN_X_STEP * (length - 1);
+    return {
+        svgWidth,
+        svgHeight: SVG_HEIGHT,
+        points: [
+            { u: PIN_X_START / svgWidth, v: 54 / SVG_HEIGHT, dr: 0, dc: 0 },
+            { u: rightX / svgWidth, v: 54 / SVG_HEIGHT, dr: 0, dc: length - 1 },
+        ],
+    };
+}
+
+const CONNECTOR_ART_SNAPS = Object.fromEntries(
+    CONNECTOR_LENGTHS.map((n) => [connectorType(n), buildConnectorArtSnap(n)])
+);
 
 export const COMPONENT_ART_SNAPS = {
-    // -----------------------------------------------------------------------
-    // POWER SUPPLY  (SVG canvas: 271 × 326 px)
-    //
-    // Both pins are on the LEFT edge of the art.
-    // Top pin centre:    x ≈ 54.5 / 271,  y ≈  54.67 / 326
-    // Bottom pin centre: x ≈ 54.5 / 271,  y ≈ 271.33 / 326
-    //
-    // Footprint is 2 cols × 3 rows; both pins live in column 0 (dc:0).
-    // -----------------------------------------------------------------------
     [COMPONENT_TYPES.POWER_SUPPLY]: {
         svgWidth:  271,
         svgHeight: 326,
         points: [
-            { u: 54.5  / 271, v:  54.67 / 326, dr: 0, dc: 0 }, // +  (top)
-            { u: 54.5  / 271, v: 271.33 / 326, dr: 2, dc: 0 }, // −  (bottom)
+            { u: 54.5  / 271, v:  54.67 / 326, dr: 0, dc: 0 },
+            { u: 54.5  / 271, v: 271.33 / 326, dr: 2, dc: 0 },
         ],
     },
 
-    // -----------------------------------------------------------------------
-    // BUTTON  (SVG canvas: 325 × 109 px)
-    //
-    // Left pin:  x ≈ 54 / 325,  y ≈ 54 / 109
-    // Right pin: x ≈ 270 / 325, y ≈ 54 / 109
-    //
-    // Footprint is 3 cols × 1 row; pins at dc:0 and dc:2.
-    // -----------------------------------------------------------------------
     [COMPONENT_TYPES.BUTTON]: {
         svgWidth:  325,
         svgHeight: 109,
         points: [
-            { u:  54 / 325, v: 54 / 109, dr: 0, dc: 0 }, // left terminal
-            { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 }, // right terminal
+            { u:  54 / 325, v: 54 / 109, dr: 0, dc: 0 },
+            { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 },
         ],
     },
 
-    // -----------------------------------------------------------------------
-    // LAMP  (SVG canvas: 325 × 109 px  — same layout as BUTTON)
-    // -----------------------------------------------------------------------
     [COMPONENT_TYPES.LAMP]: {
         svgWidth:  325,
         svgHeight: 109,
@@ -64,15 +65,5 @@ export const COMPONENT_ART_SNAPS = {
         ],
     },
 
-    // -----------------------------------------------------------------------
-    // WIRE 3  (SVG canvas: 325 × 109 px — spans 3 pin columns, ends at dc 0 & 2)
-    // -----------------------------------------------------------------------
-    [COMPONENT_TYPES.WIRE3]: {
-        svgWidth:  325,
-        svgHeight: 109,
-        points: [
-            { u:  54 / 325, v: 54 / 109, dr: 0, dc: 0 },
-            { u: 270 / 325, v: 54 / 109, dr: 0, dc: 2 },
-        ],
-    },
+    ...CONNECTOR_ART_SNAPS,
 };

@@ -1,5 +1,8 @@
 import { BOARD_COLS, BOARD_ROWS, isInsideBoard, pinId } from '../../constants/circuitGrid';
-import { getFootprint, getSnapOffsets } from '../../constants/componentCatalog';
+import {
+    getRotatedFootprint,
+    getRotatedSnapOffsets,
+} from '../../constants/componentRotation';
 
 export function getOccupiedCells(components) {
     const set = new Set();
@@ -16,7 +19,8 @@ export function cellKey(row, col) {
 }
 
 export function getComponentCells(component) {
-    const { w, h } = getFootprint(component.type, component.wireLength);
+    const rotation = component.rotation ?? 0;
+    const { w, h } = getRotatedFootprint(component.type, rotation);
     const cells = [];
     for (let dr = 0; dr < h; dr++) {
         for (let dc = 0; dc < w; dc++) {
@@ -26,14 +30,21 @@ export function getComponentCells(component) {
     return cells;
 }
 
-function isSnapCell(type, row, col, anchorRow, anchorCol) {
-    return getSnapOffsets(type).some(
+function isSnapCell(type, row, col, anchorRow, anchorCol, rotation = 0) {
+    return getRotatedSnapOffsets(type, rotation).some(
         (o) => anchorRow + o.dr === row && anchorCol + o.dc === col
     );
 }
 
-export function canPlaceAt(type, row, col, wireLength, placed, ignoreId = null) {
-    const candidate = { type, row, col, wireLength };
+export function canPlaceAt(
+    type,
+    row,
+    col,
+    placed,
+    ignoreId = null,
+    rotation = 0
+) {
+    const candidate = { type, row, col, rotation };
     const cells = getComponentCells(candidate);
     if (cells.some((c) => !isInsideBoard(c.row, c.col))) {
         return false;
@@ -50,13 +61,15 @@ export function canPlaceAt(type, row, col, wireLength, placed, ignoreId = null) 
                 (c) => c.row === cell.row && c.col === cell.col
             );
             if (!onP) return false;
-            const snapHere = isSnapCell(type, cell.row, cell.col, row, col);
+            const pRot = p.rotation ?? 0;
+            const snapHere = isSnapCell(type, cell.row, cell.col, row, col, rotation);
             const snapThere = isSnapCell(
                 p.type,
                 cell.row,
                 cell.col,
                 p.row,
-                p.col
+                p.col,
+                pRot
             );
             return !(snapHere && snapThere);
         });
@@ -66,22 +79,16 @@ export function canPlaceAt(type, row, col, wireLength, placed, ignoreId = null) 
     return true;
 }
 
-export function countPlaced(placed, type, wireLength = null) {
-    return placed.filter((p) => {
-        if (p.type !== type) return false;
-        if (type === 'wire' && wireLength != null) {
-            return p.wireLength === wireLength;
-        }
-        return true;
-    }).length;
-}
-
 export function countPlacedByType(placed, type) {
     return placed.filter((p) => p.type === type).length;
 }
 
 export function getPinNodesForComponent(component) {
-    return getComponentCells(component).map((c) => pinId(c.row, c.col));
+    const rotation = component.rotation ?? 0;
+    const offsets = getRotatedSnapOffsets(component.type, rotation);
+    return offsets.map((o) =>
+        pinId(component.row + o.dr, component.col + o.dc)
+    );
 }
 
 export function createComponentId() {

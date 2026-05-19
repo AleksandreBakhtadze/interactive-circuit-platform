@@ -1,5 +1,9 @@
 import { COMPONENT_ART_SNAPS } from '../../constants/componentArt';
-import { COMPONENT_TYPES } from '../../constants/componentCatalog';
+import { COMPONENT_TYPES, getFootprint } from '../../constants/componentCatalog';
+import {
+    getRotatedArtSnapPoints,
+    normalizeRotation,
+} from '../../constants/componentRotation';
 import { DOT_COL_X, DOT_ROW_Y, getDotPitch, pointerToNearestDot } from './boardLayout';
 
 export const BOARD_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -43,22 +47,31 @@ export function pointerToPin(clientX, clientY, gridEl) {
     return best;
 }
 
+function clampCellIndex(index, maxIndex) {
+    return Math.max(0, Math.min(index, maxIndex));
+}
+
 /** Bounding box for w×h small-dot cells */
 function getDotCellBounds(rect, row, col, w, h) {
     const { pitchX, pitchY } = getDotPitch();
     const padX = pitchX * rect.width;
     const padY = pitchY * rect.height;
 
-    const left = DOT_COL_X[col] * rect.width - padX;
-    const right = DOT_COL_X[col + w - 1] * rect.width + padX;
-    const top = DOT_ROW_Y[row] * rect.height - padY;
-    const bottom = DOT_ROW_Y[row + h - 1] * rect.height + padY;
+    const col0 = clampCellIndex(col, DOT_COL_X.length - 1);
+    const col1 = clampCellIndex(col + Math.max(w, 1) - 1, DOT_COL_X.length - 1);
+    const row0 = clampCellIndex(row, DOT_ROW_Y.length - 1);
+    const row1 = clampCellIndex(row + Math.max(h, 1) - 1, DOT_ROW_Y.length - 1);
+
+    const left = DOT_COL_X[col0] * rect.width - padX;
+    const right = DOT_COL_X[col1] * rect.width + padX;
+    const top = DOT_ROW_Y[row0] * rect.height - padY;
+    const bottom = DOT_ROW_Y[row1] * rect.height + padY;
 
     return {
         left,
         top,
-        width: right - left,
-        height: bottom - top,
+        width: Math.max(right - left, 1),
+        height: Math.max(bottom - top, 1),
     };
 }
 
@@ -71,15 +84,19 @@ function getDotCellBounds(rect, row, col, w, h) {
  *   4. Average top from both pin constraints for sub-pixel accuracy.
  */
 function layoutPowerSupply(rect, row, col, s0, s1) {
-    const boardY0 = DOT_ROW_Y[row + s0.dr] * rect.height;
-    const boardY1 = DOT_ROW_Y[row + s1.dr] * rect.height;
-    const boardX0 = DOT_COL_X[col + s0.dc] * rect.width;
+    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
+    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
+    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
+    const boardY0 = DOT_ROW_Y[r0] * rect.height;
+    const boardY1 = DOT_ROW_Y[r1] * rect.height;
+    const boardX0 = DOT_COL_X[c0] * rect.width;
 
     const imgDv = s1.v - s0.v;
     const boardDy = boardY1 - boardY0;
 
     // Height: scale so the two v-fractions span the real pin distance
-    const height = boardDy / imgDv;
+    const height =
+        Math.abs(imgDv) > 0.02 ? boardDy / imgDv : boardDy || 1;
 
     // Width: preserve SVG aspect ratio (svgWidth/svgHeight in COMPONENT_ART_SNAPS)
     const art = COMPONENT_ART_SNAPS[COMPONENT_TYPES.POWER_SUPPLY];
@@ -97,6 +114,134 @@ function layoutPowerSupply(rect, row, col, s0, s1) {
     return { left, top, width, height };
 }
 
+function toPxStyle(box) {
+    return {
+        left: `${box.left}px`,
+        top: `${box.top}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+        rotation: box.rotation ?? 0,
+        transformOrigin: box.transformOrigin,
+    };
+}
+
+/**
+ * Pin-aligned layout; at 90°/270° maps board vertical span → art width so
+ * a horizontal SVG spans the correct number of rows when rotated.
+ */
+function layoutPartFromSnaps(
+    rect,
+    row,
+    col,
+    footprintW,
+    footprintH,
+    s0,
+    s1,
+    rotation,
+    type
+) {
+    const rot = normalizeRotation(rotation);
+    const baseFp = getFootprint(type);
+    const baseBounds = getDotCellBounds(rect, row, col, baseFp.w, baseFp.h);
+
+    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
+    const c1 = clampCellIndex(col + s1.dc, DOT_COL_X.length - 1);
+    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
+    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
+
+    const boardX0 = DOT_COL_X[c0] * rect.width;
+    const boardY0 = DOT_ROW_Y[r0] * rect.height;
+    const boardX1 = DOT_COL_X[c1] * rect.width;
+    const boardY1 = DOT_ROW_Y[r1] * rect.height;
+
+    const imgDx = Math.abs(s1.u - s0.u);
+    const imgDy = Math.abs(s1.v - s0.v);
+    const boardDx = Math.abs(boardX1 - boardX0);
+    const boardDy = Math.abs(boardY1 - boardY0);
+
+    // Unrotated art box (CSS rotate applied afterward).
+    let width = baseBounds.width;
+    let height = baseBounds.height;
+
+    if (imgDx > 0.02) {
+        if (boardDx > 0.5) width = boardDx / imgDx;
+        else if (boardDy > 0.5) width = boardDy / imgDx;
+    }
+
+    if (imgDy > 0.02) {
+        if (boardDy > 0.5) height = boardDy / imgDy;
+        else if (boardDx > 0.5) height = boardDx / imgDy;
+    }
+
+    const art = COMPONENT_ART_SNAPS[type];
+    if (height <= baseBounds.height && art?.svgWidth && art?.svgHeight) {
+        height = width * (art.svgHeight / art.svgWidth);
+    }
+
+    width = Math.max(width, 1);
+    height = Math.max(height, 1);
+
+    const left = boardX0 - s0.u * width;
+    let top = boardY0 - s0.v * height;
+
+    if (imgDy > 0.02) {
+        const topFromEnd = boardY1 - s1.v * height;
+        top = (top + topFromEnd) / 2;
+    }
+
+    return {
+        left,
+        top,
+        width,
+        height,
+        rotation: rot,
+        transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
+    };
+}
+
+function getRotatedPartStyle(stageEl, row, col, footprintW, footprintH, type, rotation) {
+    const rot = normalizeRotation(rotation);
+    const art = getRotatedArtSnapPoints(type, rot);
+    const rect = stageEl.getBoundingClientRect();
+
+    if (!art?.points || art.points.length < 2) {
+        const bounds = getDotCellBounds(rect, row, col, footprintW, footprintH);
+        return toPxStyle({
+            left: bounds.left,
+            top: bounds.top,
+            width: bounds.width,
+            height: bounds.height,
+            rotation: rot,
+            transformOrigin: '50% 50%',
+        });
+    }
+
+    const [s0, s1] = art.points;
+
+    if (type === COMPONENT_TYPES.POWER_SUPPLY && rot === 0) {
+        const box = layoutPowerSupply(rect, row, col, s0, s1);
+        return toPxStyle({
+            ...box,
+            rotation: 0,
+            transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
+        });
+    }
+
+    return toPxStyle(
+        layoutPartFromSnaps(
+            rect,
+            row,
+            col,
+            footprintW,
+            footprintH,
+            s0,
+            s1,
+            rot,
+            type
+        )
+    );
+}
+
 function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
     const rect = stageEl.getBoundingClientRect();
     const art = COMPONENT_ART_SNAPS[type];
@@ -108,6 +253,7 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
             top: `${bounds.top}px`,
             width: `${bounds.width}px`,
             height: `${bounds.height}px`,
+            rotation: 0,
         };
     }
 
@@ -120,14 +266,20 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
             top: `${box.top}px`,
             width: `${box.width}px`,
             height: `${box.height}px`,
+            rotation: 0,
         };
     }
 
     // General case: solve width from horizontal snap span, height from vertical
-    const boardX0 = DOT_COL_X[col + s0.dc] * rect.width;
-    const boardY0 = DOT_ROW_Y[row + s0.dr] * rect.height;
-    const boardX1 = DOT_COL_X[col + s1.dc] * rect.width;
-    const boardY1 = DOT_ROW_Y[row + s1.dr] * rect.height;
+    const c0 = clampCellIndex(col + s0.dc, DOT_COL_X.length - 1);
+    const c1 = clampCellIndex(col + s1.dc, DOT_COL_X.length - 1);
+    const r0 = clampCellIndex(row + s0.dr, DOT_ROW_Y.length - 1);
+    const r1 = clampCellIndex(row + s1.dr, DOT_ROW_Y.length - 1);
+
+    const boardX0 = DOT_COL_X[c0] * rect.width;
+    const boardY0 = DOT_ROW_Y[r0] * rect.height;
+    const boardX1 = DOT_COL_X[c1] * rect.width;
+    const boardY1 = DOT_ROW_Y[r1] * rect.height;
 
     const imgDx = s1.u - s0.u;
     const imgDy = s1.v - s0.v;
@@ -153,18 +305,25 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
         top = (top + topFromBottom) / 2;
     }
 
-    return {
-        left: `${left}px`,
-        top: `${top}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-    };
+    return toPxStyle({
+        left,
+        top,
+        width,
+        height,
+        rotation: 0,
+        transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
+    });
 }
 
-export function getPartStyle(gridEl, row, col, w, h, type) {
+export function getPartStyle(gridEl, row, col, w, h, type, rotation = 0) {
+    const rot = normalizeRotation(rotation);
     const stage = getBoardStage(gridEl);
     if (stage) {
-        return getPartStyleFromLayout(stage, row, col, w, h, type);
+        if (rot !== 0) {
+            return getRotatedPartStyle(stage, row, col, w, h, type, rot);
+        }
+        const base = getFootprint(type);
+        return getPartStyleFromLayout(stage, row, col, base.w, base.h, type);
     }
 
     const start = gridEl.querySelector(`[data-pin="${pinName(row, col)}"]`);
@@ -190,6 +349,7 @@ export function getPartStyle(gridEl, row, col, w, h, type) {
         top: `${top}px`,
         width: `${width}px`,
         height: `${height}px`,
+        rotation: rot,
     };
 }
 

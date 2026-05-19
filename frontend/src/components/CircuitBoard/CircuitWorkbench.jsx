@@ -1,11 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { useLang } from '../../context/LangContext';
 import { getComponentImage } from '../../constants/componentAssets';
-import {
-    COMPONENT_TYPES,
-    getFootprint,
-    getPaletteForProblem,
-} from '../../constants/componentCatalog';
+import { getPaletteForProblem } from '../../constants/componentCatalog';
+import { getRotatedFootprint, normalizeRotation } from '../../constants/componentRotation';
 import {
     canPlaceAt,
     countPlacedByType,
@@ -27,9 +24,21 @@ export default function CircuitWorkbench({ problemCode }) {
     const gridRef = useRef(null);
 
     const [placed, setPlaced] = useState([]);
+    const [paletteRotations, setPaletteRotations] = useState({});
     const [message, setMessage] = useState('');
     const [activeDrag, setActiveDrag] = useState(null);
     const [hoverPin, setHoverPin] = useState(null);
+
+    const getPaletteRotation = (type) => paletteRotations[type] ?? 0;
+
+    const cyclePaletteRotation = (type, e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaletteRotations((prev) => ({
+            ...prev,
+            [type]: normalizeRotation((prev[type] ?? 0) + 90),
+        }));
+    };
 
     const getLabel = useCallback(
         (type) => {
@@ -46,21 +55,19 @@ export default function CircuitWorkbench({ problemCode }) {
         return def.maxCount - countPlacedByType(placed, type);
     };
 
-    const tryPlace = (type, row, col, wireLength, ignoreId = null) => {
-        if (type !== COMPONENT_TYPES.WIRE) {
-            const def = palette?.find((p) => p.type === type);
-            const used = countPlacedByType(placed, type);
-            if (def && used >= def.maxCount && !ignoreId) {
-                setMessage(
-                    lang === 'ka'
-                        ? 'ამ დეტალის ლიმიტი ამოწურულია'
-                        : 'No more of this component allowed'
-                );
-                return false;
-            }
+    const tryPlace = (type, row, col, rotation, ignoreId = null) => {
+        const def = palette?.find((p) => p.type === type);
+        const used = countPlacedByType(placed, type);
+        if (def && used >= def.maxCount && !ignoreId) {
+            setMessage(
+                lang === 'ka'
+                    ? 'ამ დეტალის ლიმიტი ამოწურულია'
+                    : 'No more of this component allowed'
+            );
+            return false;
         }
 
-        if (!canPlaceAt(type, row, col, wireLength, placed, ignoreId)) {
+        if (!canPlaceAt(type, row, col, placed, ignoreId, rotation)) {
             setMessage(
                 lang === 'ka' ? 'აქ განთავსება არ ხერხდება' : 'Cannot place here'
             );
@@ -76,17 +83,20 @@ export default function CircuitWorkbench({ problemCode }) {
             e.preventDefault();
             return;
         }
-        setDragPayload(e.dataTransfer, { source: 'palette', type });
+        const rotation = getPaletteRotation(type);
+        setActiveDrag({ type, rotation });
+        setDragPayload(e.dataTransfer, { source: 'palette', type, rotation });
     };
 
     const handlePlacedDragStart = (e, comp) => {
+        const rotation = comp.rotation ?? 0;
         setDragPayload(e.dataTransfer, {
             source: 'board',
             id: comp.id,
             type: comp.type,
-            wireLength: comp.wireLength,
+            rotation,
         });
-        setActiveDrag({ id: comp.id, type: comp.type });
+        setActiveDrag({ id: comp.id, type: comp.type, rotation });
     };
 
     const handleDragEnd = () => {
@@ -97,8 +107,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const handleBoardDragOver = (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
-        setHoverPin(pin);
+        setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
     };
 
     const handleBoardDragLeave = () => {
@@ -117,36 +126,33 @@ export default function CircuitWorkbench({ problemCode }) {
         if (!payload?.type) return;
 
         const { row, col } = pin;
-        const { type, wireLength } = payload;
+        const { type } = payload;
+        const rotation = payload.rotation ?? 0;
 
         if (payload.source === 'board' && payload.id) {
             const existing = placed.find((p) => p.id === payload.id);
             if (!existing) return;
             if (
-                !tryPlace(type, row, col, wireLength, payload.id) ||
-                (existing.row === row && existing.col === col)
+                !tryPlace(type, row, col, rotation, payload.id) ||
+                (existing.row === row &&
+                    existing.col === col &&
+                    (existing.rotation ?? 0) === rotation)
             ) {
                 return;
             }
             setPlaced((prev) =>
                 prev.map((p) =>
-                    p.id === payload.id ? { ...p, row, col } : p
+                    p.id === payload.id ? { ...p, row, col, rotation } : p
                 )
             );
             return;
         }
 
-        if (!tryPlace(type, row, col, wireLength)) return;
+        if (!tryPlace(type, row, col, rotation)) return;
 
         setPlaced((prev) => [
             ...prev,
-            {
-                id: createComponentId(),
-                type,
-                row,
-                col,
-                wireLength: type === COMPONENT_TYPES.WIRE ? wireLength : undefined,
-            },
+            { id: createComponentId(), type, row, col, rotation },
         ]);
     };
 
@@ -159,21 +165,20 @@ export default function CircuitWorkbench({ problemCode }) {
 
     if (!palette) return null;
 
-    const previewComp = activeDrag
-        ? { type: activeDrag.type, row: hoverPin?.row ?? 0, col: hoverPin?.col ?? 0 }
-        : null;
+    const previewRotation = activeDrag?.rotation ?? 0;
+    const previewFootprint =
+        activeDrag && hoverPin
+            ? getRotatedFootprint(activeDrag.type, previewRotation)
+            : null;
 
-    // Use footprint bounds (pin occupancy) for the drop preview, not the art
-    // bounds — so the dashed outline always shows exactly the pins that will
-    // be occupied, regardless of how large the component image is.
     const previewStyle =
-        previewComp && hoverPin
+        previewFootprint && hoverPin
             ? getFootprintStyle(
                   gridRef.current,
                   hoverPin.row,
                   hoverPin.col,
-                  getFootprint(previewComp.type).w,
-                  getFootprint(previewComp.type).h
+                  previewFootprint.w,
+                  previewFootprint.h
               )
             : null;
 
@@ -183,39 +188,76 @@ export default function CircuitWorkbench({ problemCode }) {
                 <h2 className={styles.paletteTitle}>
                     {lang === 'ka' ? 'დეტალები' : 'Components'}
                 </h2>
+                <p className={styles.paletteHint}>
+                    {lang === 'ka'
+                        ? '↻ — შებრუნება სიაში, შემდეგ გადაიტანეთ ფირზე. მარჯვენა ღილაკი — წაშლა.'
+                        : 'Click ↻ to rotate in the list, then drag onto the board. Right-click to remove.'}
+                </p>
                 <div className={styles.paletteItems}>
                     {palette.map((item) => {
                         const left = remaining(item.type);
                         const img = getComponentImage(item.type);
+                        const rotation = getPaletteRotation(item.type);
                         return (
-                            <button
-                                key={item.type}
-                                type="button"
-                                className={styles.paletteItem}
-                                draggable={left > 0}
-                                disabled={left <= 0}
-                                onDragStart={(e) =>
-                                    handlePaletteDragStart(e, item.type)
-                                }
-                                onDragEnd={handleDragEnd}
-                            >
-                                {img ? (
-                                    <img
-                                        src={img}
-                                        alt=""
-                                        className={styles.paletteImg}
-                                        draggable={false}
-                                    />
-                                ) : (
-                                    <span className={styles.paletteFallback}>
-                                        {getLabel(item.type).slice(0, 2)}
+                            <div key={item.type} className={styles.paletteCard}>
+                                <button
+                                    type="button"
+                                    className={styles.rotateBtn}
+                                    title={
+                                        lang === 'ka'
+                                            ? 'შებრუნება 90°'
+                                            : 'Rotate 90°'
+                                    }
+                                    onClick={(e) =>
+                                        cyclePaletteRotation(item.type, e)
+                                    }
+                                >
+                                    ↻
+                                    <span className={styles.rotateDeg}>
+                                        {rotation}°
                                     </span>
-                                )}
-                                <span className={styles.paletteLabel}>
-                                    {lang === 'ka' ? item.labelKa : item.labelEn}
-                                </span>
-                                <span className={styles.paletteCount}>×{left}</span>
-                            </button>
+                                </button>
+                                <div
+                                    className={`${styles.paletteItem} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
+                                    draggable={left > 0}
+                                    onDragStart={(e) => {
+                                        if (left <= 0) {
+                                            e.preventDefault();
+                                            return;
+                                        }
+                                        handlePaletteDragStart(e, item.type);
+                                    }}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <div className={styles.palettePreview}>
+                                        {img ? (
+                                            <img
+                                                src={img}
+                                                alt=""
+                                                className={styles.paletteImg}
+                                                style={{
+                                                    transform: `rotate(${rotation}deg)`,
+                                                }}
+                                                draggable={false}
+                                            />
+                                        ) : (
+                                            <span
+                                                className={styles.paletteFallback}
+                                            >
+                                                {getLabel(item.type).slice(0, 2)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className={styles.paletteLabel}>
+                                        {lang === 'ka'
+                                            ? item.labelKa
+                                            : item.labelEn}
+                                    </span>
+                                    <span className={styles.paletteCount}>
+                                        ×{left}
+                                    </span>
+                                </div>
+                            </div>
                         );
                     })}
                 </div>
@@ -236,40 +278,68 @@ export default function CircuitWorkbench({ problemCode }) {
                         />
                     )}
                     {placed.map((comp, index) => {
-                        const { w, h } = getFootprint(comp.type, comp.wireLength);
+                        const rotation = comp.rotation ?? 0;
+                        const { w, h } = getRotatedFootprint(
+                            comp.type,
+                            rotation
+                        );
                         const partStyle = getPartStyle(
                             gridRef.current,
                             comp.row,
                             comp.col,
                             w,
                             h,
-                            comp.type
+                            comp.type,
+                            rotation
                         );
                         const img = getComponentImage(comp.type);
                         if (!partStyle) return null;
+
+                        const rotDeg = partStyle.rotation ?? 0;
+                        const boxStyle = {
+                            left: partStyle.left,
+                            top: partStyle.top,
+                            width: partStyle.width,
+                            height: partStyle.height,
+                            zIndex: 10 + index,
+                            ...(rotDeg
+                                ? {
+                                      transform: `rotate(${rotDeg}deg)`,
+                                      transformOrigin:
+                                          partStyle.transformOrigin ??
+                                          'center center',
+                                  }
+                                : {}),
+                        };
 
                         return (
                             <div
                                 key={comp.id}
                                 className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''}`}
-                                style={{ ...partStyle, zIndex: 10 + index }}
+                                style={boxStyle}
                                 draggable
-                                onDragStart={(e) => handlePlacedDragStart(e, comp)}
+                                onDragStart={(e) =>
+                                    handlePlacedDragStart(e, comp)
+                                }
                                 onDragEnd={handleDragEnd}
-                                onContextMenu={(e) => removeComponent(comp.id, e)}
+                                onContextMenu={(e) =>
+                                    removeComponent(comp.id, e)
+                                }
                             >
-                                {img ? (
-                                    <img
-                                        src={img}
-                                        alt={getLabel(comp.type)}
-                                        className={styles.partImg}
-                                        draggable={false}
-                                    />
-                                ) : (
-                                    <span className={styles.partFallback}>
-                                        {getLabel(comp.type)}
-                                    </span>
-                                )}
+                                <div className={styles.partInner}>
+                                    {img ? (
+                                        <img
+                                            src={img}
+                                            alt={getLabel(comp.type)}
+                                            className={styles.partImgAligned}
+                                            draggable={false}
+                                        />
+                                    ) : (
+                                        <span className={styles.partFallback}>
+                                            {getLabel(comp.type)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         );
                     })}

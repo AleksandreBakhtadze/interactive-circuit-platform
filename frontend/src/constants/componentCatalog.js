@@ -2,13 +2,28 @@ import { getComponentImage } from './componentAssets';
 
 /** Footprint sizes: width × height in pin cells (columns × rows). */
 
+export const CONNECTOR_LENGTHS = [2, 3, 4, 5, 6, 7];
+
+export function connectorType(length) {
+    return `connector${length}`;
+}
+
+export function parseConnectorLength(type) {
+    const match = /^connector(\d)$/.exec(type ?? '');
+    if (!match) return null;
+    const n = Number(match[1]);
+    return CONNECTOR_LENGTHS.includes(n) ? n : null;
+}
+
+export function isConnectorType(type) {
+    return parseConnectorLength(type) !== null;
+}
+
 export const COMPONENT_TYPES = {
     POWER_SUPPLY: 'power_supply',
     BUTTON: 'button',
     LAMP: 'lamp',
     RESISTOR: 'resistor',
-    WIRE: 'wire',
-    WIRE3: 'wire3',
 };
 
 const FOOTPRINTS = {
@@ -16,13 +31,12 @@ const FOOTPRINTS = {
     [COMPONENT_TYPES.BUTTON]: { w: 3, h: 1 },
     [COMPONENT_TYPES.LAMP]: { w: 3, h: 1 },
     [COMPONENT_TYPES.RESISTOR]: { w: 3, h: 1 },
-    [COMPONENT_TYPES.WIRE3]: { w: 3, h: 1 },
 };
 
-export function getFootprint(type, wireLength) {
-    if (type === COMPONENT_TYPES.WIRE) {
-        const len = wireLength ?? 2;
-        return { w: len, h: 1 };
+export function getFootprint(type) {
+    const connectorLen = parseConnectorLength(type);
+    if (connectorLen !== null) {
+        return { w: connectorLen, h: 1 };
     }
     return FOOTPRINTS[type] ?? { w: 1, h: 1 };
 }
@@ -41,17 +55,27 @@ const SNAP_OFFSETS = {
         { dr: 0, dc: 0 },
         { dr: 0, dc: 2 },
     ],
-    [COMPONENT_TYPES.WIRE3]: [
-        { dr: 0, dc: 0 },
-        { dr: 0, dc: 2 },
-    ],
 };
 
 export function getSnapOffsets(type) {
+    const connectorLen = parseConnectorLength(type);
+    if (connectorLen !== null) {
+        return [
+            { dr: 0, dc: 0 },
+            { dr: 0, dc: connectorLen - 1 },
+        ];
+    }
     return SNAP_OFFSETS[type] ?? [];
 }
 
 export { getComponentImage };
+
+const CONNECTOR_PALETTE_ITEMS = CONNECTOR_LENGTHS.map((n) => ({
+    type: connectorType(n),
+    labelKa: `გამტარი ${n}`,
+    labelEn: `Connector ${n}`,
+    maxCount: 10,
+}));
 
 /** Inventory for ST.L1.1 — first problem only for now. */
 export const ST_L1_1_PALETTE = [
@@ -73,15 +97,8 @@ export const ST_L1_1_PALETTE = [
         labelEn: 'Lamp 6V',
         maxCount: 1,
     },
-    {
-        type: COMPONENT_TYPES.WIRE3,
-        labelKa: 'გამტარი 3',
-        labelEn: 'Wire 3',
-        maxCount: 10,
-    },
+    ...CONNECTOR_PALETTE_ITEMS,
 ];
-
-export const WIRE_LENGTHS = [2, 3, 4, 5, 6, 7];
 
 export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L1.1') {

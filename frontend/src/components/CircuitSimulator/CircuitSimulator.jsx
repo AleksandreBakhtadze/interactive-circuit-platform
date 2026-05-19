@@ -2,10 +2,11 @@ import { Fragment, useMemo, useState } from 'react';
 import { useLang } from '../../context/LangContext';
 import { BOARD_COLS, BOARD_ROWS } from '../../constants/circuitGrid';
 import {
-    COMPONENT_TYPES,
+    CONNECTOR_LENGTHS,
+    connectorType,
     getFootprint,
     getPaletteForProblem,
-    WIRE_LENGTHS,
+    parseConnectorLength,
 } from '../../constants/componentCatalog';
 import {
     canPlaceAt,
@@ -30,6 +31,9 @@ export default function CircuitSimulator({ problemCode }) {
         return null;
     }
 
+    const partsPalette = palette.filter((p) => parseConnectorLength(p.type) === null);
+    const connectorsPalette = palette.filter((p) => parseConnectorLength(p.type) !== null);
+
     const selectItem = (item) => {
         setSelected(item);
         setMessage('');
@@ -41,22 +45,20 @@ export default function CircuitSimulator({ problemCode }) {
             return;
         }
 
-        const { type, wireLength } = selected;
+        const { type } = selected;
 
-        if (type !== COMPONENT_TYPES.WIRE) {
-            const used = countPlacedByType(placed, type);
-            const def = palette.find((p) => p.type === type);
-            if (def && used >= def.maxCount) {
-                setMessage(
-                    lang === 'ka'
-                        ? 'ამ დეტალის ლიმიტი ამოწურულია'
-                        : 'No more of this component allowed'
-                );
-                return;
-            }
+        const used = countPlacedByType(placed, type);
+        const def = palette.find((p) => p.type === type);
+        if (def && used >= def.maxCount) {
+            setMessage(
+                lang === 'ka'
+                    ? 'ამ დეტალის ლიმიტი ამოწურულია'
+                    : 'No more of this component allowed'
+            );
+            return;
         }
 
-        if (!canPlaceAt(type, row, col, wireLength, placed)) {
+        if (!canPlaceAt(type, row, col, placed)) {
             setMessage(
                 lang === 'ka'
                     ? 'აქ განთავსება არ ხერხდება'
@@ -72,11 +74,10 @@ export default function CircuitSimulator({ problemCode }) {
                 type,
                 row,
                 col,
-                wireLength: type === COMPONENT_TYPES.WIRE ? wireLength : undefined,
             },
         ]);
         setMessage('');
-        if (type !== COMPONENT_TYPES.WIRE) {
+        if (parseConnectorLength(type) === null) {
             setSelected(null);
         }
     };
@@ -89,9 +90,6 @@ export default function CircuitSimulator({ problemCode }) {
     };
 
     const getLabel = (type) => {
-        if (type === COMPONENT_TYPES.WIRE) {
-            return lang === 'ka' ? 'გამტარი' : 'Wire';
-        }
         const def = palette.find((p) => p.type === type);
         if (!def) return type;
         return lang === 'ka' ? def.labelKa : def.labelEn;
@@ -111,10 +109,9 @@ export default function CircuitSimulator({ problemCode }) {
                 </h2>
 
                 <div className={styles.paletteGroup}>
-                    {palette.map((item) => {
+                    {partsPalette.map((item) => {
                         const left = remaining(item.type);
-                        const isActive =
-                            selected?.type === item.type && !selected?.wireLength;
+                        const isActive = selected?.type === item.type;
                         const { w, h } = getFootprint(item.type);
                         return (
                             <button
@@ -136,23 +133,24 @@ export default function CircuitSimulator({ problemCode }) {
                 </div>
 
                 <h3 className={styles.wireTitle}>
-                    {lang === 'ka' ? 'გამტარები' : 'Wires'}
+                    {lang === 'ka' ? 'გამტარები' : 'Connectors'}
                 </h3>
                 <div className={styles.wireGrid}>
-                    {WIRE_LENGTHS.map((len) => {
-                        const isActive =
-                            selected?.type === COMPONENT_TYPES.WIRE &&
-                            selected?.wireLength === len;
+                    {CONNECTOR_LENGTHS.map((len) => {
+                        const type = connectorType(len);
+                        const def = connectorsPalette.find((p) => p.type === type);
+                        if (!def) return null;
+                        const left = remaining(type);
+                        const isActive = selected?.type === type;
                         return (
                             <button
-                                key={len}
+                                key={type}
                                 type="button"
                                 className={`${styles.wireBtn} ${isActive ? styles.paletteItemActive : ''}`}
-                                onClick={() =>
-                                    selectItem({ type: COMPONENT_TYPES.WIRE, wireLength: len })
-                                }
+                                disabled={left <= 0}
+                                onClick={() => selectItem({ type })}
                             >
-                                1×{len}
+                                {lang === 'ka' ? def.labelKa : def.labelEn}
                             </button>
                         );
                     })}
@@ -197,7 +195,7 @@ export default function CircuitSimulator({ problemCode }) {
                     ))}
 
                     {placed.map((comp) => {
-                        const { w, h } = getFootprint(comp.type, comp.wireLength);
+                        const { w, h } = getFootprint(comp.type);
                         return (
                             <button
                                 key={comp.id}
@@ -212,9 +210,6 @@ export default function CircuitSimulator({ problemCode }) {
                             >
                                 <span className={styles.placedLabel}>
                                     {getLabel(comp.type)}
-                                    {comp.type === COMPONENT_TYPES.WIRE && (
-                                        <span className={styles.placedWireLen}> 1×{comp.wireLength}</span>
-                                    )}
                                 </span>
                             </button>
                         );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
+import { API_BASE } from '../../api';
 import styles from './RegisterPage.module.css';
 
 export default function RegisterPage() {
@@ -20,7 +21,7 @@ export default function RegisterPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8080/api/users/register', {
+            const res = await fetch(`${API_BASE}/users/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),

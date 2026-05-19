@@ -10,7 +10,6 @@ import com.example.circuit_simulator.dto.ProblemDTO;
 
 @RestController
 @RequestMapping("/api/problems")
-@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class ProblemController {
 

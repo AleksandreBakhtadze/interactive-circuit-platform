@@ -4,9 +4,8 @@ import CircuitBoard from '../../components/CircuitBoard/CircuitBoard';
 import CircuitWorkbench from '../../components/CircuitBoard/CircuitWorkbench';
 import { supportsSimulator } from '../../constants/componentCatalog';
 import { useLang } from '../../context/LangContext';
+import { API_BASE } from '../../api';
 import styles from './ChallengeDetailPage.module.css';
-
-const API = 'http://localhost:8080/api';
 
 export default function ChallengeDetailPage() {
     const { chapterCode, problemSlug } = useParams();
@@ -22,7 +21,7 @@ export default function ChallengeDetailPage() {
         setError('');
 
         fetch(
-            `${API}/chapters/${encodeURIComponent(chapterCode)}/problems/${encodeURIComponent(problemSlug)}`
+            `${API_BASE}/chapters/${encodeURIComponent(chapterCode)}/problems/${encodeURIComponent(problemSlug)}`
         )
             .then((res) => {
                 if (!res.ok) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
+import { API_BASE } from '../../api';
 import styles from './ChallengesPage.module.css';
 
 export default function ChallengesPage() {
@@ -11,7 +12,7 @@ export default function ChallengesPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetch('http://localhost:8080/api/chapters')
+        fetch(`${API_BASE}/chapters`)
             .then(res => res.json())
             .then(data => { setChapters(data); setLoading(false); })
             .catch(() => { setError('სერვერთან კავშირი ვერ მოხერხდა'); setLoading(false); });

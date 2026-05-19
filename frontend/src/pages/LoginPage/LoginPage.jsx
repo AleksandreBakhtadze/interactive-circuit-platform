@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE } from '../../api';
 import styles from './LoginPage.module.css';
 
 export default function LoginPage() {
@@ -22,7 +23,7 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8080/api/users/login', {
+            const res = await fetch(`${API_BASE}/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),

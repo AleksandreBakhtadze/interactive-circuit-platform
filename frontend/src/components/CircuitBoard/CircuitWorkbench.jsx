@@ -512,6 +512,8 @@ export default function CircuitWorkbench({ problemCode }) {
         } finally {
             setSubmitting(false);
         }
+    };
+
     const renderPreviewImg = (type, rotation) => {
         const img = getComponentImage(type);
         const rotated = rotationSteps(rotation) % 2 === 1;

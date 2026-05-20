@@ -70,13 +70,13 @@ const CAPACITOR_ART_SNAPS = Object.fromEntries(
     CAPACITOR_SPECS.map((s) => [capacitorType(s.key), RESISTOR_ART_SNAP])
 );
 
-/** Vertical triangle (217×326): collector top, emitter bottom, base left. */
+/** Vertical transistor (217×326): collector top, base left, emitter bottom. */
 const TRIANGLE_ART_VERTICAL = {
     svgWidth: 217,
     svgHeight: 326,
     points: [
         { u: 162 / 217, v: 54.17 / 326, dr: 0, dc: 1 },
-        { u: 162 / 217, v: 270.83 / 326, dr: 2, dc: 1 },
+        { u: 162 / 217, v: 270.83 / 326, dr: 1, dc: 1 },
         { u: 54 / 217, v: 162.5 / 326, dr: 1, dc: 0 },
     ],
 };
@@ -89,6 +89,20 @@ const TRIANGLE_ART_HORIZONTAL = {
         { u: 217 / 326, v: 0.17 / 217, dr: 0, dc: 2 },
         { u: 217 / 326, v: 216.83 / 217, dr: 2, dc: 2 },
         { u: 109 / 326, v: 108.5 / 217, dr: 1, dc: 0 },
+    ],
+};
+
+/**
+ * slide-switch.svg / var-resistor SVGs apply rotate(90°) inside the file.
+ * Pin centres in the rendered 326×217 viewBox (apex A up, B/C on bottom row).
+ */
+const APEX_UP_TRIANGLE_ART = {
+    svgWidth: 326,
+    svgHeight: 217,
+    points: [
+        { u: 163 / 326, v: 54.5 / 217, dr: 0, dc: 1 },
+        { u: 54.67 / 326, v: 162.5 / 217, dr: 1, dc: 0 },
+        { u: 271.33 / 326, v: 162.5 / 217, dr: 1, dc: 2 },
     ],
 };
 
@@ -158,9 +172,9 @@ export const COMPONENT_ART_SNAPS = {
 
     [COMPONENT_TYPES.RELAY]: RELAY_ART_SNAP,
 
-    [COMPONENT_TYPES.SLIDE_SWITCH]: TRIANGLE_ART_HORIZONTAL,
+    [COMPONENT_TYPES.SLIDE_SWITCH]: APEX_UP_TRIANGLE_ART,
 
-    [COMPONENT_TYPES.VAR_RESISTOR]: TRIANGLE_ART_HORIZONTAL,
+    [COMPONENT_TYPES.VAR_RESISTOR]: APEX_UP_TRIANGLE_ART,
 
     ...CONNECTOR_ART_SNAPS,
     ...RESISTOR_ART_SNAPS,

@@ -1,4 +1,5 @@
 import { BOARD_COLS, BOARD_ROWS, isInsideBoard, pinId } from '../../constants/circuitGrid';
+import { isConnectorType } from '../../constants/componentCatalog';
 import {
     getRotatedFootprint,
     getRotatedSnapOffsets,
@@ -36,6 +37,41 @@ function isSnapCell(type, row, col, anchorRow, anchorCol, rotation = 0) {
     );
 }
 
+/** Map hovered pin to footprint anchor so a terminal can sit on that pin. */
+export function alignPlacementAnchor(type, hoverRow, hoverCol, rotation = 0) {
+    const offsets = getRotatedSnapOffsets(type, rotation);
+    const { w, h } = getRotatedFootprint(type, rotation);
+
+    const fits = (row, col) =>
+        row >= 0 &&
+        col >= 0 &&
+        row + h <= BOARD_ROWS.length &&
+        col + w <= BOARD_COLS.length;
+
+    for (const { dr, dc } of offsets) {
+        const row = hoverRow - dr;
+        const col = hoverCol - dc;
+        if (
+            row + dr === hoverRow &&
+            col + dc === hoverCol &&
+            fits(row, col)
+        ) {
+            return { row, col };
+        }
+    }
+
+    for (const { dr, dc } of offsets) {
+        const row = hoverRow - dr;
+        const col = hoverCol - dc;
+        if (fits(row, col)) {
+            return { row, col };
+        }
+    }
+
+    const { dr, dc } = offsets[0] ?? { dr: 0, dc: 0 };
+    return { row: hoverRow - dr, col: hoverCol - dc };
+}
+
 export function canPlaceAt(
     type,
     row,
@@ -71,6 +107,9 @@ export function canPlaceAt(
                 p.col,
                 pRot
             );
+            if (isConnectorType(type) && !snapThere) {
+                return false;
+            }
             return !(snapHere && snapThere);
         });
         if (blocked) return false;

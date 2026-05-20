@@ -1,5 +1,6 @@
 import {
     COMPONENT_TYPES,
+    getRequiredPartsForProblem,
     isConnectorType,
     parseConnectorLength,
 } from '../constants/componentCatalog';
@@ -56,6 +57,7 @@ function spiceId(id) {
 const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.POWER_SUPPLY]: 'power_supply',
     [COMPONENT_TYPES.BUTTON]: 'button',
+    [COMPONENT_TYPES.SWITCH]: 'switch',
     [COMPONENT_TYPES.LAMP]: 'lamp',
     [COMPONENT_TYPES.RESISTOR]: 'resistor',
 };
@@ -64,12 +66,22 @@ function boardTypeToRole(boardType) {
     return BOARD_TYPE_TO_ROLE[boardType] ?? boardType;
 }
 
-/** Parts the student can toggle during live simulation (button, slide switch, …). */
-export function isInteractivePart(type) {
+/** Momentary parts (press and hold). */
+export function isMomentaryInteractive(type) {
     return type === COMPONENT_TYPES.BUTTON;
 }
 
-/** Default switch states for live simulation (all open / not pressed). */
+/** Latching parts (click to toggle open/closed). */
+export function isToggleInteractive(type) {
+    return type === COMPONENT_TYPES.SWITCH;
+}
+
+/** Parts the student can operate during live simulation. */
+export function isInteractivePart(type) {
+    return isMomentaryInteractive(type) || isToggleInteractive(type);
+}
+
+/** Default switch states for live simulation (all open / off). */
 export function createInitialSwitchStates(placed) {
     const states = {};
     for (const comp of placed) {
@@ -99,9 +111,11 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
     }
 
     let groundRoot = null;
-    const powerSupply = placed.find((c) => c.type === COMPONENT_TYPES.POWER_SUPPLY);
-    if (powerSupply) {
-        const psPins = getComponentTerminalPins(powerSupply);
+    const powerSupplies = placed.filter(
+        (c) => c.type === COMPONENT_TYPES.POWER_SUPPLY
+    );
+    if (powerSupplies.length > 0) {
+        const psPins = getComponentTerminalPins(powerSupplies[0]);
         if (psPins.length >= 2) {
             groundRoot = uf.find(psPins[1]);
         }
@@ -113,6 +127,7 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
     };
 
     const components = [];
+    let powerSupplyIndex = 0;
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -123,7 +138,11 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
         const nodes = pins.map(resolve);
         const id = spiceId(comp.id);
 
-        const role = boardTypeToRole(comp.type);
+        let role = boardTypeToRole(comp.type);
+        if (comp.type === COMPONENT_TYPES.POWER_SUPPLY) {
+            powerSupplyIndex += 1;
+            role = `power_supply_${powerSupplyIndex}`;
+        }
 
         switch (comp.type) {
             case COMPONENT_TYPES.POWER_SUPPLY:
@@ -137,6 +156,16 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                 break;
 
             case COMPONENT_TYPES.BUTTON:
+                components.push({
+                    id,
+                    role,
+                    type: 'switch',
+                    nodes,
+                    state: switchStatesById[comp.id] ?? 'open',
+                });
+                break;
+
+            case COMPONENT_TYPES.SWITCH:
                 components.push({
                     id,
                     role,
@@ -173,11 +202,11 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
     return { components };
 }
 
-/** All non-wire palette parts are placed (for submit). */
-export function isBoardComplete(placed, palette) {
-    if (!palette) return false;
-    for (const item of palette) {
-        if (parseConnectorLength(item.type) !== null) continue;
+/** Required task parts are on the board (for submit). */
+export function isBoardComplete(placed, problemCode) {
+    const required = getRequiredPartsForProblem(problemCode);
+    if (!required) return false;
+    for (const item of required) {
         if (countPlacedByType(placed, item.type) < item.maxCount) {
             return false;
         }

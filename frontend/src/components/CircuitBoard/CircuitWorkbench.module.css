@@ -368,6 +368,7 @@
 .placedPart {
     cursor: grab;
     overflow: visible;
+    touch-action: none;
 }
 
 .placedPartInteractive {
@@ -382,7 +383,8 @@
 }
 
 .placedPartDragging {
-    opacity: 0.35;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .partInner {

@@ -46,8 +46,11 @@ import {
     createInitialSwitchStates,
     isBoardComplete,
     isInteractivePart,
+    isMomentaryInteractive,
+    isToggleInteractive,
 } from '../../utils/circuitNetlist';
 import {
+    alignPlacementAnchor,
     canPlaceAt,
     countPlacedByType,
     createComponentId,
@@ -63,9 +66,30 @@ import {
 } from './boardPlacement';
 import styles from './CircuitWorkbench.module.css';
 
+const MOVE_DRAG_THRESHOLD_PX = 4;
+
 function isWidePalettePart(type) {
     const { w, h } = getFootprint(type);
     return w > h;
+}
+
+function incompleteBoardMessage(problemCode, lang) {
+    if (lang === 'ka') {
+        if (problemCode === 'ST.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, ნათურა';
+        }
+        if (problemCode === 'ST.L1.3') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, ნათურა';
+        }
+        return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
+    }
+    if (problemCode === 'ST.L1.2') {
+        return 'Place: 2 power supplies, button, lamp';
+    }
+    if (problemCode === 'ST.L1.3') {
+        return 'Place: power supply, switch, button, lamp';
+    }
+    return 'Place: power supply, button, lamp';
 }
 
 export default function CircuitWorkbench({ problemCode }) {
@@ -74,6 +98,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const gridRef = useRef(null);
     const heldButtonIdRef = useRef(null);
     const switchStatesRef = useRef({});
+    const moveSessionRef = useRef(null);
 
     const [placed, setPlaced] = useState([]);
     const [paletteRotations, setPaletteRotations] = useState({});
@@ -273,27 +298,104 @@ export default function CircuitWorkbench({ problemCode }) {
         setTransparentDragGhost(e.dataTransfer);
     };
 
-    const handlePlacedDragStart = (e, comp) => {
-        const len = parseConnectorLength(comp.type);
-        if (len !== null) setConnectorLength(len);
-        const rKey = parseResistorKey(comp.type);
-        if (rKey !== null) setResistorKey(rKey);
-        const lKey = parseLedKey(comp.type);
-        if (lKey !== null) setLedColor(lKey);
-        const cKey = parseCapacitorKey(comp.type);
-        if (cKey !== null) setCapacitorKey(cKey);
-        const tKey = parseTransistorKey(comp.type);
-        if (tKey !== null) setTransistorKey(tKey);
+    const commitPlacedMove = (id, type, rotation, pin) => {
+        const { row, col } = alignPlacementAnchor(
+            type,
+            pin.row,
+            pin.col,
+            rotation
+        );
+        const existing = placed.find((p) => p.id === id);
+        if (!existing) return;
+
+        const unchanged =
+            existing.row === row &&
+            existing.col === col &&
+            (existing.rotation ?? 0) === rotation;
+
+        if (unchanged) return;
+
+        if (!tryPlace(type, row, col, rotation, id)) return;
+
+        setPlaced((prev) =>
+            prev.map((p) =>
+                p.id === id ? { ...p, row, col, rotation } : p
+            )
+        );
+    };
+
+    const endMoveSession = () => {
+        moveSessionRef.current = null;
+        setActiveDrag(null);
+        setHoverPin(null);
+    };
+
+    /** Pointer move (HTML5 drag breaks on CSS-transformed parts). */
+    const handlePlacedPointerDown = (e, comp) => {
+        if (e.button !== 0) return;
 
         const rotation = comp.rotation ?? 0;
-        setDragPayload(e.dataTransfer, {
-            source: 'board',
+        moveSessionRef.current = {
             id: comp.id,
             type: comp.type,
             rotation,
-        });
-        setActiveDrag({ id: comp.id, type: comp.type, rotation });
-        setTransparentDragGhost(e.dataTransfer);
+            startX: e.clientX,
+            startY: e.clientY,
+            dragging: false,
+        };
+
+        e.currentTarget.setPointerCapture(e.pointerId);
+    };
+
+    const handlePlacedPointerMove = (e, comp) => {
+        const session = moveSessionRef.current;
+        if (!session || session.id !== comp.id) return;
+
+        const dx = e.clientX - session.startX;
+        const dy = e.clientY - session.startY;
+        if (
+            !session.dragging &&
+            dx * dx + dy * dy < MOVE_DRAG_THRESHOLD_PX * MOVE_DRAG_THRESHOLD_PX
+        ) {
+            return;
+        }
+
+        if (!session.dragging) {
+            session.dragging = true;
+            setActiveDrag({
+                id: comp.id,
+                type: comp.type,
+                rotation: session.rotation,
+            });
+        }
+
+        e.preventDefault();
+        setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
+    };
+
+    const handlePlacedPointerUp = (e, comp) => {
+        const session = moveSessionRef.current;
+        if (!session || session.id !== comp.id) return;
+
+        try {
+            e.currentTarget.releasePointerCapture(e.pointerId);
+        } catch {
+            /* already released */
+        }
+
+        if (session.dragging) {
+            const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
+            if (pin) {
+                commitPlacedMove(
+                    session.id,
+                    session.type,
+                    session.rotation,
+                    pin
+                );
+            }
+        }
+
+        endMoveSession();
     };
 
     const handleDragEnd = () => {
@@ -322,26 +424,17 @@ export default function CircuitWorkbench({ problemCode }) {
         const payload = parseDragPayload(e.dataTransfer);
         if (!payload?.type) return;
 
-        const { row, col } = pin;
         const { type } = payload;
         const rotation = payload.rotation ?? 0;
+        const { row, col } = alignPlacementAnchor(
+            type,
+            pin.row,
+            pin.col,
+            rotation
+        );
 
         if (payload.source === 'board' && payload.id) {
-            const existing = placed.find((p) => p.id === payload.id);
-            if (!existing) return;
-            if (
-                !tryPlace(type, row, col, rotation, payload.id) ||
-                (existing.row === row &&
-                    existing.col === col &&
-                    (existing.rotation ?? 0) === rotation)
-            ) {
-                return;
-            }
-            setPlaced((prev) =>
-                prev.map((p) =>
-                    p.id === payload.id ? { ...p, row, col, rotation } : p
-                )
-            );
+            commitPlacedMove(payload.id, type, rotation, pin);
             return;
         }
 
@@ -361,12 +454,8 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const runLiveSimulation = useCallback(
-        async (states, logLabel) => {
+        async (states) => {
             const circuitJson = buildCircuitJson(placed, states);
-            console.log(
-                logLabel ?? 'Circuit JSON sent to backend:',
-                circuitJson
-            );
 
             if (!circuitJson.components.length) {
                 setMessage(
@@ -381,12 +470,6 @@ export default function CircuitWorkbench({ problemCode }) {
 
             try {
                 const result = await simulateCircuit(circuitJson);
-                console.log(
-                    logLabel
-                        ? `Simulation (${logLabel}):`
-                        : 'Simulation result:',
-                    result
-                );
 
                 if (result.error) {
                     setMessage(
@@ -394,21 +477,18 @@ export default function CircuitWorkbench({ problemCode }) {
                             ? `სიმულაციის შეცდომა: ${result.error}`
                             : `Simulation error: ${result.error}`
                     );
-                } else if (liveSimMode || logLabel) {
+                } else if (liveSimMode) {
                     setMessage(
                         lang === 'ka'
-                            ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე — შედეგი კონსოლში (F12)'
-                            : 'Press and hold the button on the board — results in console (F12)'
+                            ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
+                            : 'Press and hold the button on the board'
                     );
                 } else {
                     setMessage(
-                        lang === 'ka'
-                            ? 'სიმულაცია დასრულდა — შედეგი კონსოლშია (F12)'
-                            : 'Simulation done — see browser console (F12)'
+                        lang === 'ka' ? 'სიმულაცია დასრულდა' : 'Simulation finished'
                     );
                 }
             } catch (err) {
-                console.error('Simulation request failed:', err);
                 const detail = err?.message ?? String(err);
                 const isNetwork =
                     detail.includes('Failed to fetch') ||
@@ -434,10 +514,7 @@ export default function CircuitWorkbench({ problemCode }) {
         setSwitchStates(initial);
         setLiveSimMode(true);
         setMessage('');
-        await runLiveSimulation(
-            initial,
-            'initial (switches released / open)'
-        );
+        await runLiveSimulation(initial);
     };
 
     /** Momentary button: closed only while pointer is held down. */
@@ -446,6 +523,20 @@ export default function CircuitWorkbench({ problemCode }) {
         if (e.button !== 0) return;
         e.stopPropagation();
         e.preventDefault();
+
+        if (isToggleInteractive(comp.type)) {
+            const current = switchStatesRef.current[comp.id] ?? 'open';
+            const nextStates = {
+                ...switchStatesRef.current,
+                [comp.id]: current === 'closed' ? 'open' : 'closed',
+            };
+            setSwitchStates(nextStates);
+            await runLiveSimulation(nextStates);
+            return;
+        }
+
+        if (!isMomentaryInteractive(comp.type)) return;
+
         e.currentTarget.setPointerCapture(e.pointerId);
         heldButtonIdRef.current = comp.id;
 
@@ -454,11 +545,12 @@ export default function CircuitWorkbench({ problemCode }) {
             [comp.id]: 'closed',
         };
         setSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, 'button pressed');
+        await runLiveSimulation(nextStates);
     };
 
     const handleInteractivePointerUp = async (comp, e) => {
-        if (!liveSimMode || heldButtonIdRef.current !== comp.id) return;
+        if (!liveSimMode || !isMomentaryInteractive(comp.type)) return;
+        if (heldButtonIdRef.current !== comp.id) return;
         e.stopPropagation();
         heldButtonIdRef.current = null;
 
@@ -473,17 +565,13 @@ export default function CircuitWorkbench({ problemCode }) {
             [comp.id]: 'open',
         };
         setSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, 'button released');
+        await runLiveSimulation(nextStates);
     };
 
     const handleSubmit = async () => {
-        if (!isBoardComplete(placed, palette)) {
+        if (!isBoardComplete(placed, problemCode)) {
             setSubmitStatus('fail');
-            setMessage(
-                lang === 'ka'
-                    ? 'განათავსეთ ყველა საჭირო დეტალი (კვება, ღილაკი, ნათურა)'
-                    : 'Place all required parts (supply, button, lamp)'
-            );
+            setMessage(incompleteBoardMessage(problemCode, lang));
             return;
         }
 
@@ -494,7 +582,6 @@ export default function CircuitWorkbench({ problemCode }) {
 
         try {
             const result = await validateCircuit(problemCode, circuitJson);
-            console.log('Validation result:', result);
 
             setSubmitStatus(result.passed ? 'pass' : 'fail');
             setMessage(
@@ -503,7 +590,6 @@ export default function CircuitWorkbench({ problemCode }) {
                     : result.message
             );
         } catch (err) {
-            console.error('Validation failed:', err);
             setSubmitStatus('fail');
             const detail = err?.message ?? String(err);
             setMessage(
@@ -929,12 +1015,22 @@ export default function CircuitWorkbench({ problemCode }) {
             ? getRotatedFootprint(activeDrag.type, previewRotation)
             : null;
 
-    const previewPartStyle =
-        activeDrag && hoverPin && previewFootprint
-            ? getPartStyle(
-                  gridRef.current,
+    const previewAnchor =
+        activeDrag && hoverPin
+            ? alignPlacementAnchor(
+                  activeDrag.type,
                   hoverPin.row,
                   hoverPin.col,
+                  previewRotation
+              )
+            : null;
+
+    const previewPartStyle =
+        activeDrag && previewAnchor && previewFootprint
+            ? getPartStyle(
+                  gridRef.current,
+                  previewAnchor.row,
+                  previewAnchor.col,
                   previewFootprint.w,
                   previewFootprint.h,
                   activeDrag.type,
@@ -990,8 +1086,8 @@ export default function CircuitWorkbench({ problemCode }) {
                             ? 'სიმულაციის რეჟიმი: დააჭირეთ და არ გაუშვათ ღილაკი (როგორც ნამდვილ ღილაკზე).'
                             : 'Simulation mode: press and hold the button (release to open).'
                         : lang === 'ka'
-                          ? '↻ — შებრუნება, შემდეგ გადაიტანეთ ფირზე. მარჯვენა ღილაკი — წაშლა.'
-                        : '↻ to rotate, then drag onto the board. Right-click to remove.'}
+                          ? '↻ — შებრუნება, შემდეგ გადაიტანეთ ფირზე. გადაიტანეთ ფირზე არსებული დეტალიც. მარჯვენა ღილაკი — წაშლა.'
+                        : '↻ to rotate, then drag onto the board. Drag placed parts to move them. Right-click to remove.'}
                 </p>
                 <div className={styles.paletteItems}>
                     {standardPalette.map(renderPaletteCard)}
@@ -1062,42 +1158,37 @@ export default function CircuitWorkbench({ problemCode }) {
                                 key={comp.id}
                                 className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''} ${isPressed ? styles.placedPartPressed : ''}`}
                                 style={boxStyle}
-                                draggable={!interactive}
-                                onDragStart={(e) => {
+                                draggable={false}
+                                onPointerDown={(e) => {
                                     if (interactive) {
-                                        e.preventDefault();
+                                        handleInteractivePointerDown(comp, e);
                                         return;
                                     }
-                                    handlePlacedDragStart(e, comp);
+                                    handlePlacedPointerDown(e, comp);
                                 }}
-                                onDragEnd={handleDragEnd}
-                                onPointerDown={
-                                    interactive
-                                        ? (e) =>
-                                              handleInteractivePointerDown(
-                                                  comp,
-                                                  e
-                                              )
-                                        : undefined
-                                }
-                                onPointerUp={
-                                    interactive
-                                        ? (e) =>
-                                              handleInteractivePointerUp(
-                                                  comp,
-                                                  e
-                                              )
-                                        : undefined
-                                }
-                                onPointerCancel={
-                                    interactive
-                                        ? (e) =>
-                                              handleInteractivePointerUp(
-                                                  comp,
-                                                  e
-                                              )
-                                        : undefined
-                                }
+                                onPointerMove={(e) => {
+                                    if (!interactive) {
+                                        handlePlacedPointerMove(e, comp);
+                                    }
+                                }}
+                                onPointerUp={(e) => {
+                                    if (interactive && isMomentaryInteractive(comp.type)) {
+                                        handleInteractivePointerUp(comp, e);
+                                        return;
+                                    }
+                                    if (!interactive) {
+                                        handlePlacedPointerUp(e, comp);
+                                    }
+                                }}
+                                onPointerCancel={(e) => {
+                                    if (interactive && isMomentaryInteractive(comp.type)) {
+                                        handleInteractivePointerUp(comp, e);
+                                        return;
+                                    }
+                                    if (!interactive) {
+                                        handlePlacedPointerUp(e, comp);
+                                    }
+                                }}
                                 onContextMenu={(e) => {
                                     if (interactive) {
                                         e.preventDefault();

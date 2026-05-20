@@ -22,6 +22,36 @@ public class ProblemDataSeeder implements CommandLineRunner {
 
     private record ProblemSeed(String code, String title, int displayOrder) {}
 
+    private record ProblemContent(
+            String description,
+            String hint,
+            String questions,
+            String methodology
+    ) {}
+
+    private static final java.util.Map<String, ProblemContent> ST_PROBLEM_CONTENT = java.util.Map.of(
+            "ST.L1.2",
+            new ProblemContent(
+                    "გამოიყენეთ მხოლოდ შემდეგი დეტალები: ღილაკი, ნათურა, ორი კვების წყარო და გამტარები. ააწყვეთ წრედი, რომელიც იმუშავებს ასე: თუ ღილაკს დავაწვებით, ნათურა უნდა აინთოს; თუ ღილაკს ავუშვებთ, ნათურა უნდა ჩაქრეს. ეს არის წინა სავარჯიშოს მსგავსი ამოცანა იმ განსხავავებით, რომ ერთი კვების წყაროს ნაცვლად უნდა გამოიყენოთ ორი. წრედის აწყობის შემდეგ, აღწერეთ რა შეიცვალა წინა ამოცანასთან შედარებით და რამ გამოიწვია ეს ცვლილება?",
+                    "ერთი კვების წყაროს დადებითი პოლუსი მიაერთეთ მეორე კვების წყაროს უარყოფით პოლუსს. ნათურის ასანთებად გამოიყენეთ დარჩენილი თავისუფალი პოლუსები.",
+                    "როგორ იმუშავებს წრედი თუ ნათურას ჩავრთავთ კვების წყაროებს შორის?\n"
+                            + "როგორ იმუშავებს წრედი თუ კვებების მერთების თანამიმდევრობას შევცვლით — ერთი კვების დადებით პოლუსს მივაერთებთ მეორე კვების დადებითს? ახსენით რატომ?",
+                    "ამ სავარჯიშოში პირველად უნდა გამოიყენონ მიმდევრობით ჩართული ორი კვების წყარო. ნათურის ნათების მომატებით პრაქტიკულად უნდა ნახონ, რომ ორი კვების წყაროს ძაბვა იკრიბება და ჯამური ძაბვა იზრდება."
+            )
+    );
+
+    private static final java.util.Map<String, ProblemContent> ST_L13_CONTENT =
+            java.util.Map.of(
+                    "ST.L1.3",
+                    new ProblemContent(
+                            "გამოიყენეთ მხოლოდ შემდეგი დეტალები: ღილაკი, ნათურა, ჩამრთველი, ერთი კვების წყარო და გამტარები. ააწყვეთ წრედი, რომელიც იმუშავებს ასე: წრედის აწყობის შემდეგ, თუ მხოლოდ ჩამრთველით ჩართავთ წრედს (ღილაკის გარეშე), ნათურა არ უნდა აინთოს; თუ ღილაკს დავაწვებით, ნათურა უნდა აინთოს; თუ ღილაკს ავუშვებთ, ნათურა უნდა ჩაქრეს. ამოცანაში დამატებით უნდა გამოიყენოთ ჩამრთველი — აწყობის პროცესში ის გამორთული უნდა იყოს; დარწმუნდების შემდეგ, რომ წრედი სწორად არის აწყობილი, შეგიძლიათ ჩართოთ.",
+                            "წრედში დენმა უნდა გაიაროს ჩამრთველის გავლით. ჩამრთველი ჩართეთ ღილაკამდე (საშუალო თავაური — კვების დადებითი პოლუსის მხრიდან).",
+                            "შეიცვლება თუ არა წრედის სამუშაო პრინციპი თუ ღილაკს და ჩამრთველს გავუცვლით ადგილები?\n"
+                                    + "შეიცვლება თუ არა წრედის სამუშაო პრინციპი თუ ბუნებრივად შემოვატრიალებთ?",
+                            "ამ სავარჯიოiათი უნდა გაეცნონ ჩამრთველის პრაქტიკულ გამოყენებას. წრედის აწყობის დროს ჩამრთველი გამორთული უნდა იყოს; სასურველია მიერთოთ კვების დადებით პოლუსთან და ჩართოთ მხოლოდ აწყობის დასრულებისა და შემოწმების შემდეგ."
+                    )
+            );
+
     private static final List<ProblemSeed> ST_PROBLEMS = List.of(
             new ProblemSeed("ST.L1.1", "ნათურის ანთება ღილაკით", 1),
             new ProblemSeed("ST.L1.2", "ნათურის ანთება ღილაკით და ორი კვების წყაროთი", 2),
@@ -65,6 +95,7 @@ public class ProblemDataSeeder implements CommandLineRunner {
         problem.setDisplayOrder(seed.displayOrder());
         problem.setChapter(chapter);
         problem.setDifficulty("beginner");
+        applyRichContent(problem, seed.code());
         problemRepository.save(problem);
     }
 
@@ -72,6 +103,21 @@ public class ProblemDataSeeder implements CommandLineRunner {
         problem.setTitle(seed.title());
         problem.setDisplayOrder(seed.displayOrder());
         problem.setChapter(chapter);
+        applyRichContent(problem, seed.code());
         problemRepository.save(problem);
+    }
+
+    private void applyRichContent(Problem problem, String code) {
+        ProblemContent content = ST_PROBLEM_CONTENT.get(code);
+        if (content == null) {
+            content = ST_L13_CONTENT.get(code);
+        }
+        if (content == null) {
+            return;
+        }
+        problem.setDescription(content.description());
+        problem.setHint(content.hint());
+        problem.setQuestions(content.questions());
+        problem.setMethodology(content.methodology());
     }
 }

@@ -53,6 +53,7 @@ com/example/circuit_simulator/service/ComponentService.class
 com/example/circuit_simulator/repository/ChapterRepository.class
 com/example/circuit_simulator/service/CircuitValidationService.class
 com/example/circuit_simulator/controller/ChapterController.class
+com/example/circuit_simulator/service/ProblemDataSeeder$ProblemContent.class
 com/example/circuit_simulator/exception/GlobalExceptionHandler.class
 com/example/circuit_simulator/repository/ProblemRepository.class
 com/example/circuit_simulator/dto/CaseResultDTO$CaseResultDTOBuilder.class

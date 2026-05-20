@@ -15,16 +15,21 @@ export function getRotatedFootprint(type, rotation = 0) {
     return rotationSteps(rotation) % 2 === 1 ? { w: h, h: w } : { w, h };
 }
 
-/** 90° clockwise per step; base footprint is w×h at rotation 0. */
+/** 90° clockwise per step within a w×col × h×row footprint (anchor stays top-left). */
 export function rotateGridPoint(dr, dc, baseW, baseH, steps) {
     let r = dr;
     let c = dc;
+    let w = baseW;
+    let h = baseH;
 
     for (let i = 0; i < steps % 4; i++) {
         const nr = c;
-        const nc = r;
+        const nc = h - 1 - r;
         r = nr;
         c = nc;
+        const nextW = h;
+        h = w;
+        w = nextW;
     }
 
     return { dr: r, dc: c };

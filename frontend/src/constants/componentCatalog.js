@@ -163,11 +163,14 @@ export function getCapacitorSpec(typeOrKey) {
 /** 3×3 — top/bottom on one column, third pin from the middle row. */
 export const THREE_PIN_FOOTPRINT = { w: 3, h: 3 };
 
-/** Vertical triangle SVG (217×326): top/bottom at dc=1, base at dc=0. */
+/** Vertical transistor (npn/pnp): collector top, base left, emitter bottom (2×2). */
+export const TRANSISTOR_TRIANGLE_FOOTPRINT = { w: 2, h: 2 };
+
+/** Order matches SpiceGenerator: nodes[0]=base, [1]=collector, [2]=emitter. */
 export const THREE_PIN_SNAP_VERTICAL = [
-    { dr: 0, dc: 1 },
-    { dr: 2, dc: 1 },
     { dr: 1, dc: 0 },
+    { dr: 0, dc: 1 },
+    { dr: 1, dc: 1 },
 ];
 
 /** Horizontal triangle SVG (326×217): top/bottom at dc=2, base at dc=0. */
@@ -175,6 +178,15 @@ export const THREE_PIN_SNAP_HORIZONTAL = [
     { dr: 0, dc: 2 },
     { dr: 2, dc: 2 },
     { dr: 1, dc: 0 },
+];
+
+/** Apex-up triangle (slide switch): A top centre, B/C one row below (3×2 footprint). */
+export const APEX_UP_TRIANGLE_FOOTPRINT = { w: 3, h: 2 };
+
+export const THREE_PIN_SNAP_APEX_UP = [
+    { dr: 0, dc: 1 },
+    { dr: 1, dc: 0 },
+    { dr: 1, dc: 2 },
 ];
 
 export const RELAY_SNAP_OFFSETS = [
@@ -283,6 +295,13 @@ export function isThreePinTriangleType(type) {
     );
 }
 
+export function isApexUpTriangleType(type) {
+    return (
+        type === COMPONENT_TYPES.SLIDE_SWITCH ||
+        type === COMPONENT_TYPES.VAR_RESISTOR
+    );
+}
+
 export function isRelayType(type) {
     return type === COMPONENT_TYPES.RELAY;
 }
@@ -291,11 +310,8 @@ export function getThreePinSnapOffsets(type) {
     if (isTransistorType(type)) {
         return THREE_PIN_SNAP_VERTICAL;
     }
-    if (
-        type === COMPONENT_TYPES.SLIDE_SWITCH ||
-        type === COMPONENT_TYPES.VAR_RESISTOR
-    ) {
-        return THREE_PIN_SNAP_HORIZONTAL;
+    if (isApexUpTriangleType(type)) {
+        return THREE_PIN_SNAP_APEX_UP;
     }
     return THREE_PIN_SNAP_VERTICAL;
 }
@@ -307,6 +323,12 @@ export function getFootprint(type) {
     }
     if (isTwoPinWideType(type)) {
         return { w: 3, h: 1 };
+    }
+    if (isApexUpTriangleType(type)) {
+        return APEX_UP_TRIANGLE_FOOTPRINT;
+    }
+    if (isTransistorType(type)) {
+        return TRANSISTOR_TRIANGLE_FOOTPRINT;
     }
     if (isThreePinTriangleType(type)) {
         return THREE_PIN_FOOTPRINT;
@@ -359,6 +381,14 @@ export function getArtLayoutPair(type, points) {
     if (!points?.length) return [null, null];
     if (isRelayType(type) && points.length >= 4) {
         return [points[0], points[3]];
+    }
+    // Apex-up slide switch / var resistor: span top pin to bottom-right pin.
+    if (points.length >= 3 && isApexUpTriangleType(type)) {
+        return [points[0], points[2]];
+    }
+    // Vertical transistor: span collector to base (not collector–emitter column only).
+    if (points.length >= 3 && isTransistorType(type)) {
+        return [points[0], points[2]];
     }
     return [points[0], points[1]];
 }
@@ -569,13 +599,99 @@ export const ST_L1_1_PALETTE = [
     LED_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for ST.L1.2 — two power supplies in series, button, lamp, connectors only. */
+export const ST_L1_2_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for ST.L1.3 — button, lamp, series switch, one supply, connectors only. */
+export const ST_L1_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L1.1') {
         return ST_L1_1_PALETTE;
+    }
+    if (problemCode === 'ST.L1.2') {
+        return ST_L1_2_PALETTE;
+    }
+    if (problemCode === 'ST.L1.3') {
+        return ST_L1_3_PALETTE;
     }
     return null;
 }
 
 export function supportsSimulator(problemCode) {
-    return problemCode === 'ST.L1.1';
+    return (
+        problemCode === 'ST.L1.1' ||
+        problemCode === 'ST.L1.2' ||
+        problemCode === 'ST.L1.3'
+    );
+}
+
+/** Parts that must be on the board before Submit (per problem). */
+const PROBLEM_REQUIRED_PARTS = {
+    'ST.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'ST.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'ST.L1.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+};
+
+export function getRequiredPartsForProblem(problemCode) {
+    return PROBLEM_REQUIRED_PARTS[problemCode] ?? null;
 }

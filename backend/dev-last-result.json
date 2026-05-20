@@ -1,0 +1,50 @@
+{
+  "timestamp" : "2026-05-20T13:27:54.280974116Z",
+  "kind" : "simulate",
+  "request" : {
+    "components" : [ {
+      "id" : "c_1779283560662_qluu8x",
+      "role" : "power_supply_1",
+      "type" : "voltage",
+      "nodes" : [ "A6", "0" ],
+      "value" : "6"
+    }, {
+      "id" : "c_1779283563421_sdmw2h",
+      "role" : "power_supply_2",
+      "type" : "voltage",
+      "nodes" : [ "0", "F4" ],
+      "value" : "6"
+    }, {
+      "id" : "c_1779283587498_iq1m73",
+      "role" : "lamp",
+      "type" : "lamp",
+      "nodes" : [ "A4", "F4" ]
+    }, {
+      "id" : "c_1779283598397_3rr733",
+      "role" : "button",
+      "type" : "switch",
+      "nodes" : [ "A4", "A6" ],
+      "state" : "open"
+    } ]
+  },
+  "response" : {
+    "nodes" : {
+      "v(a6)" : 6.0,
+      "@r_c_1779283598397_3rr733[i]" : -1.2E-11,
+      "@r_gnd_a6[i]" : 6.0E-12,
+      "v_c_1779283560662_qluu8x#branch" : -1.8E-11,
+      "v_c_1779283563421_sdmw2h#branch" : -2.4E-11,
+      "v(a4)" : -6.0,
+      "@r_c_1779283587498_iq1m73[i]" : 1.800001E-11,
+      "@r_gnd_a4[i]" : -6.0E-12,
+      "v(f4)" : -6.0,
+      "@r_gnd_f4[i]" : -6.0E-12
+    },
+    "components" : {
+      "c_1779283598397_3rr733" : 0.0,
+      "c_1779283563421_sdmw2h" : 0.0,
+      "c_1779283560662_qluu8x" : 0.0,
+      "c_1779283587498_iq1m73" : 0.0
+    }
+  }
+}

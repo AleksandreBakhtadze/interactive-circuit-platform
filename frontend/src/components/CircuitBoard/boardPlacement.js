@@ -3,11 +3,11 @@ import {
     COMPONENT_TYPES,
     getArtLayoutPair,
     getFootprint,
-    usesVerticalSpanLayout,
 } from '../../constants/componentCatalog';
 import {
     getRotatedArtSnapPoints,
     normalizeRotation,
+    rotationSteps,
 } from '../../constants/componentRotation';
 import { DOT_COL_X, DOT_ROW_Y, getDotPitch, pointerToNearestDot } from './boardLayout';
 
@@ -120,7 +120,7 @@ function getDotCellBounds(rect, row, col, w, h) {
  *   3. Pin the left edge so u0 * width lands on the anchor column x.
  *   4. Average top from both pin constraints for sub-pixel accuracy.
  */
-function layoutPowerSupply(rect, row, col, s0, s1) {
+function layoutPowerSupply(rect, row, col, s0, s1, rotation = 0) {
     const p0 = getDotPx(col + s0.dc, row + s0.dr, rect);
     const p1 = getDotPx(col + s1.dc, row + s1.dr, rect);
 
@@ -145,15 +145,15 @@ function layoutPowerSupply(rect, row, col, s0, s1) {
     const height = imgSpan > 0.02 ? boardSpan / imgSpan : boardSpan || 1;
     const width = height * aspectRatio;
 
-    const leftFrom0 = p0.x - s0.u * width;
-    const leftFrom1 = p1.x - s1.u * width;
-    const left =
-        Math.abs(imgDu) > 0.02 ? (leftFrom0 + leftFrom1) / 2 : leftFrom0;
+    const anchor = layoutAnchorPin(s0, s1, rotation);
+    const anchorPx = anchor === s1 ? p1 : p0;
+    const left = anchorPx.x - anchor.u * width;
+    let top = anchorPx.y - anchor.v * height;
 
-    const topFrom0 = p0.y - s0.v * height;
-    const topFrom1 = p1.y - s1.v * height;
-    const top =
-        Math.abs(imgDv) > 0.02 ? (topFrom0 + topFrom1) / 2 : topFrom0;
+    if (imgDv > 0.02 && anchor === s0) {
+        const topFrom1 = p1.y - s1.v * height;
+        top = (top + topFrom1) / 2;
+    }
 
     return { left, top, width, height };
 }
@@ -167,6 +167,20 @@ function toPxStyle(box) {
         rotation: box.rotation ?? 0,
         transformOrigin: box.transformOrigin,
     };
+}
+
+/**
+ * Pin that stays fixed under CSS rotate — must match left/top anchoring below.
+ * 180°/270° pivot on s1; 0°/90° on s0.
+ */
+function layoutAnchorPin(s0, s1, rotation) {
+    const steps = rotationSteps(rotation) % 4;
+    return steps === 2 || steps === 3 ? s1 : s0;
+}
+
+function snapTransformOrigin(s0, s1, rotation) {
+    const pin = layoutAnchorPin(s0, s1, rotation);
+    return `${pin.u * 100}% ${pin.v * 100}%`;
 }
 
 /**
@@ -215,17 +229,26 @@ function layoutPartFromSnaps(
     }
 
     const art = COMPONENT_ART_SNAPS[type];
-    if (height <= baseBounds.height && art?.svgWidth && art?.svgHeight) {
+    const solvedBothAxes = imgDx > 0.02 && imgDy > 0.02;
+    if (
+        !solvedBothAxes &&
+        height <= baseBounds.height &&
+        art?.svgWidth &&
+        art?.svgHeight
+    ) {
         height = width * (art.svgHeight / art.svgWidth);
     }
 
     width = Math.max(width, 1);
     height = Math.max(height, 1);
 
-    const left = boardX0 - s0.u * width;
-    let top = boardY0 - s0.v * height;
+    const anchor = layoutAnchorPin(s0, s1, rot);
+    const anchorX = anchor === s1 ? boardX1 : boardX0;
+    const anchorY = anchor === s1 ? boardY1 : boardY0;
+    const left = anchorX - anchor.u * width;
+    let top = anchorY - anchor.v * height;
 
-    if (imgDy > 0.02) {
+    if (imgDy > 0.02 && anchor === s0) {
         const topFromEnd = boardY1 - s1.v * height;
         top = (top + topFromEnd) / 2;
     }
@@ -236,7 +259,7 @@ function layoutPartFromSnaps(
         width,
         height,
         rotation: rot,
-        transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
+        transformOrigin: snapTransformOrigin(s0, s1, rot),
     };
 }
 
@@ -259,15 +282,12 @@ function getRotatedPartStyle(stageEl, row, col, footprintW, footprintH, type, ro
 
     const [s0, s1] = getArtLayoutPair(type, art.points);
 
-    if (
-        type === COMPONENT_TYPES.POWER_SUPPLY ||
-        usesVerticalSpanLayout(s0, s1)
-    ) {
-        const box = layoutPowerSupply(rect, row, col, s0, s1);
+    if (type === COMPONENT_TYPES.POWER_SUPPLY) {
+        const box = layoutPowerSupply(rect, row, col, s0, s1, rot);
         return toPxStyle({
             ...box,
             rotation: rot,
-            transformOrigin: `${s0.u * 100}% ${s0.v * 100}%`,
+            transformOrigin: snapTransformOrigin(s0, s1, rot),
         });
     }
 
@@ -303,10 +323,7 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
 
     const [s0, s1] = getArtLayoutPair(type, art.points);
 
-    if (
-        type === COMPONENT_TYPES.POWER_SUPPLY ||
-        usesVerticalSpanLayout(s0, s1)
-    ) {
+    if (type === COMPONENT_TYPES.POWER_SUPPLY) {
         const box = layoutPowerSupply(rect, row, col, s0, s1);
         return {
             left: `${box.left}px`,

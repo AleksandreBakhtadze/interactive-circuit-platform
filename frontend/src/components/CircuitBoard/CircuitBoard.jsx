@@ -68,26 +68,60 @@ export default function CircuitBoard({ label, gridRef, children, simulator = fal
     if (simulator) {
         return (
             <div className={styles.wrapperSimulator}>
-                <div className={styles.boardStage} data-board-stage>
-                    <img
-                        src={BOARD_IMAGE}
-                        className={styles.boardImage}
-                        alt=""
-                        draggable={false}
-                    />
+                <div className={styles.simulatorWithLabels}>
+                    <div className={styles.boardAndRowLabels}>
+                        <div className={styles.simRowLabels} aria-hidden>
+                            {ROWS.map((row, rowIndex) => (
+                                <span
+                                    key={row}
+                                    className={styles.simRowLabel}
+                                    style={{
+                                        top: `${DOT_ROW_Y[rowIndex] * 100}%`,
+                                    }}
+                                >
+                                    {row}
+                                </span>
+                            ))}
+                        </div>
 
-                    <div
-                        className={styles.dotLayer}
-                        ref={gridRef}
-                        role="grid"
-                        aria-label="Circuit board"
-                    >
-                        <SimulatorDotGrid />
+                        <div className={styles.boardStage} data-board-stage>
+                            <div className={styles.simColLabels} aria-hidden>
+                                {COLS.map((col, colIndex) => (
+                                    <span
+                                        key={col}
+                                        className={styles.simColLabel}
+                                        style={{
+                                            left: `${DOT_COL_X[colIndex] * 100}%`,
+                                        }}
+                                    >
+                                        {col}
+                                    </span>
+                                ))}
+                            </div>
+
+                            <img
+                                src={BOARD_IMAGE}
+                                className={styles.boardImage}
+                                alt=""
+                                draggable={false}
+                            />
+
+                            <div
+                                className={styles.dotLayer}
+                                ref={gridRef}
+                                role="grid"
+                                aria-label="Circuit board"
+                            >
+                                <SimulatorDotGrid />
+                            </div>
+
+                            {children && (
+                                <div className={styles.componentsLayer}>
+                                    {children}
+                                </div>
+                            )}
+                        </div>
                     </div>
-
-                    {children && (
-                        <div className={styles.componentsLayer}>{children}</div>
-                    )}
                 </div>
             </div>
         );

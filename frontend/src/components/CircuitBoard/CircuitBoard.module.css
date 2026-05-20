@@ -14,8 +14,72 @@
     width: 100%;
 }
 
+.simulatorWithLabels {
+    --pin-label-gutter: 1.75rem;
+    width: 100%;
+    padding-top: 1.4rem;
+}
+
+.simColLabels {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1.25rem;
+    transform: translateY(calc(-100% - 4px));
+    z-index: 4;
+    pointer-events: none;
+}
+
+.simColLabel {
+    position: absolute;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #5a8ab8;
+    letter-spacing: 0.04em;
+    user-select: none;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
+.boardAndRowLabels {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.simRowLabels {
+    position: relative;
+    flex-shrink: 0;
+    width: var(--pin-label-gutter);
+    min-height: 0;
+    align-self: stretch;
+}
+
+.simRowLabel {
+    position: absolute;
+    right: 0;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #5a8ab8;
+    letter-spacing: 0.04em;
+    user-select: none;
+    pointer-events: none;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
 .boardStage {
     position: relative;
+    flex: 1;
+    min-width: 0;
     width: 100%;
     aspect-ratio: 1082 / 757;
 }
@@ -187,7 +251,17 @@
     }
 
     .rowLabel,
-    .colLabel {
-        font-size: 0.75rem;
+    .colLabel,
+    .simRowLabel,
+    .simColLabel {
+        font-size: 0.7rem;
+    }
+
+    .simColLabels {
+        height: 1.1rem;
+    }
+
+    .simulatorWithLabels {
+        --pin-label-gutter: 1.35rem;
     }
 }

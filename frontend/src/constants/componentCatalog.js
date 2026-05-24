@@ -306,6 +306,34 @@ export function isRelayType(type) {
     return type === COMPONENT_TYPES.RELAY;
 }
 
+/** Collision uses pin cells only — footprint is unchanged for layout/anchor. */
+export function usesSnapOnlyCells(type) {
+    return isThreePinTriangleType(type);
+}
+
+/**
+ * Extra grid dot blocked under triangle body (not a terminal).
+ * Apex-up: centre of bottom edge between B and C pins.
+ * Transistor: centre of right edge on 3×3 triangle grid (outside 2×2 footprint).
+ */
+export function getTriangleBodyOffsets(type) {
+    if (isApexUpTriangleType(type)) {
+        return [{ dr: 1, dc: 1 }];
+    }
+    if (isTransistorType(type)) {
+        return [{ dr: 1, dc: 2 }];
+    }
+    return [];
+}
+
+/** Footprint used when rotating triangle body cells (may differ from placement footprint). */
+export function getTriangleBodyRotationFootprint(type) {
+    if (isTransistorType(type)) {
+        return THREE_PIN_FOOTPRINT;
+    }
+    return getFootprint(type);
+}
+
 export function getThreePinSnapOffsets(type) {
     if (isTransistorType(type)) {
         return THREE_PIN_SNAP_VERTICAL;

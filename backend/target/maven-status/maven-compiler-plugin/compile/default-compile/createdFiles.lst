@@ -34,15 +34,15 @@ com/example/circuit_simulator/config/WebConfig.class
 com/example/circuit_simulator/model/Chapter.class
 com/example/circuit_simulator/model/SimulationResult.class
 com/example/circuit_simulator/controller/ComponentController.class
-com/example/circuit_simulator/repository/CircuitRepository.class
-com/example/circuit_simulator/utils/SpiceGenerator.class
 com/example/circuit_simulator/model/Component.class
+com/example/circuit_simulator/utils/SpiceGenerator.class
+com/example/circuit_simulator/repository/CircuitRepository.class
 com/example/circuit_simulator/validation/ProblemValidationSpec.class
 com/example/circuit_simulator/dto/UserDTO.class
 com/example/circuit_simulator/controller/SimulationController.class
 com/example/circuit_simulator/model/User.class
-com/example/circuit_simulator/service/ProblemDataSeeder.class
 com/example/circuit_simulator/dto/LoginResponse.class
+com/example/circuit_simulator/service/ProblemDataSeeder.class
 com/example/circuit_simulator/dto/RegisterResponse.class
 com/example/circuit_simulator/controller/ProblemController.class
 com/example/circuit_simulator/model/Circuit$CircuitBuilder.class
@@ -55,7 +55,7 @@ com/example/circuit_simulator/service/CircuitValidationService.class
 com/example/circuit_simulator/controller/ChapterController.class
 com/example/circuit_simulator/service/ProblemDataSeeder$ProblemContent.class
 com/example/circuit_simulator/exception/GlobalExceptionHandler.class
-com/example/circuit_simulator/repository/ProblemRepository.class
 com/example/circuit_simulator/dto/CaseResultDTO$CaseResultDTOBuilder.class
+com/example/circuit_simulator/repository/ProblemRepository.class
 com/example/circuit_simulator/service/CircuitService.class
 com/example/circuit_simulator/config/SecurityConfig.class

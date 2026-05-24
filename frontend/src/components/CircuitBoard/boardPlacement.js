@@ -18,7 +18,7 @@ export function pinName(row, col) {
     return `${BOARD_ROWS[row]}${BOARD_COLS[col]}`;
 }
 
-function getBoardStage(gridEl) {
+export function getBoardStage(gridEl) {
     return gridEl?.closest('[data-board-stage]') ?? null;
 }
 

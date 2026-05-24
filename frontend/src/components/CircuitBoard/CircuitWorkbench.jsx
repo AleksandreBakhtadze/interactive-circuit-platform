@@ -68,6 +68,22 @@ import styles from './CircuitWorkbench.module.css';
 
 const MOVE_DRAG_THRESHOLD_PX = 4;
 
+/** Topmost placed part under the cursor (ignores drop preview). */
+function findPlacedPartIdAt(clientX, clientY) {
+    if (typeof document.elementsFromPoint !== 'function') {
+        return null;
+    }
+
+    for (const el of document.elementsFromPoint(clientX, clientY)) {
+        const part = el.closest('[data-placed-part]');
+        if (part?.dataset.placedPart) {
+            return part.dataset.placedPart;
+        }
+    }
+
+    return null;
+}
+
 function isWidePalettePart(type) {
     const { w, h } = getFootprint(type);
     return w > h;
@@ -99,6 +115,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const heldButtonIdRef = useRef(null);
     const switchStatesRef = useRef({});
     const moveSessionRef = useRef(null);
+    const boardHostRef = useRef(null);
 
     const [placed, setPlaced] = useState([]);
     const [paletteRotations, setPaletteRotations] = useState({});
@@ -293,18 +310,25 @@ export default function CircuitWorkbench({ problemCode }) {
             return;
         }
         const rotation = getPaletteRotation(type);
-        setActiveDrag({ type, rotation });
+        setActiveDrag({ type, rotation, grabDr: 0, grabDc: 0 });
         setDragPayload(e.dataTransfer, { source: 'palette', type, rotation });
         setTransparentDragGhost(e.dataTransfer);
     };
 
-    const commitPlacedMove = (id, type, rotation, pin) => {
-        const { row, col } = alignPlacementAnchor(
+    const commitPlacedMove = (id, type, rotation, rawPin, grabDr = 0, grabDc = 0) => {
+        const anchoredPin = {
+            row: rawPin.row - grabDr,
+            col: rawPin.col - grabDc,
+        };
+        const anchor = alignPlacementAnchor(
             type,
-            pin.row,
-            pin.col,
+            anchoredPin.row,
+            anchoredPin.col,
             rotation
         );
+        if (!anchor) return;
+
+        const { row, col } = anchor;
         const existing = placed.find((p) => p.id === id);
         if (!existing) return;
 
@@ -330,26 +354,51 @@ export default function CircuitWorkbench({ problemCode }) {
         setHoverPin(null);
     };
 
-    /** Pointer move (HTML5 drag breaks on CSS-transformed parts). */
-    const handlePlacedPointerDown = (e, comp) => {
-        if (e.button !== 0) return;
-
+    /**
+     * Board-level pointer drag — only the topmost part under the cursor moves.
+     * (Per-part handlers caused stacked connectors to drag together.)
+     */
+    const beginMoveSession = (comp, clientX, clientY, pointerId) => {
         const rotation = comp.rotation ?? 0;
+        const rawPin = pointerToPin(clientX, clientY, gridRef.current);
+        const grabDr = rawPin ? rawPin.row - comp.row : 0;
+        const grabDc = rawPin ? rawPin.col - comp.col : 0;
+
         moveSessionRef.current = {
             id: comp.id,
             type: comp.type,
             rotation,
-            startX: e.clientX,
-            startY: e.clientY,
+            startX: clientX,
+            startY: clientY,
             dragging: false,
+            grabDr,
+            grabDc,
         };
 
-        e.currentTarget.setPointerCapture(e.pointerId);
+        boardHostRef.current?.setPointerCapture(pointerId);
     };
 
-    const handlePlacedPointerMove = (e, comp) => {
+    const handleBoardPointerDownCapture = (e) => {
+        if (e.button !== 0) return;
+
+        const partId = findPlacedPartIdAt(e.clientX, e.clientY);
+        if (!partId) return;
+
+        const comp = placed.find((p) => p.id === partId);
+        if (!comp) return;
+
+        if (liveSimMode && isInteractivePart(comp.type)) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        beginMoveSession(comp, e.clientX, e.clientY, e.pointerId);
+    };
+
+    const handleBoardPointerMove = (e) => {
         const session = moveSessionRef.current;
-        if (!session || session.id !== comp.id) return;
+        if (!session) return;
 
         const dx = e.clientX - session.startX;
         const dy = e.clientY - session.startY;
@@ -363,9 +412,11 @@ export default function CircuitWorkbench({ problemCode }) {
         if (!session.dragging) {
             session.dragging = true;
             setActiveDrag({
-                id: comp.id,
-                type: comp.type,
+                id: session.id,
+                type: session.type,
                 rotation: session.rotation,
+                grabDr: session.grabDr,
+                grabDc: session.grabDc,
             });
         }
 
@@ -373,12 +424,12 @@ export default function CircuitWorkbench({ problemCode }) {
         setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
     };
 
-    const handlePlacedPointerUp = (e, comp) => {
+    const finishMoveSession = (e) => {
         const session = moveSessionRef.current;
-        if (!session || session.id !== comp.id) return;
+        if (!session) return;
 
         try {
-            e.currentTarget.releasePointerCapture(e.pointerId);
+            boardHostRef.current?.releasePointerCapture(e.pointerId);
         } catch {
             /* already released */
         }
@@ -390,12 +441,25 @@ export default function CircuitWorkbench({ problemCode }) {
                     session.id,
                     session.type,
                     session.rotation,
-                    pin
+                    pin,
+                    session.grabDr,
+                    session.grabDc
                 );
             }
         }
 
         endMoveSession();
+    };
+
+    const handleBoardPointerUp = (e) => {
+        if (!moveSessionRef.current) return;
+        e.preventDefault();
+        finishMoveSession(e);
+    };
+
+    const handleBoardPointerCancel = (e) => {
+        if (!moveSessionRef.current) return;
+        finishMoveSession(e);
     };
 
     const handleDragEnd = () => {
@@ -404,6 +468,7 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const handleBoardDragOver = (e) => {
+        if (moveSessionRef.current) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
@@ -415,6 +480,11 @@ export default function CircuitWorkbench({ problemCode }) {
 
     const handleBoardDrop = (e) => {
         e.preventDefault();
+        if (moveSessionRef.current) {
+            endMoveSession();
+            return;
+        }
+
         const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
         setHoverPin(null);
         setActiveDrag(null);
@@ -426,7 +496,7 @@ export default function CircuitWorkbench({ problemCode }) {
 
         const { type } = payload;
         const rotation = payload.rotation ?? 0;
-        const { row, col } = alignPlacementAnchor(
+        const anchor = alignPlacementAnchor(
             type,
             pin.row,
             pin.col,
@@ -434,10 +504,13 @@ export default function CircuitWorkbench({ problemCode }) {
         );
 
         if (payload.source === 'board' && payload.id) {
-            commitPlacedMove(payload.id, type, rotation, pin);
+            commitPlacedMove(payload.id, type, rotation, pin, 0, 0);
             return;
         }
 
+        if (!anchor) return;
+
+        const { row, col } = anchor;
         if (!tryPlace(type, row, col, rotation)) return;
 
         setPlaced((prev) => [
@@ -1010,17 +1083,24 @@ export default function CircuitWorkbench({ problemCode }) {
     if (!palette) return null;
 
     const previewRotation = activeDrag?.rotation ?? 0;
+    const grabDr = activeDrag?.grabDr ?? 0;
+    const grabDc = activeDrag?.grabDc ?? 0;
+
+    const adjustedHoverPin = hoverPin
+        ? { row: hoverPin.row - grabDr, col: hoverPin.col - grabDc }
+        : null;
+
     const previewFootprint =
-        activeDrag && hoverPin
+        activeDrag && adjustedHoverPin
             ? getRotatedFootprint(activeDrag.type, previewRotation)
             : null;
 
     const previewAnchor =
-        activeDrag && hoverPin
+        activeDrag && adjustedHoverPin && previewFootprint
             ? alignPlacementAnchor(
                   activeDrag.type,
-                  hoverPin.row,
-                  hoverPin.col,
+                  adjustedHoverPin.row,
+                  adjustedHoverPin.col,
                   previewRotation
               )
             : null;
@@ -1038,9 +1118,7 @@ export default function CircuitWorkbench({ problemCode }) {
               )
             : null;
 
-    const previewCss = previewPartStyle
-        ? partStyleToCss(previewPartStyle)
-        : null;
+    const previewCss = previewPartStyle ? partStyleToCss(previewPartStyle) : null;
 
     return (
         <div className={styles.workbench}>
@@ -1100,7 +1178,12 @@ export default function CircuitWorkbench({ problemCode }) {
             </aside>
 
             <div
-                className={styles.boardHost}
+                ref={boardHostRef}
+                className={`${styles.boardHost} ${activeDrag?.id ? styles.boardHostDragging : ''}`}
+                onPointerDownCapture={handleBoardPointerDownCapture}
+                onPointerMove={handleBoardPointerMove}
+                onPointerUp={handleBoardPointerUp}
+                onPointerCancel={handleBoardPointerCancel}
                 onDragOver={handleBoardDragOver}
                 onDragLeave={handleBoardDragLeave}
                 onDrop={handleBoardDrop}
@@ -1156,37 +1239,27 @@ export default function CircuitWorkbench({ problemCode }) {
                         return (
                             <div
                                 key={comp.id}
+                                data-placed-part={comp.id}
                                 className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''} ${isPressed ? styles.placedPartPressed : ''}`}
                                 style={boxStyle}
                                 draggable={false}
                                 onPointerDown={(e) => {
-                                    if (interactive) {
-                                        handleInteractivePointerDown(comp, e);
-                                        return;
-                                    }
-                                    handlePlacedPointerDown(e, comp);
-                                }}
-                                onPointerMove={(e) => {
-                                    if (!interactive) {
-                                        handlePlacedPointerMove(e, comp);
-                                    }
+                                    if (!interactive) return;
+                                    e.stopPropagation();
+                                    handleInteractivePointerDown(comp, e);
                                 }}
                                 onPointerUp={(e) => {
-                                    if (interactive && isMomentaryInteractive(comp.type)) {
+                                    if (!interactive) return;
+                                    e.stopPropagation();
+                                    if (isMomentaryInteractive(comp.type)) {
                                         handleInteractivePointerUp(comp, e);
-                                        return;
-                                    }
-                                    if (!interactive) {
-                                        handlePlacedPointerUp(e, comp);
                                     }
                                 }}
                                 onPointerCancel={(e) => {
-                                    if (interactive && isMomentaryInteractive(comp.type)) {
+                                    if (!interactive) return;
+                                    e.stopPropagation();
+                                    if (isMomentaryInteractive(comp.type)) {
                                         handleInteractivePointerUp(comp, e);
-                                        return;
-                                    }
-                                    if (!interactive) {
-                                        handlePlacedPointerUp(e, comp);
                                     }
                                 }}
                                 onContextMenu={(e) => {

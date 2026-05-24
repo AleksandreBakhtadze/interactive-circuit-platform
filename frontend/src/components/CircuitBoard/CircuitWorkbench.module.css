@@ -348,6 +348,16 @@
 
 .boardHost {
     width: 100%;
+    touch-action: none;
+}
+
+/* While dragging one part, ignore hits on other stacked parts */
+.boardHostDragging .placedPart {
+    pointer-events: none;
+}
+
+.boardHostDragging .placedPartDragging {
+    pointer-events: none;
 }
 
 .dropPreview,

@@ -50,7 +50,8 @@ export function getComponentTerminalPins(component) {
     return offsets.map((o) => pinName(component.row + o.dr, component.col + o.dc));
 }
 
-function spiceId(id) {
+/** Same id normalization as ngspice netlist / simulation result keys. */
+export function toSpiceId(id) {
     return String(id).replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
@@ -136,7 +137,7 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
 
         const pins = getComponentTerminalPins(comp);
         const nodes = pins.map(resolve);
-        const id = spiceId(comp.id);
+        const id = toSpiceId(comp.id);
 
         let role = boardTypeToRole(comp.type);
         if (comp.type === COMPONENT_TYPES.POWER_SUPPLY) {

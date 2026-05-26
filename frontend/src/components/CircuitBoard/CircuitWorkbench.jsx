@@ -42,12 +42,19 @@ import {
     rotationSteps,
 } from '../../constants/componentRotation';
 import {
+    getComponentVoltage,
+    getPlacedComponentImage,
+    normalizeSimulationResults,
+    simulationHasError,
+} from '../../utils/componentDisplay';
+import {
     buildCircuitJson,
     createInitialSwitchStates,
     isBoardComplete,
     isInteractivePart,
     isMomentaryInteractive,
     isToggleInteractive,
+    toSpiceId,
 } from '../../utils/circuitNetlist';
 import {
     alignPlacementAnchor,
@@ -128,10 +135,16 @@ export default function CircuitWorkbench({ problemCode }) {
     const [simulating, setSimulating] = useState(false);
     const [liveSimMode, setLiveSimMode] = useState(false);
     const [switchStates, setSwitchStates] = useState({});
+    const [simResults, setSimResults] = useState(null);
 
     useEffect(() => {
         switchStatesRef.current = switchStates;
     }, [switchStates]);
+
+    const commitSwitchStates = useCallback((nextStates) => {
+        switchStatesRef.current = nextStates;
+        setSwitchStates(nextStates);
+    }, []);
     const [submitting, setSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
     const [activeDrag, setActiveDrag] = useState(null);
@@ -139,7 +152,9 @@ export default function CircuitWorkbench({ problemCode }) {
 
     useEffect(() => {
         setLiveSimMode(false);
+        switchStatesRef.current = {};
         setSwitchStates({});
+        setSimResults(null);
     }, [placed]);
     const connectorGroup = getConnectorGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
@@ -527,7 +542,8 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const runLiveSimulation = useCallback(
-        async (states) => {
+        async (states, options = {}) => {
+            const isLive = options.live ?? liveSimMode;
             const circuitJson = buildCircuitJson(placed, states);
 
             if (!circuitJson.components.length) {
@@ -542,26 +558,33 @@ export default function CircuitWorkbench({ problemCode }) {
             setSimulating(true);
 
             try {
-                const result = await simulateCircuit(circuitJson);
+                const raw = await simulateCircuit(circuitJson);
+                const result = normalizeSimulationResults(raw);
 
-                if (result.error) {
+                if (simulationHasError(result)) {
+                    setSimResults(null);
                     setMessage(
                         lang === 'ka'
                             ? `სიმულაციის შეცდომა: ${result.error}`
                             : `Simulation error: ${result.error}`
                     );
-                } else if (liveSimMode) {
+                } else {
+                    setSimResults(result);
+                }
+
+                if (!simulationHasError(result) && isLive) {
                     setMessage(
                         lang === 'ka'
                             ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
                             : 'Press and hold the button on the board'
                     );
-                } else {
+                } else if (!simulationHasError(result)) {
                     setMessage(
                         lang === 'ka' ? 'სიმულაცია დასრულდა' : 'Simulation finished'
                     );
                 }
             } catch (err) {
+                setSimResults(null);
                 const detail = err?.message ?? String(err);
                 const isNetwork =
                     detail.includes('Failed to fetch') ||
@@ -584,10 +607,10 @@ export default function CircuitWorkbench({ problemCode }) {
 
     const handleSimulate = async () => {
         const initial = createInitialSwitchStates(placed);
-        setSwitchStates(initial);
+        commitSwitchStates(initial);
         setLiveSimMode(true);
         setMessage('');
-        await runLiveSimulation(initial);
+        await runLiveSimulation(initial, { live: true });
     };
 
     /** Momentary button: closed only while pointer is held down. */
@@ -603,7 +626,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 ...switchStatesRef.current,
                 [comp.id]: current === 'closed' ? 'open' : 'closed',
             };
-            setSwitchStates(nextStates);
+            commitSwitchStates(nextStates);
             await runLiveSimulation(nextStates);
             return;
         }
@@ -617,7 +640,7 @@ export default function CircuitWorkbench({ problemCode }) {
             ...switchStatesRef.current,
             [comp.id]: 'closed',
         };
-        setSwitchStates(nextStates);
+        commitSwitchStates(nextStates);
         await runLiveSimulation(nextStates);
     };
 
@@ -637,7 +660,7 @@ export default function CircuitWorkbench({ problemCode }) {
             ...switchStatesRef.current,
             [comp.id]: 'open',
         };
-        setSwitchStates(nextStates);
+        commitSwitchStates(nextStates);
         await runLiveSimulation(nextStates);
     };
 
@@ -1160,9 +1183,13 @@ export default function CircuitWorkbench({ problemCode }) {
                 </div>
                 <p className={styles.paletteHint}>
                     {liveSimMode
-                        ? lang === 'ka'
-                            ? 'სიმულაციის რეჟიმი: დააჭირეთ და არ გაუშვათ ღილაკი (როგორც ნამდვილ ღილაკზე).'
-                            : 'Simulation mode: press and hold the button (release to open).'
+                        ? problemCode === 'ST.L1.3'
+                            ? lang === 'ka'
+                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი — მაშინ ანთება ნათურა.'
+                                : 'Simulation mode: turn the switch ON, then press and hold the button to light the lamp.'
+                            : lang === 'ka'
+                              ? 'სიმულაციის რეჟიმი: დააჭირეთ და არ გაუშვათ ღილაკი (როგორც ნამდვილ ღილაკზე).'
+                              : 'Simulation mode: press and hold the button (release to open).'
                         : lang === 'ka'
                           ? '↻ — შებრუნება, შემდეგ გადაიტანეთ ფირზე. გადაიტანეთ ფირზე არსებული დეტალიც. მარჯვენა ღილაკი — წაშლა.'
                         : '↻ to rotate, then drag onto the board. Drag placed parts to move them. Right-click to remove.'}
@@ -1222,14 +1249,28 @@ export default function CircuitWorkbench({ problemCode }) {
                             comp.type,
                             rotation
                         );
-                        const img = getComponentImage(comp.type);
+                        const simOk =
+                            liveSimMode &&
+                            simResults &&
+                            !simulationHasError(simResults);
+                        const spiceComponentId = toSpiceId(comp.id);
+                        const switchClosed =
+                            switchStatesRef.current[comp.id] === 'closed';
+                        const img = getPlacedComponentImage(comp.type, {
+                            liveSimMode,
+                            switchClosed,
+                            simOk,
+                            simResults,
+                            spiceId: spiceComponentId,
+                            voltage: getComponentVoltage(
+                                simResults,
+                                spiceComponentId
+                            ),
+                        });
                         if (!partStyle) return null;
 
                         const interactive =
                             liveSimMode && isInteractivePart(comp.type);
-                        const isPressed =
-                            interactive &&
-                            switchStates[comp.id] === 'closed';
 
                         const boxStyle = {
                             ...partStyleToCss(partStyle),
@@ -1240,7 +1281,7 @@ export default function CircuitWorkbench({ problemCode }) {
                             <div
                                 key={comp.id}
                                 data-placed-part={comp.id}
-                                className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''} ${isPressed ? styles.placedPartPressed : ''}`}
+                                className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''}`}
                                 style={boxStyle}
                                 draggable={false}
                                 onPointerDown={(e) => {
@@ -1269,17 +1310,39 @@ export default function CircuitWorkbench({ problemCode }) {
                                     }
                                     removeComponent(comp.id, e);
                                 }}
-                                role={interactive ? 'button' : undefined}
+                                role={
+                                    interactive
+                                        ? isToggleInteractive(comp.type)
+                                            ? 'switch'
+                                            : 'button'
+                                        : undefined
+                                }
                                 tabIndex={interactive ? 0 : undefined}
+                                aria-checked={
+                                    interactive && isToggleInteractive(comp.type)
+                                        ? switchClosed
+                                        : undefined
+                                }
                                 aria-pressed={
-                                    interactive ? isPressed : undefined
+                                    interactive &&
+                                    isMomentaryInteractive(comp.type)
+                                        ? switchClosed
+                                        : undefined
+                                }
+                                aria-label={
+                                    interactive
+                                        ? isToggleInteractive(comp.type)
+                                            ? `${getLabel(comp.type)} — ${switchClosed ? (lang === 'ka' ? 'ჩართული' : 'on') : lang === 'ka' ? 'გამორთული' : 'off'}`
+                                            : getLabel(comp.type)
+                                        : undefined
                                 }
                             >
                                 <div className={styles.partInner}>
                                     {img ? (
                                         <img
                                             src={img}
-                                            alt={getLabel(comp.type)}
+                                            alt=""
+                                            aria-hidden
                                             className={styles.partImgAligned}
                                             draggable={false}
                                         />

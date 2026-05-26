@@ -167,13 +167,29 @@ public class CircuitValidationService {
                 Object v = componentVoltages.get(spiceId);
                 yield v instanceof Number n ? Math.abs(n.doubleValue()) : 0.0;
             }
-            case "current" -> {
-                String key = "@r_" + spiceId.toLowerCase() + "[i]";
-                Double i = nodes.get(key);
-                yield i != null ? Math.abs(i) : 0.0;
-            }
+            // Signed diode/resistor current: positive = forward bias in ngspice netlist order.
+            case "current" -> readCurrent(spiceId, nodes, false);
+            case "forward_current" -> readCurrent(spiceId, nodes, true);
             default -> 0.0;
         };
+    }
+
+    private double readCurrent(String spiceId, Map<String, Double> nodes, boolean signed) {
+        String lower = spiceId.toLowerCase();
+
+        // Diodes / LEDs: ngspice reports diode current as [id]
+        Double d = nodes.get("@d_" + lower + "[id]");
+        if (d != null) {
+            return signed ? d : Math.abs(d);
+        }
+
+        // Resistors (including lamp modeled as R)
+        Double r = nodes.get("@r_" + lower + "[i]");
+        if (r != null) {
+            return signed ? r : Math.abs(r);
+        }
+
+        return 0.0;
     }
 
     private boolean compare(String op, double actual, double expected) {

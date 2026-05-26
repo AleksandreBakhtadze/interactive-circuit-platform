@@ -2,7 +2,11 @@ import {
     COMPONENT_TYPES,
     getRequiredPartsForProblem,
     isConnectorType,
+    isLedType,
+    isResistorType,
+    getLedSpec,
     parseConnectorLength,
+    getResistorSpec,
 } from '../constants/componentCatalog';
 import { getRotatedSnapOffsets } from '../constants/componentRotation';
 import { pinName } from '../components/CircuitBoard/boardPlacement';
@@ -129,6 +133,9 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
 
     const components = [];
     let powerSupplyIndex = 0;
+    let buttonIndex = 0;
+    let resistorIndex = 0;
+    let ledIndex = 0;
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -143,6 +150,18 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
         if (comp.type === COMPONENT_TYPES.POWER_SUPPLY) {
             powerSupplyIndex += 1;
             role = `power_supply_${powerSupplyIndex}`;
+        }
+        if (comp.type === COMPONENT_TYPES.BUTTON) {
+            buttonIndex += 1;
+            role = `button_${buttonIndex}`;
+        }
+        if (isResistorType(comp.type) || comp.type === COMPONENT_TYPES.RESISTOR) {
+            resistorIndex += 1;
+            role = `resistor_${resistorIndex}`;
+        }
+        if (isLedType(comp.type)) {
+            ledIndex += 1;
+            role = `led_${ledIndex}`;
         }
 
         switch (comp.type) {
@@ -196,6 +215,27 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                 break;
 
             default:
+                if (isResistorType(comp.type)) {
+                    const spec = getResistorSpec(comp.type);
+                    if (spec) {
+                        components.push({
+                            id,
+                            role,
+                            type: 'resistor',
+                            nodes,
+                            value: String(spec.ohms),
+                        });
+                    }
+                } else if (isLedType(comp.type)) {
+                    const spec = getLedSpec(comp.type);
+                    components.push({
+                        id,
+                        role,
+                        type: 'led',
+                        nodes,
+                        color: spec?.spiceColor ?? 'red',
+                    });
+                }
                 break;
         }
     }
@@ -216,6 +256,10 @@ export function isBoardComplete(placed, problemCode) {
 }
 
 function countPlacedByType(placed, type) {
+    if (type === COMPONENT_TYPES.RESISTOR) {
+        return placed.filter((p) => p.type === COMPONENT_TYPES.RESISTOR || isResistorType(p.type))
+            .length;
+    }
     return placed.filter((p) => p.type === type).length;
 }
 

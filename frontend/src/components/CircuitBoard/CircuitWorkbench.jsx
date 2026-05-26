@@ -15,6 +15,7 @@ import {
     getFootprint,
     getLedGroupItem,
     getLedMaxCount,
+    getLedMaxCountForType,
     getLedSpec,
     getPaletteForProblem,
     getResistorGroupItem,
@@ -218,7 +219,7 @@ export default function CircuitWorkbench({ problemCode }) {
         }
         const ledKey = parseLedKey(type);
         if (ledKey !== null) {
-            const max = getLedMaxCount(palette);
+            const max = getLedMaxCountForType(palette, type);
             return max - countPlacedByType(placed, type);
         }
         const cKey = parseCapacitorKey(type);
@@ -267,7 +268,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 return false;
             }
         } else if (parseLedKey(type) !== null) {
-            const max = getLedMaxCount(palette);
+            const max = getLedMaxCountForType(palette, type);
             if (used >= max && !ignoreId) {
                 setMessage(
                     lang === 'ka'

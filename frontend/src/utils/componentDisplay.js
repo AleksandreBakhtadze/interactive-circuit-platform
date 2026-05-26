@@ -30,11 +30,29 @@ function isLitCurrent(current) {
     return typeof current === 'number' && current > LIT_CURRENT_THRESHOLD;
 }
 
-/** ngspice branch current for resistors (lamp model uses R). */
-export function getComponentCurrent(results, spiceComponentId) {
-    const key = `@r_${spiceComponentId}[i]`;
-    const value = results?.nodes?.[key];
-    return typeof value === 'number' ? Math.abs(value) : undefined;
+/**
+ * ngspice device current.
+ * - Resistors: @r_<id>[i]
+ * - Diodes / LEDs: @d_<id>[id] (ngspice uses [id] for diode current)
+ * @param {{ signed?: boolean }} [opts] — when true, keep sign (forward bias = positive for LEDs)
+ */
+export function getComponentCurrent(results, spiceComponentId, opts = {}) {
+    const nodes = results?.nodes;
+    if (!nodes) return undefined;
+
+    const rKey = `@r_${spiceComponentId}[i]`;
+    const rVal = nodes[rKey];
+    if (typeof rVal === 'number') {
+        return opts.signed ? rVal : Math.abs(rVal);
+    }
+
+    const dKey = `@d_${spiceComponentId}[id]`;
+    const dVal = nodes[dKey];
+    if (typeof dVal === 'number') {
+        return opts.signed ? dVal : Math.abs(dVal);
+    }
+
+    return undefined;
 }
 
 function isLampLit(results, spiceComponentId, voltage) {
@@ -85,7 +103,12 @@ export function getPlacedComponentImage(type, opts = {}) {
 
     const ledKey = parseLedKey(type);
     if (ledKey) {
-        if (liveSimMode && simOk && isLitVoltage(voltage)) {
+        const forwardCurrent = getComponentCurrent(simResults, spiceId, { signed: true });
+        if (
+            liveSimMode &&
+            simOk &&
+            (isLitCurrent(forwardCurrent) || isLitVoltage(voltage))
+        ) {
             return LED_ON_IMAGES[ledKey] ?? base;
         }
         return base;

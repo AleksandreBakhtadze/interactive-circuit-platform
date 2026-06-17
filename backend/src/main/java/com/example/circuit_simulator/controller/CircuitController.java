@@ -35,7 +35,8 @@ public class CircuitController {
     @PostMapping("/simulate")
     public Circuit simulate(@RequestBody CircuitDTO dto) throws Exception {
         // Run simulation
-        String result = simulationService.simulate(dto.getCircuitData());
+        String result = simulationService.simulate(
+                dto.getCircuitData(), dto.getProblemCode(), dto.getSimPhase());
 
         // Create circuit entity
         Circuit circuit = Circuit.builder()

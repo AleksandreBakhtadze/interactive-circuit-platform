@@ -1,10 +1,13 @@
 package com.example.circuit_simulator.service;
 
+import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.io.*;
 
 public class NgspiceService {
+
+    /** Parsed ngspice wrdata columns: time plus one series per probe. */
+    public record WrdataSeries(List<Double> time, List<List<Double>> probeValues) {}
 
     public static Map<String, Double> parse(String filePath) throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(filePath));
@@ -67,11 +70,54 @@ public class NgspiceService {
     }
 
     public static void runNgspice(String file) throws Exception {
-        ProcessBuilder pb = new ProcessBuilder("ngspice", "-b", file);
-        pb.redirectOutput(new File("output.txt"));
+        runNgspice(file, "output.txt");
+    }
+
+    public static void runNgspice(String circuitFile, String outputLog) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder("ngspice", "-b", circuitFile);
+        pb.redirectOutput(new File(outputLog));
         pb.redirectErrorStream(true);
 
         Process process = pb.start();
-        process.waitFor();
+        int exit = process.waitFor();
+        if (exit != 0) {
+            throw new RuntimeException("ngspice exited with code " + exit);
+        }
+    }
+
+    /**
+     * Parse wrdata ASCII export (without {@code time} in the wrdata vector list).
+     * For N probes each row has 2N columns: time, val0, time, val1, …
+     */
+    public static WrdataSeries parseWrdata(String filePath, int probeCount) throws IOException {
+        List<String> lines = Files.readAllLines(Paths.get(filePath));
+        List<Double> time = new ArrayList<>();
+        List<List<Double>> probeValues = new ArrayList<>();
+        for (int i = 0; i < probeCount; i++) {
+            probeValues.add(new ArrayList<>());
+        }
+
+        int minColumns = Math.max(2, probeCount * 2);
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            String[] parts = line.split("\\s+");
+            if (parts.length < minColumns) {
+                continue;
+            }
+            try {
+                time.add(Double.parseDouble(parts[0]));
+                for (int i = 0; i < probeCount; i++) {
+                    probeValues.get(i).add(Double.parseDouble(parts[2 * i + 1]));
+                }
+            } catch (NumberFormatException ignored) {
+                /* skip malformed rows */
+            }
+        }
+
+        return new WrdataSeries(time, probeValues);
     }
 }

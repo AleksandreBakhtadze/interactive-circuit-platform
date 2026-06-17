@@ -1,6 +1,8 @@
 import {
     COMPONENT_TYPES,
+    getCapacitorSpec,
     getRequiredPartsForProblem,
+    isCapacitorType,
     isConnectorType,
     isLedType,
     isResistorType,
@@ -71,6 +73,13 @@ function boardTypeToRole(boardType) {
     return BOARD_TYPE_TO_ROLE[boardType] ?? boardType;
 }
 
+/** ngspice capacitance suffix (e.g. 10 µF → "10u"). */
+function formatCapacitorSpiceValue(spec) {
+    if (!spec) return '10u';
+    const micro = spec.farads * 1e6;
+    return `${micro}u`;
+}
+
 /** Momentary parts (press and hold). */
 export function isMomentaryInteractive(type) {
     return type === COMPONENT_TYPES.BUTTON;
@@ -136,6 +145,7 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
     let buttonIndex = 0;
     let resistorIndex = 0;
     let ledIndex = 0;
+    let capacitorIndex = 0;
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -162,6 +172,10 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
         if (isLedType(comp.type)) {
             ledIndex += 1;
             role = `led_${ledIndex}`;
+        }
+        if (isCapacitorType(comp.type)) {
+            capacitorIndex += 1;
+            role = `capacitor_${capacitorIndex}`;
         }
 
         switch (comp.type) {
@@ -235,6 +249,15 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                         nodes,
                         color: spec?.spiceColor ?? 'red',
                     });
+                } else if (isCapacitorType(comp.type)) {
+                    const spec = getCapacitorSpec(comp.type);
+                    components.push({
+                        id,
+                        role,
+                        type: 'capacitor',
+                        nodes,
+                        value: formatCapacitorSpiceValue(spec),
+                    });
                 }
                 break;
         }
@@ -259,6 +282,9 @@ function countPlacedByType(placed, type) {
     if (type === COMPONENT_TYPES.RESISTOR) {
         return placed.filter((p) => p.type === COMPONENT_TYPES.RESISTOR || isResistorType(p.type))
             .length;
+    }
+    if (type === 'capacitor') {
+        return placed.filter((p) => isCapacitorType(p.type)).length;
     }
     return placed.filter((p) => p.type === type).length;
 }

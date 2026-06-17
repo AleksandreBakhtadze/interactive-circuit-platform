@@ -1,8 +1,12 @@
 package com.example.circuit_simulator.utils;
 
+import com.example.circuit_simulator.simulation.TranProbe;
+import com.example.circuit_simulator.simulation.TranScenario;
+import com.example.circuit_simulator.simulation.TranSpiceBuild;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.Locale;
 
 public class SpiceGenerator {
 
@@ -172,16 +176,7 @@ public class SpiceGenerator {
                     .append(" ").append(node).append(" 0 1e12\n"); // 1e12 instead of 1e9
         }
 
-        sb.append(".model DIODE_MODEL    D (IS=1e-10 N=1.0  RS=1  BV=100)\n");
-        sb.append(".model LEDMODEL_RED   D (IS=1e-30 N=2.5  RS=3  BV=5)\n");   // sharp knee ~1.8V
-        sb.append(".model LEDMODEL_GREEN D (IS=1e-40 N=3.0  RS=3  BV=5)\n");   // sharp knee ~2.1V
-        sb.append(".model LEDMODEL_BLUE  D (IS=1e-50 N=3.5  RS=3  BV=5)\n");   // sharp knee ~2.8V
-        // hFE=150 (mid of 100-200), VAF=100 for realistic saturation
-        sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
-        sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
-        // hFE=5000 (mid of 3000-10000) for Darlington
-        sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
-        sb.append(".model PNP_DARLINGTON PNP (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
+        appendModels(sb);
         sb.append(".options savecurrents\n");
         sb.append("\n.control\n");
         sb.append("op\n");
@@ -194,6 +189,282 @@ public class SpiceGenerator {
         sb.append(".end\n");
 
         return sb.toString();
+    }
+
+    /**
+     * Transient netlist: momentary switches as voltage-controlled S-elements with PWL control.
+     */
+    public static TranSpiceBuild generateTranSpice(String json, TranScenario scenario)
+            throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        StringBuilder sb = new StringBuilder();
+        Set<String> nodesSet = new HashSet<>();
+        List<TranProbe> probes = new ArrayList<>();
+
+        sb.append("* auto-generated transient circuit\n");
+
+        for (Map<String, Object> comp : components) {
+            String id = (String) comp.get("id");
+            String type = (String) comp.get("type");
+            List<String> nodes = (List<String>) comp.get("nodes");
+            String value = (String) comp.get("value");
+            String role = (String) comp.get("role");
+
+            nodesSet.addAll(nodes);
+
+            switch (type) {
+                case "voltage" -> sb.append("V_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1))
+                        .append(" DC ").append(value).append("\n");
+
+                case "resistor" -> sb.append("R_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1)).append(" ")
+                        .append(value).append("\n");
+
+                case "lamp" -> {
+                    sb.append("R_").append(id).append(" ")
+                            .append(nodes.get(0)).append(" ")
+                            .append(nodes.get(1)).append(" 100\n");
+                    probes.add(new TranProbe(id, "current",
+                            "@r_" + id.toLowerCase() + "[i]"));
+                    probes.add(new TranProbe(id, "voltage", voltageExpression(nodes)));
+                }
+
+                case "switch" -> appendTranSwitch(sb, nodesSet, id, role, nodes, scenario);
+
+                case "led" -> {
+                    String color = (String) comp.get("color");
+                    String ledModel = ledModelForColor(color);
+                    sb.append("D_").append(id).append(" ")
+                            .append(nodes.get(0)).append(" ")
+                            .append(nodes.get(1)).append(" ")
+                            .append(ledModel).append("\n");
+                    probes.add(new TranProbe(id, "forward_current",
+                            "@d_" + id.toLowerCase() + "[id]"));
+                }
+
+                case "capacitor" -> sb.append("C_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1)).append(" ")
+                        .append(value).append("\n");
+
+                case "motor" -> sb.append("R_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1)).append(" 50\n");
+
+                case "slide_switch" -> appendSlideSwitch(sb, id, nodes, comp);
+
+                case "variable_resistor" -> appendVariableResistor(sb, id, nodes, comp);
+
+                case "transistor" -> appendTransistor(sb, id, nodes, comp);
+
+                default -> { /* unsupported in tran for now */ }
+            }
+        }
+
+        nodesSet.remove("0");
+        for (String node : nodesSet) {
+            sb.append("R_GND_").append(node)
+                    .append(" ").append(node).append(" 0 1e12\n");
+        }
+
+        appendModels(sb);
+        sb.append(".model SW_BTN SW(Ron=1e-5 Roff=1e12 Vt=2.5 Vh=-0.5)\n");
+        // Required for @d_<id>[id] / @r_<id>[i] in wrdata during .tran (DC netlist already sets this).
+        sb.append(".options savecurrents\n");
+
+        sb.append("\n.control\n");
+        sb.append(String.format(Locale.US, "tran %.6f %.6f uic\n",
+                scenario.step(), scenario.stop()));
+        sb.append("wrdata tran_out.txt");
+        for (TranProbe probe : probes) {
+            sb.append(" ").append(probe.wrdataExpression());
+        }
+        sb.append("\nquit\n.endc\n.end\n");
+
+        return new TranSpiceBuild(sb.toString(), probes, scenario);
+    }
+
+    /**
+     * Capacitor discharge transient: switches open, initial node voltages from a prior DC charge.
+     */
+    public static TranSpiceBuild generateDischargeTranSpice(
+            String json,
+            Map<String, Double> nodeVoltages,
+            TranScenario scenario) throws Exception {
+        TranSpiceBuild build = generateTranSpice(json, scenario);
+        String icBlock = buildInitialConditions(json, nodeVoltages);
+        String netlist = build.netlist().replace(
+                "\n.control\n",
+                icBlock + "\n.control\n");
+        return new TranSpiceBuild(netlist, build.probes(), scenario);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String buildInitialConditions(String json, Map<String, Double> nodeVoltages)
+            throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        Set<String> nodes = new LinkedHashSet<>();
+        for (Map<String, Object> comp : components) {
+            List<String> compNodes = (List<String>) comp.get("nodes");
+            if (compNodes != null) {
+                nodes.addAll(compNodes);
+            }
+        }
+        nodes.remove("0");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("* initial conditions from charged DC state\n");
+        for (String node : nodes) {
+            if (node.startsWith("ctrl_")) {
+                continue;
+            }
+            double v = nodeVoltage(nodeVoltages, node);
+            sb.append(String.format(Locale.US, ".ic v(%s)=%.6f\n", node, v));
+        }
+
+        return sb.toString();
+    }
+
+    private static double nodeVoltage(Map<String, Double> nodeVoltages, String node) {
+        if ("0".equals(node)) {
+            return 0.0;
+        }
+        return nodeVoltages.getOrDefault("v(" + node.toLowerCase() + ")",
+                nodeVoltages.getOrDefault("v(" + node + ")", 0.0));
+    }
+
+    private static void appendTranSwitch(
+            StringBuilder sb,
+            Set<String> nodesSet,
+            String id,
+            String role,
+            List<String> nodes,
+            TranScenario scenario) {
+        String ctrlNode = "ctrl_" + id.replaceAll("[^a-zA-Z0-9_]", "_");
+        nodesSet.add(ctrlNode);
+
+        sb.append("Vctrl_").append(id).append(" ")
+                .append(ctrlNode).append(" 0 ");
+
+        if (scenario.pulsesRole(role)) {
+            sb.append(String.format(Locale.US,
+                    "PWL(0 0 %.6f 0 %.6f 6 %.6f 6 %.6f 0 %.6f 0)\n",
+                    scenario.pressStart(),
+                    scenario.pressStart(),
+                    scenario.pressEnd(),
+                    scenario.pressEnd() + 1e-6,
+                    scenario.stop()));
+        } else {
+            sb.append(String.format(Locale.US, "PWL(0 0 %.6f 0)\n", scenario.stop()));
+        }
+
+        sb.append("S_").append(id).append(" ")
+                .append(nodes.get(0)).append(" ")
+                .append(nodes.get(1)).append(" ")
+                .append(ctrlNode).append(" 0 SW_BTN\n");
+    }
+
+    private static String voltageExpression(List<String> nodes) {
+        String n1 = nodes.get(0);
+        String n2 = nodes.get(1);
+        if ("0".equals(n2)) {
+            return "v(" + n1 + ")";
+        }
+        if ("0".equals(n1)) {
+            return "v(" + n2 + ")";
+        }
+        return "v(" + n1 + "," + n2 + ")";
+    }
+
+    private static String ledModelForColor(String color) {
+        if (color == null || color.equals("plain")) {
+            return "DIODE_MODEL";
+        }
+        return switch (color) {
+            case "green" -> "LEDMODEL_GREEN";
+            case "blue" -> "LEDMODEL_BLUE";
+            default -> "LEDMODEL_RED";
+        };
+    }
+
+    private static void appendSlideSwitch(
+            StringBuilder sb, String id, List<String> nodes, Map<String, Object> comp) {
+        String slideState = (String) comp.get("state");
+        String common = nodes.get(0);
+        String left = nodes.get(1);
+        String right = nodes.get(2);
+
+        if ("left".equals(slideState)) {
+            sb.append("R_").append(id).append("_L ")
+                    .append(common).append(" ").append(left).append(" 0.00001\n");
+            sb.append("R_").append(id).append("_R ")
+                    .append(common).append(" ").append(right).append(" 1e12\n");
+        } else {
+            sb.append("R_").append(id).append("_L ")
+                    .append(common).append(" ").append(left).append(" 1e12\n");
+            sb.append("R_").append(id).append("_R ")
+                    .append(common).append(" ").append(right).append(" 0.00001\n");
+        }
+    }
+
+    private static void appendVariableResistor(
+            StringBuilder sb, String id, List<String> nodes, Map<String, Object> comp) {
+        String vrValue = (String) comp.get("value");
+        double maxR = Double.parseDouble(vrValue);
+        Object posObj = comp.get("position");
+        double pos = posObj != null ? Double.parseDouble(posObj.toString()) : 0.5;
+
+        double r1 = Math.max(maxR * pos, 1);
+        double r2 = Math.max(maxR * (1.0 - pos), 1);
+
+        String wiper = nodes.get(0);
+        String left = nodes.get(1);
+        String right = nodes.get(2);
+
+        sb.append("R_").append(id).append("_L ")
+                .append(wiper).append(" ").append(left).append(" ").append(r1).append("\n");
+        sb.append("R_").append(id).append("_R ")
+                .append(wiper).append(" ").append(right).append(" ").append(r2).append("\n");
+    }
+
+    private static void appendTransistor(
+            StringBuilder sb, String id, List<String> nodes, Map<String, Object> comp) {
+        String subtype = (String) comp.get("subtype");
+        String model = switch (subtype != null ? subtype : "") {
+            case "npn" -> "NPN_MODEL";
+            case "npn_darlington" -> "NPN_DARLINGTON";
+            case "pnp" -> "PNP_MODEL";
+            case "pnp_darlington" -> "PNP_DARLINGTON";
+            default -> "NPN_MODEL";
+        };
+        sb.append("Q_").append(id).append(" ")
+                .append(nodes.get(1)).append(" ")
+                .append(nodes.get(0)).append(" ")
+                .append(nodes.get(2)).append(" ")
+                .append(model).append("\n");
+    }
+
+    private static void appendModels(StringBuilder sb) {
+        sb.append(".model DIODE_MODEL    D (IS=1e-10 N=1.0  RS=1  BV=100)\n");
+        sb.append(".model LEDMODEL_RED   D (IS=1e-30 N=2.5  RS=3  BV=5)\n");
+        sb.append(".model LEDMODEL_GREEN D (IS=1e-40 N=3.0  RS=3  BV=5)\n");
+        sb.append(".model LEDMODEL_BLUE  D (IS=1e-50 N=3.5  RS=3  BV=5)\n");
+        sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
+        sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
+        sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
+        sb.append(".model PNP_DARLINGTON PNP (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
     }
 
     public static String setSwitchState(String json, String state) throws Exception {

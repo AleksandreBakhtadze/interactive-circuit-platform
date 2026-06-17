@@ -741,6 +741,34 @@ export const ST_L1_5_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for CP.L1.1 — RC LED fade: cap, button, red LED, resistor, two supplies. */
+export const CP_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 /** Inventory for ST.L1.8 — red LED with series resistor + button + switch, one supply. */
 export const ST_L1_8_PALETTE = [
     {
@@ -790,6 +818,9 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L2.4') {
         return ST_L2_4_PALETTE;
     }
+    if (problemCode === 'CP.L1.1') {
+        return CP_L1_1_PALETTE;
+    }
     return null;
 }
 
@@ -800,8 +831,13 @@ export function supportsSimulator(problemCode) {
         problemCode === 'ST.L1.3' ||
         problemCode === 'ST.L1.5' ||
         problemCode === 'ST.L1.8' ||
-        problemCode === 'ST.L2.4'
+        problemCode === 'ST.L2.4' ||
+        problemCode === 'CP.L1.1'
     );
+}
+
+export function usesTransientSimulation(problemCode) {
+    return problemCode === 'CP.L1.1';
 }
 
 /** Parts that must be on the board before Submit (per problem). */
@@ -840,6 +876,13 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
         { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
         { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'CP.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
     ],
 };
 

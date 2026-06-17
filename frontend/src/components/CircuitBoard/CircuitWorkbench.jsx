@@ -18,6 +18,7 @@ import {
     getLedMaxCountForType,
     getLedSpec,
     getPaletteForProblem,
+    usesTransientSimulation,
     getResistorGroupItem,
     getResistorMaxCount,
     getResistorSpec,
@@ -29,6 +30,7 @@ import {
     ledType,
     parseCapacitorKey,
     parseConnectorLength,
+    isLedType,
     parseLedKey,
     parseResistorKey,
     parseTransistorKey,
@@ -43,8 +45,11 @@ import {
     rotationSteps,
 } from '../../constants/componentRotation';
 import {
+    getComponentCurrent,
     getComponentVoltage,
+    getLedBrightnessRatio,
     getPlacedComponentImage,
+    isTransientResult,
     normalizeSimulationResults,
     simulationHasError,
 } from '../../utils/componentDisplay';
@@ -105,6 +110,9 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'ST.L1.3') {
             return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, ნათურა';
         }
+        if (problemCode === 'CP.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, რეზისტორი';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -112,6 +120,9 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'ST.L1.3') {
         return 'Place: power supply, switch, button, lamp';
+    }
+    if (problemCode === 'CP.L1.1') {
+        return 'Place: 2 power supplies, button, red LED, capacitor, resistor';
     }
     return 'Place: power supply, button, lamp';
 }
@@ -137,6 +148,12 @@ export default function CircuitWorkbench({ problemCode }) {
     const [liveSimMode, setLiveSimMode] = useState(false);
     const [switchStates, setSwitchStates] = useState({});
     const [simResults, setSimResults] = useState(null);
+    const [tranFrameIndex, setTranFrameIndex] = useState(0);
+    const tranAnimRef = useRef(null);
+    /** Max LED forward current from last button-pressed DC run (brightness reference). */
+    const pressedLedCurrentMaxRef = useRef(null);
+    const dischargeAnimatingRef = useRef(false);
+    const idleSimResultsRef = useRef(null);
 
     useEffect(() => {
         switchStatesRef.current = switchStates;
@@ -542,9 +559,97 @@ export default function CircuitWorkbench({ problemCode }) {
         setMessage('');
     };
 
+    useEffect(() => {
+        return () => {
+            if (tranAnimRef.current != null) {
+                cancelAnimationFrame(tranAnimRef.current);
+            }
+        };
+    }, []);
+
+    const cancelDischargeAnimation = useCallback(() => {
+        if (tranAnimRef.current != null) {
+            cancelAnimationFrame(tranAnimRef.current);
+            tranAnimRef.current = null;
+        }
+    }, []);
+
+    const finishDischargeAnimation = useCallback(() => {
+        dischargeAnimatingRef.current = false;
+        setTranFrameIndex(0);
+        if (idleSimResultsRef.current) {
+            setSimResults(idleSimResultsRef.current);
+        }
+    }, []);
+
+    const rememberPressedLedCurrent = useCallback(
+        (result) => {
+            const ledComp = placed.find((p) => isLedType(p.type));
+            if (!ledComp) {
+                return;
+            }
+            const spiceId = toSpiceId(ledComp.id);
+            const i = getComponentCurrent(result, spiceId);
+            if (typeof i === 'number' && i > 0) {
+                pressedLedCurrentMaxRef.current = i;
+            }
+        },
+        [placed]
+    );
+
+    const startDischargeAnimation = useCallback(
+        (result) => {
+            cancelDischargeAnimation();
+            const times = result?.time;
+            if (!Array.isArray(times) || times.length < 2) {
+                finishDischargeAnimation();
+                return;
+            }
+
+            dischargeAnimatingRef.current = true;
+
+            const ledComp = placed.find((p) => isLedType(p.type));
+            if (ledComp && pressedLedCurrentMaxRef.current == null) {
+                const spiceId = toSpiceId(ledComp.id);
+                const i0 = getComponentCurrent(result, spiceId, {}, 0);
+                if (typeof i0 === 'number' && i0 > 0) {
+                    pressedLedCurrentMaxRef.current = i0;
+                }
+            }
+
+            const simStopSec =
+                typeof result.stop === 'number'
+                    ? result.stop
+                    : times[times.length - 1];
+            const durationMs = Math.max(3000, simStopSec * 1000);
+            const start = performance.now();
+            setTranFrameIndex(0);
+
+            const tick = (now) => {
+                const progress = Math.min(1, (now - start) / durationMs);
+                const targetTime = progress * times[times.length - 1];
+                let idx = 0;
+                while (idx < times.length - 1 && times[idx + 1] < targetTime) {
+                    idx += 1;
+                }
+                setTranFrameIndex(idx);
+                if (progress < 1) {
+                    tranAnimRef.current = requestAnimationFrame(tick);
+                } else {
+                    tranAnimRef.current = null;
+                    finishDischargeAnimation();
+                }
+            };
+
+            tranAnimRef.current = requestAnimationFrame(tick);
+        },
+        [cancelDischargeAnimation, finishDischargeAnimation, placed]
+    );
+
     const runLiveSimulation = useCallback(
         async (states, options = {}) => {
             const isLive = options.live ?? liveSimMode;
+            const simPhase = options.simPhase ?? 'idle';
             const circuitJson = buildCircuitJson(placed, states);
 
             if (!circuitJson.components.length) {
@@ -559,18 +664,33 @@ export default function CircuitWorkbench({ problemCode }) {
             setSimulating(true);
 
             try {
-                const raw = await simulateCircuit(circuitJson);
+                const phase =
+                    usesTransientSimulation(problemCode) ? simPhase : undefined;
+                const raw = await simulateCircuit(circuitJson, problemCode, phase);
                 const result = normalizeSimulationResults(raw);
 
                 if (simulationHasError(result)) {
                     setSimResults(null);
+                    setTranFrameIndex(0);
                     setMessage(
                         lang === 'ka'
                             ? `სიმულაციის შეცდომა: ${result.error}`
                             : `Simulation error: ${result.error}`
                     );
                 } else {
+                    if (simPhase === 'idle') {
+                        idleSimResultsRef.current = result;
+                    }
+                    if (simPhase === 'pressed') {
+                        rememberPressedLedCurrent(result);
+                    }
                     setSimResults(result);
+                    if (isTransientResult(result) && simPhase === 'discharge') {
+                        startDischargeAnimation(result);
+                    } else {
+                        cancelDischargeAnimation();
+                        setTranFrameIndex(0);
+                    }
                 }
 
                 if (!simulationHasError(result) && isLive) {
@@ -603,7 +723,17 @@ export default function CircuitWorkbench({ problemCode }) {
                 setSimulating(false);
             }
         },
-        [placed, lang, liveSimMode]
+        [
+            placed,
+            lang,
+            liveSimMode,
+            problemCode,
+            startDischargeAnimation,
+            cancelDischargeAnimation,
+            commitSwitchStates,
+            rememberPressedLedCurrent,
+            finishDischargeAnimation,
+        ]
     );
 
     const handleSimulate = async () => {
@@ -611,7 +741,7 @@ export default function CircuitWorkbench({ problemCode }) {
         commitSwitchStates(initial);
         setLiveSimMode(true);
         setMessage('');
-        await runLiveSimulation(initial, { live: true });
+        await runLiveSimulation(initial, { live: true, simPhase: 'idle' });
     };
 
     /** Momentary button: closed only while pointer is held down. */
@@ -634,6 +764,14 @@ export default function CircuitWorkbench({ problemCode }) {
 
         if (!isMomentaryInteractive(comp.type)) return;
 
+        const wasDischarging = dischargeAnimatingRef.current;
+        cancelDischargeAnimation();
+        if (wasDischarging) {
+            finishDischargeAnimation();
+        } else {
+            setTranFrameIndex(0);
+        }
+
         e.currentTarget.setPointerCapture(e.pointerId);
         heldButtonIdRef.current = comp.id;
 
@@ -642,7 +780,7 @@ export default function CircuitWorkbench({ problemCode }) {
             [comp.id]: 'closed',
         };
         commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates);
+        await runLiveSimulation(nextStates, { simPhase: 'pressed' });
     };
 
     const handleInteractivePointerUp = async (comp, e) => {
@@ -662,7 +800,7 @@ export default function CircuitWorkbench({ problemCode }) {
             [comp.id]: 'open',
         };
         commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates);
+        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
     };
 
     const handleSubmit = async () => {
@@ -1257,15 +1395,34 @@ export default function CircuitWorkbench({ problemCode }) {
                         const spiceComponentId = toSpiceId(comp.id);
                         const switchClosed =
                             switchStatesRef.current[comp.id] === 'closed';
+                        const frameIndex = isTransientResult(simResults)
+                            ? tranFrameIndex
+                            : 0;
+                        const isLedDischargeFade =
+                            dischargeAnimatingRef.current &&
+                            isLedType(comp.type) &&
+                            isTransientResult(simResults) &&
+                            pressedLedCurrentMaxRef.current;
+                        const ledBrightnessRatio = isLedDischargeFade
+                            ? getLedBrightnessRatio(
+                                  simResults,
+                                  spiceComponentId,
+                                  frameIndex,
+                                  pressedLedCurrentMaxRef.current
+                              )
+                            : undefined;
                         const img = getPlacedComponentImage(comp.type, {
                             liveSimMode,
                             switchClosed,
                             simOk,
                             simResults,
                             spiceId: spiceComponentId,
+                            tranFrameIndex: frameIndex,
+                            ledBrightnessRatio,
                             voltage: getComponentVoltage(
                                 simResults,
-                                spiceComponentId
+                                spiceComponentId,
+                                frameIndex
                             ),
                         });
                         if (!partStyle) return null;
@@ -1277,6 +1434,18 @@ export default function CircuitWorkbench({ problemCode }) {
                             ...partStyleToCss(partStyle),
                             zIndex: 10 + index,
                         };
+
+                        const baseLedImg = isLedDischargeFade
+                            ? getComponentImage(comp.type)
+                            : null;
+                        const glowLedImg = isLedDischargeFade
+                            ? getPlacedComponentImage(comp.type, {
+                                  liveSimMode: true,
+                                  simOk: true,
+                                  dischargeFading: true,
+                                  spiceId: spiceComponentId,
+                              })
+                            : null;
 
                         return (
                             <div
@@ -1338,8 +1507,36 @@ export default function CircuitWorkbench({ problemCode }) {
                                         : undefined
                                 }
                             >
-                                <div className={styles.partInner}>
-                                    {img ? (
+                                <div
+                                    className={
+                                        isLedDischargeFade
+                                            ? `${styles.partInner} ${styles.partInnerLedFade}`
+                                            : styles.partInner
+                                    }
+                                >
+                                    {isLedDischargeFade &&
+                                    baseLedImg &&
+                                    glowLedImg ? (
+                                        <>
+                                            <img
+                                                src={baseLedImg}
+                                                alt=""
+                                                aria-hidden
+                                                className={styles.partImgAligned}
+                                                draggable={false}
+                                            />
+                                            <img
+                                                src={glowLedImg}
+                                                alt=""
+                                                aria-hidden
+                                                className={styles.ledGlowOverlay}
+                                                style={{
+                                                    opacity: ledBrightnessRatio,
+                                                }}
+                                                draggable={false}
+                                            />
+                                        </>
+                                    ) : img ? (
                                         <img
                                             src={img}
                                             alt=""

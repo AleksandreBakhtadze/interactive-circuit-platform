@@ -3,14 +3,18 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
 /**
  * @param {{ components: object[] }} circuitJson — from buildCircuitJson(placed)
+ * @param {string} [problemCode] — selects DC vs transient analysis (e.g. CP.L1.1)
+ * @param {'idle'|'pressed'|'discharge'} [simPhase] — live interaction phase (CP.L1.1)
  * @returns {Promise<{ nodes?: object, components?: object, error?: string }>}
  */
-export async function simulateCircuit(circuitJson) {
+export async function simulateCircuit(circuitJson, problemCode, simPhase) {
     const res = await fetch(`${API_BASE}/circuits/simulate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             circuitData: JSON.stringify(circuitJson),
+            problemCode: problemCode ?? undefined,
+            simPhase: simPhase ?? undefined,
         }),
     });
 

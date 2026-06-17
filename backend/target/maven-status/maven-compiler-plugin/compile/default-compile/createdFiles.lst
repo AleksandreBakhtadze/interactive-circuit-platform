@@ -10,6 +10,7 @@ com/example/circuit_simulator/dto/CheckResultDTO$CheckResultDTOBuilder.class
 com/example/circuit_simulator/validation/ValidationCase.class
 com/example/circuit_simulator/dto/CircuitDTO.class
 com/example/circuit_simulator/repository/SimulationResultRepository.class
+com/example/circuit_simulator/simulation/SimPhase.class
 com/example/circuit_simulator/CircuitSimulatorApplication.class
 com/example/circuit_simulator/exception/ErrorResponse.class
 com/example/circuit_simulator/service/SimulationResultService.class
@@ -22,14 +23,18 @@ com/example/circuit_simulator/service/NgspiceService.class
 com/example/circuit_simulator/dto/SimulationResultDTO.class
 com/example/circuit_simulator/repository/ComponentRepository.class
 com/example/circuit_simulator/validation/ValidationSpecRegistry.class
+com/example/circuit_simulator/service/SimulationService$1.class
 com/example/circuit_simulator/dto/ChapterDTO.class
 com/example/circuit_simulator/dto/CaseResultDTO.class
 com/example/circuit_simulator/dto/ValidationResultDTO$ValidationResultDTOBuilder.class
+com/example/circuit_simulator/simulation/TranScenario.class
 com/example/circuit_simulator/dto/ValidationResultDTO.class
 com/example/circuit_simulator/service/ProblemService.class
+com/example/circuit_simulator/service/NgspiceService$WrdataSeries.class
 com/example/circuit_simulator/dto/RegisterRequest.class
 com/example/circuit_simulator/dto/CheckResultDTO.class
 com/example/circuit_simulator/dto/ProblemDTO.class
+com/example/circuit_simulator/simulation/TranProbe.class
 com/example/circuit_simulator/config/WebConfig.class
 com/example/circuit_simulator/model/Chapter.class
 com/example/circuit_simulator/model/SimulationResult.class
@@ -48,6 +53,7 @@ com/example/circuit_simulator/controller/ProblemController.class
 com/example/circuit_simulator/model/Circuit$CircuitBuilder.class
 com/example/circuit_simulator/dto/ProblemListItemDTO.class
 com/example/circuit_simulator/model/Problem.class
+com/example/circuit_simulator/simulation/AnalysisModes.class
 com/example/circuit_simulator/model/Circuit.class
 com/example/circuit_simulator/service/ComponentService.class
 com/example/circuit_simulator/repository/ChapterRepository.class
@@ -59,3 +65,4 @@ com/example/circuit_simulator/repository/ProblemRepository.class
 com/example/circuit_simulator/dto/CaseResultDTO$CaseResultDTOBuilder.class
 com/example/circuit_simulator/service/CircuitService.class
 com/example/circuit_simulator/config/SecurityConfig.class
+com/example/circuit_simulator/simulation/TranSpiceBuild.class

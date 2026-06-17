@@ -11,6 +11,10 @@ public class CircuitDTO {
     private String name;
     private String description;
     private Long problemId;
+    /** Problem code (e.g. CP.L1.1) — selects DC vs transient analysis. */
+    private String problemCode;
+    /** Live phase for CP transient problems: idle | pressed | discharge. */
+    private String simPhase;
     private String circuitData;  // Keep as String for JSON input
     private String simulationResults;
 

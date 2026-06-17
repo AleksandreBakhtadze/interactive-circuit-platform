@@ -103,6 +103,30 @@ public class ProblemDataSeeder implements CommandLineRunner {
                     )
             );
 
+    private static final java.util.Map<String, ProblemContent> CP_PROBLEM_CONTENT =
+            java.util.Map.of(
+                    "CP.L1.1",
+                    new ProblemContent(
+                            "გამოიყენეთ მხოლოდ შემდეგი დეტალები: კონდესატორი, ღილაკი, ერთი წითელი შუქდიოდი, რეზისტორი და ორი კვების წყარო.\n\n"
+                                    + "ააწყვეთ წრედი, რომელიც იმუშავებს ასე:\n"
+                                    + "წრედის აწყობის შემდეგ შუქდიოდი არ უნდა აინთოს;\n"
+                                    + "თუ ღილაკს დავაწვებით, შუქდიოდი უნდა აინთოს;\n"
+                                    + "თუ ღილაკს ავუშვებთ, შუქდიოდი უნდა ჩაქრეს ნელა.\n\n"
+                                    + "ღილაკზე დაჭერით შუქდიოდი უნდა ინთებოდეს მყისიერად, ღილაკის გათიშვით უნდა ქრებოდეს ნელა.",
+                            "შუქდიოდი ჩართეთ კონდესატორის პარალელურად. კონდესატორი განიხილეთ როგორც შუქდიოდის კვების წყარო.\n"
+                                    + "ღილაკის გავლით უნდა დაიმუხტოს კონდესატორი, ხოლო რეზისტორის და შუქდიოდის გავლით განიმუხტოს კონდესატორი.",
+                            "როგორ იმუშავებს წრედი თუ კონდესატორის ტევადობას შევამცირებთ?\n"
+                                    + "როგორ შეგვიძლია გავზარდოთ შუქდიოდის ჩაქრობის ხანგრძლივობა?",
+                            "ეს არის კონდენსატორის გაცნობითი სავარჯიშო. ამ ამოცანაში პრაქტიკულად უნდა ნახონ მისი მუშაობის პრინციპი, "
+                                    + "ენერგიის შენახვისა და გამოყენების ეფექტი. შუქდიოდისა და განსხვავებული რეზისტორების გამოყენებით "
+                                    + "დინამიკაში უნდა ნახონ კონდენსატორის განმუხტვის პროცესი."
+                    )
+            );
+
+    private static final List<ProblemSeed> CP_PROBLEMS = List.of(
+            new ProblemSeed("CP.L1.1", "კონდესატორით შუქდიოდის ნელი ჩაქრობა", 1)
+    );
+
     private static final List<ProblemSeed> ST_PROBLEMS = List.of(
             new ProblemSeed("ST.L1.1", "ნათურის ანთება ღილაკით", 1),
             new ProblemSeed("ST.L1.2", "ნათურის ანთება ღილაკით და ორი კვების წყაროთი", 2),
@@ -123,20 +147,24 @@ public class ProblemDataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        chapterRepository.findByCode("ST").ifPresentOrElse(
-                this::seedChapterProblems,
-                () -> System.err.println("ProblemDataSeeder: chapter ST not found — skipping problem seed")
-        );
+        seedChapter("ST", ST_PROBLEMS);
+        seedChapter("CP", CP_PROBLEMS);
     }
 
-    private void seedChapterProblems(Chapter chapter) {
-        for (ProblemSeed seed : ST_PROBLEMS) {
-            problemRepository.findByCode(seed.code()).ifPresentOrElse(
-                    problem -> updateProblem(problem, chapter, seed),
-                    () -> createProblem(chapter, seed)
-            );
-        }
-        System.out.println("ST chapter problems seeded (" + ST_PROBLEMS.size() + ").");
+    private void seedChapter(String chapterCode, List<ProblemSeed> seeds) {
+        chapterRepository.findByCode(chapterCode).ifPresentOrElse(
+                chapter -> {
+                    for (ProblemSeed seed : seeds) {
+                        problemRepository.findByCode(seed.code()).ifPresentOrElse(
+                                problem -> updateProblem(problem, chapter, seed),
+                                () -> createProblem(chapter, seed)
+                        );
+                    }
+                    System.out.println(chapterCode + " chapter problems seeded (" + seeds.size() + ").");
+                },
+                () -> System.err.println(
+                        "ProblemDataSeeder: chapter " + chapterCode + " not found — skipping problem seed")
+        );
     }
 
     private void createProblem(Chapter chapter, ProblemSeed seed) {
@@ -171,6 +199,9 @@ public class ProblemDataSeeder implements CommandLineRunner {
         }
         if (content == null) {
             content = ST_L18_CONTENT.get(code);
+        }
+        if (content == null) {
+            content = CP_PROBLEM_CONTENT.get(code);
         }
         if (content == null) {
             return;

@@ -48,6 +48,7 @@ import {
     getComponentCurrent,
     getComponentVoltage,
     getLedBrightnessRatio,
+    getTransientSeriesMax,
     getPlacedComponentImage,
     isTransientResult,
     normalizeSimulationResults,
@@ -113,6 +114,9 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'CP.L1.1') {
             return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, რეზისტორი';
         }
+        if (problemCode === 'CP.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, 2 რეზისტორი';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -123,6 +127,9 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'CP.L1.1') {
         return 'Place: 2 power supplies, button, red LED, capacitor, resistor';
+    }
+    if (problemCode === 'CP.L1.2') {
+        return 'Place: 2 power supplies, button, red LED, capacitor, 2 resistors';
     }
     return 'Place: power supply, button, lamp';
 }
@@ -150,9 +157,9 @@ export default function CircuitWorkbench({ problemCode }) {
     const [simResults, setSimResults] = useState(null);
     const [tranFrameIndex, setTranFrameIndex] = useState(0);
     const tranAnimRef = useRef(null);
-    /** Max LED forward current from last button-pressed DC run (brightness reference). */
+    /** Max LED forward current reference for brightness scaling during tran animation. */
     const pressedLedCurrentMaxRef = useRef(null);
-    const dischargeAnimatingRef = useRef(false);
+    const [ledTranAnimPhase, setLedTranAnimPhase] = useState(null);
     const idleSimResultsRef = useRef(null);
 
     useEffect(() => {
@@ -567,15 +574,15 @@ export default function CircuitWorkbench({ problemCode }) {
         };
     }, []);
 
-    const cancelDischargeAnimation = useCallback(() => {
+    const cancelTranAnimation = useCallback(() => {
         if (tranAnimRef.current != null) {
             cancelAnimationFrame(tranAnimRef.current);
             tranAnimRef.current = null;
         }
     }, []);
 
-    const finishDischargeAnimation = useCallback(() => {
-        dischargeAnimatingRef.current = false;
+    const finishTranAnimation = useCallback(() => {
+        setLedTranAnimPhase(null);
         setTranFrameIndex(0);
         if (idleSimResultsRef.current) {
             setSimResults(idleSimResultsRef.current);
@@ -589,7 +596,20 @@ export default function CircuitWorkbench({ problemCode }) {
                 return;
             }
             const spiceId = toSpiceId(ledComp.id);
-            const i = getComponentCurrent(result, spiceId);
+            if (isTransientResult(result)) {
+                const peak =
+                    getTransientSeriesMax(result, spiceId, 'forward_current', {
+                        forwardOnly: true,
+                    }) ??
+                    getTransientSeriesMax(result, spiceId, 'current', {
+                        forwardOnly: true,
+                    });
+                if (typeof peak === 'number' && peak > 0) {
+                    pressedLedCurrentMaxRef.current = peak;
+                }
+                return;
+            }
+            const i = getComponentCurrent(result, spiceId, { signed: true });
             if (typeof i === 'number' && i > 0) {
                 pressedLedCurrentMaxRef.current = i;
             }
@@ -597,23 +617,40 @@ export default function CircuitWorkbench({ problemCode }) {
         [placed]
     );
 
-    const startDischargeAnimation = useCallback(
-        (result) => {
-            cancelDischargeAnimation();
+    const startTranAnimation = useCallback(
+        (result, phase) => {
+            cancelTranAnimation();
             const times = result?.time;
             if (!Array.isArray(times) || times.length < 2) {
-                finishDischargeAnimation();
+                if (phase === 'discharge') {
+                    finishTranAnimation();
+                } else {
+                    setLedTranAnimPhase(null);
+                }
                 return;
             }
 
-            dischargeAnimatingRef.current = true;
+            setLedTranAnimPhase(phase);
 
             const ledComp = placed.find((p) => isLedType(p.type));
-            if (ledComp && pressedLedCurrentMaxRef.current == null) {
+            if (ledComp) {
                 const spiceId = toSpiceId(ledComp.id);
-                const i0 = getComponentCurrent(result, spiceId, {}, 0);
-                if (typeof i0 === 'number' && i0 > 0) {
-                    pressedLedCurrentMaxRef.current = i0;
+                if (phase === 'charge') {
+                    const peak =
+                        getTransientSeriesMax(result, spiceId, 'forward_current', {
+                            forwardOnly: true,
+                        }) ??
+                        getTransientSeriesMax(result, spiceId, 'current', {
+                            forwardOnly: true,
+                        });
+                    if (typeof peak === 'number' && peak > 0) {
+                        pressedLedCurrentMaxRef.current = peak;
+                    }
+                } else if (pressedLedCurrentMaxRef.current == null) {
+                    const i0 = getComponentCurrent(result, spiceId, { signed: true }, 0);
+                    if (typeof i0 === 'number' && i0 > 0) {
+                        pressedLedCurrentMaxRef.current = i0;
+                    }
                 }
             }
 
@@ -637,13 +674,24 @@ export default function CircuitWorkbench({ problemCode }) {
                     tranAnimRef.current = requestAnimationFrame(tick);
                 } else {
                     tranAnimRef.current = null;
-                    finishDischargeAnimation();
+                    if (phase === 'discharge') {
+                        finishTranAnimation();
+                    } else {
+                        setLedTranAnimPhase(null);
+                        setTranFrameIndex(times.length - 1);
+                        rememberPressedLedCurrent(result);
+                    }
                 }
             };
 
             tranAnimRef.current = requestAnimationFrame(tick);
         },
-        [cancelDischargeAnimation, finishDischargeAnimation, placed]
+        [
+            cancelTranAnimation,
+            finishTranAnimation,
+            placed,
+            rememberPressedLedCurrent,
+        ]
     );
 
     const runLiveSimulation = useCallback(
@@ -680,15 +728,25 @@ export default function CircuitWorkbench({ problemCode }) {
                 } else {
                     if (simPhase === 'idle') {
                         idleSimResultsRef.current = result;
+                        pressedLedCurrentMaxRef.current = null;
                     }
-                    if (simPhase === 'pressed') {
+                    if (
+                        simPhase === 'pressed' &&
+                        !isTransientResult(result)
+                    ) {
                         rememberPressedLedCurrent(result);
                     }
                     setSimResults(result);
-                    if (isTransientResult(result) && simPhase === 'discharge') {
-                        startDischargeAnimation(result);
+                    if (isTransientResult(result)) {
+                        const animPhase =
+                            result.simPhase === 'pressed' ||
+                            simPhase === 'pressed'
+                                ? 'charge'
+                                : 'discharge';
+                        startTranAnimation(result, animPhase);
                     } else {
-                        cancelDischargeAnimation();
+                        cancelTranAnimation();
+                        setLedTranAnimPhase(null);
                         setTranFrameIndex(0);
                     }
                 }
@@ -728,11 +786,11 @@ export default function CircuitWorkbench({ problemCode }) {
             lang,
             liveSimMode,
             problemCode,
-            startDischargeAnimation,
-            cancelDischargeAnimation,
+            startTranAnimation,
+            cancelTranAnimation,
             commitSwitchStates,
             rememberPressedLedCurrent,
-            finishDischargeAnimation,
+            finishTranAnimation,
         ]
     );
 
@@ -764,10 +822,11 @@ export default function CircuitWorkbench({ problemCode }) {
 
         if (!isMomentaryInteractive(comp.type)) return;
 
-        const wasDischarging = dischargeAnimatingRef.current;
-        cancelDischargeAnimation();
+        const wasDischarging = ledTranAnimPhase === 'discharge';
+        cancelTranAnimation();
+        setLedTranAnimPhase(null);
         if (wasDischarging) {
-            finishDischargeAnimation();
+            finishTranAnimation();
         } else {
             setTranFrameIndex(0);
         }
@@ -1398,17 +1457,26 @@ export default function CircuitWorkbench({ problemCode }) {
                         const frameIndex = isTransientResult(simResults)
                             ? tranFrameIndex
                             : 0;
-                        const isLedDischargeFade =
-                            dischargeAnimatingRef.current &&
+                        const isChargeTranResult =
+                            simResults?.simPhase === 'pressed' && switchClosed;
+                        const isLedTranFade =
                             isLedType(comp.type) &&
                             isTransientResult(simResults) &&
-                            pressedLedCurrentMaxRef.current;
-                        const ledBrightnessRatio = isLedDischargeFade
+                            pressedLedCurrentMaxRef.current &&
+                            (ledTranAnimPhase === 'charge' ||
+                                ledTranAnimPhase === 'discharge' ||
+                                isChargeTranResult);
+                        const ledBrightnessDirection =
+                            ledTranAnimPhase === 'charge' || isChargeTranResult
+                                ? 'charge'
+                                : 'discharge';
+                        const ledBrightnessRatio = isLedTranFade
                             ? getLedBrightnessRatio(
                                   simResults,
                                   spiceComponentId,
                                   frameIndex,
-                                  pressedLedCurrentMaxRef.current
+                                  pressedLedCurrentMaxRef.current,
+                                  ledBrightnessDirection
                               )
                             : undefined;
                         const img = getPlacedComponentImage(comp.type, {
@@ -1435,15 +1503,16 @@ export default function CircuitWorkbench({ problemCode }) {
                             zIndex: 10 + index,
                         };
 
-                        const baseLedImg = isLedDischargeFade
+                        const baseLedImg = isLedTranFade
                             ? getComponentImage(comp.type)
                             : null;
-                        const glowLedImg = isLedDischargeFade
+                        const glowLedImg = isLedTranFade
                             ? getPlacedComponentImage(comp.type, {
                                   liveSimMode: true,
                                   simOk: true,
                                   dischargeFading: true,
                                   spiceId: spiceComponentId,
+                                  tranFrameIndex: frameIndex,
                               })
                             : null;
 
@@ -1509,12 +1578,12 @@ export default function CircuitWorkbench({ problemCode }) {
                             >
                                 <div
                                     className={
-                                        isLedDischargeFade
+                                        isLedTranFade
                                             ? `${styles.partInner} ${styles.partInnerLedFade}`
                                             : styles.partInner
                                     }
                                 >
-                                    {isLedDischargeFade &&
+                                    {isLedTranFade &&
                                     baseLedImg &&
                                     glowLedImg ? (
                                         <>

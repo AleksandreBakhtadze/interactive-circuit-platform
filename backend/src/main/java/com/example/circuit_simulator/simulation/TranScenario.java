@@ -10,13 +10,30 @@ public record TranScenario(
         double stop,
         double pressStart,
         double pressEnd,
-        Set<String> pulsedSwitchRoles
+        Set<String> pulsedSwitchRoles,
+        SwitchTimeline switchTimeline,
+        String simPhaseLabel
 ) {
+    public enum SwitchTimeline {
+        /** Switches stay open for the full run (capacitor discharge). */
+        OPEN,
+        /** Switches stay closed for the full run (capacitor charge). */
+        CLOSED,
+        /** Per-role PWL press/release window. */
+        PULSED
+    }
+
     public static TranScenario discharge() {
-        return new TranScenario(0.005, 4.0, 0, 0, Set.of());
+        return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.OPEN, "discharge");
+    }
+
+    public static TranScenario charge() {
+        return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "pressed");
     }
 
     public boolean pulsesRole(String role) {
-        return role != null && pulsedSwitchRoles.contains(role);
+        return switchTimeline == SwitchTimeline.PULSED
+                && role != null
+                && pulsedSwitchRoles.contains(role);
     }
 }

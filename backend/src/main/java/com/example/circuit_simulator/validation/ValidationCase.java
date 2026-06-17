@@ -7,5 +7,15 @@ public record ValidationCase(
         String label,
         String labelKa,
         Map<String, String> switchStates,
-        List<ValidationCheck> checks
-) {}
+        List<ValidationCheck> checks,
+        String simPhase
+) {
+    /** DC steady-state case (default for ST problems). */
+    public ValidationCase(
+            String label,
+            String labelKa,
+            Map<String, String> switchStates,
+            List<ValidationCheck> checks) {
+        this(label, labelKa, switchStates, checks, null);
+    }
+}

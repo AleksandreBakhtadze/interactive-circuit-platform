@@ -63,7 +63,10 @@ public class SimulationService {
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);
                 return switch (phase) {
-                    case idle, pressed -> runDcToMap(circuitJson);
+                    case idle -> runDcToMap(circuitJson);
+                    case pressed -> AnalysisModes.usesSlowCharge(problemCode)
+                            ? runChargeTranToMap(circuitJson)
+                            : runDcToMap(circuitJson);
                     case discharge -> runDischargeTranToMap(circuitJson);
                 };
             }
@@ -84,6 +87,20 @@ public class SimulationService {
         result.put("nodes", nodeVoltages);
         result.put("components", componentVoltages);
         return result;
+    }
+
+    private Map<String, Object> runChargeTranToMap(String circuitJson) throws Exception {
+        // Frontend sends button closed during pressed phase; ICs must come from
+        // the uncharged idle state (button open), not the pressed steady state.
+        String idleJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("button_1", "open"));
+        Map<String, Double> idleNodes = runDcAndParse(idleJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        idleNodes,
+                        TranScenario.charge()));
     }
 
     private Map<String, Object> runDischargeTranToMap(String circuitJson) throws Exception {
@@ -145,7 +162,7 @@ public class SimulationService {
             result.put("analysis", "tran");
             result.put("step", scenario.step());
             result.put("stop", scenario.stop());
-            result.put("simPhase", "discharge");
+            result.put("simPhase", scenario.simPhaseLabel());
             result.put("time", roundList(thinned.time()));
             result.put("components", components);
             return result;

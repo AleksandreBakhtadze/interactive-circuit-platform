@@ -90,6 +90,29 @@ export function isTransientResult(results) {
     return results?.analysis === 'tran' && Array.isArray(results?.time);
 }
 
+/** Peak value of a transient metric series (e.g. charge reference current). */
+export function getTransientSeriesMax(
+    results,
+    spiceComponentId,
+    metric,
+    { forwardOnly = false } = {}
+) {
+    const metrics = results?.components?.[spiceComponentId];
+    if (!metrics || typeof metrics !== 'object') return undefined;
+    const series = metrics[metric];
+    if (!Array.isArray(series) || series.length === 0) return undefined;
+    let max = 0;
+    for (const value of series) {
+        if (typeof value !== 'number') continue;
+        if (forwardOnly) {
+            if (value > max) max = value;
+        } else {
+            max = Math.max(max, Math.abs(value));
+        }
+    }
+    return max > 0 ? max : undefined;
+}
+
 /** Sample one metric from a transient component series at a frame index. */
 export function getTransientMetric(results, spiceComponentId, metric, frameIndex = 0) {
     const metrics = results?.components?.[spiceComponentId];
@@ -154,10 +177,9 @@ export function getPlacedComponentImage(type, opts = {}) {
             tranFrameIndex
         );
 
-        const absCurrent =
-            typeof forwardCurrent === 'number' ? Math.abs(forwardCurrent) : 0;
-
-        const lit = dischargeFading || isLedLitCurrent(absCurrent);
+        const lit =
+            dischargeFading ||
+            isLedLitCurrent(forwardCurrent);
 
         if (liveSimMode && simOk && lit) {
             return LED_ON_IMAGES[ledKey] ?? base;
@@ -199,27 +221,32 @@ export function getComponentVoltage(results, spiceComponentId, frameIndex) {
 }
 
 /**
- * LED brightness ratio for transient discharge (0–1).
- * Uses a perceptual curve so the glow stays visible through the long current
- * tail (~µA) while ngspice is still discharging, then reaches 0 when current is 0.
- * @param {number} maxCurrent — reference current, e.g. from button-pressed DC (~8 mA).
+ * LED brightness ratio for transient charge/discharge (0–1).
+ * @param {number} maxCurrent — reference current (peak of charge or pressed DC).
+ * @param {'charge'|'discharge'} [direction]
  */
 export function getLedBrightnessRatio(
     results,
     spiceComponentId,
     frameIndex,
-    maxCurrent
+    maxCurrent,
+    direction = 'discharge'
 ) {
     if (!maxCurrent || maxCurrent <= 0) {
         return 0;
     }
-    const current = getComponentCurrent(results, spiceComponentId, {}, frameIndex);
-    if (typeof current !== 'number' || current <= 0) {
+    const current = getComponentCurrent(
+        results,
+        spiceComponentId,
+        { signed: true },
+        frameIndex
+    );
+    if (typeof current !== 'number' || current <= LED_LIT_CURRENT_THRESHOLD) {
         return 0;
     }
-    const linear = Math.abs(current) / maxCurrent;
-    // Gamma < 1: linear 5% current still reads ~25% brightness (visible fade).
-    const perceptual = Math.pow(linear, 0.35);
+    const linear = current / maxCurrent;
+    const gamma = direction === 'charge' ? 2.2 : 0.35;
+    const perceptual = Math.pow(linear, gamma);
     return Math.max(0, Math.min(1, perceptual));
 }
 

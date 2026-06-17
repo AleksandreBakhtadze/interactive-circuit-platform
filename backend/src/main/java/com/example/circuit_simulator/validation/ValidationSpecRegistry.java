@@ -20,7 +20,9 @@ public class ValidationSpecRegistry {
             "ST.L1.3", stL13(),
             "ST.L1.5", stL15(),
             "ST.L1.8", stL18(),
-            "ST.L2.4", stL24()
+            "ST.L2.4", stL24(),
+            "CP.L1.1", cpL11(),
+            "CP.L1.2", cpL12()
     );
 
     public Optional<ProblemValidationSpec> findByProblemCode(String problemCode) {
@@ -240,6 +242,108 @@ public class ValidationSpecRegistry {
                                 List.of(
                                         new ValidationCheck("lamp", "current", "gt", 0.01)
                                 )
+                        )
+                )
+        );
+    }
+
+    private static ProblemValidationSpec cpL11() {
+        return new ProblemValidationSpec(
+                "CP.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "button_open",
+                                "ღილაკი არ არის დაჭერილი",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed",
+                                "ღილაკი დაჭერილი (მყისიერი ანთება)",
+                                Map.of("button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.003)
+                                )
+                        ),
+                        new ValidationCase(
+                                "discharge_fade",
+                                "ღილაკის გაშვების შემდეგ ნელი ჩაქრობა",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    private static ProblemValidationSpec cpL12() {
+        return new ProblemValidationSpec(
+                "CP.L1.2",
+                List.of(
+                        new ValidationCase(
+                                "button_open",
+                                "ღილაკი არ არის დაჭერილი",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slow_charge",
+                                "ღილაკის დაჭერისას ნელი ანთება",
+                                Map.of("button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_early",
+                                                "lt",
+                                                0.005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.003)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "discharge_fade",
+                                "ღილაკის გაშვების შემდეგ ნელი ჩაქრობა",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
                         )
                 )
         );

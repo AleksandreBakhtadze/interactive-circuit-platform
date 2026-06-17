@@ -52,7 +52,10 @@ public class CircuitValidationService {
         for (ValidationCase validationCase : spec.cases()) {
             String caseJson = SpiceGenerator.applySwitchStates(
                     circuitJson, validationCase.switchStates());
-            Map<String, Object> simResult = simulationService.simulateToMap(caseJson);
+            Map<String, Object> simResult = validationCase.simPhase() != null
+                    ? simulationService.simulateToMap(
+                            caseJson, problemCode, validationCase.simPhase())
+                    : simulationService.simulateToMap(caseJson, problemCode);
 
             if (simResult.containsKey("error")) {
                 allPassed = false;
@@ -79,7 +82,7 @@ public class CircuitValidationService {
             for (ValidationCheck check : validationCase.checks()) {
                 String spiceId = roleToId.get(check.role());
                 double actual = readMetric(
-                        check.metric(), spiceId, componentVoltages, nodes);
+                        check.metric(), spiceId, componentVoltages, nodes, simResult);
                 boolean checkPassed = compare(check.op(), actual, check.value());
 
                 if (!checkPassed) {
@@ -156,10 +159,15 @@ public class CircuitValidationService {
             String metric,
             String spiceId,
             Map<String, Object> componentVoltages,
-            Map<String, Double> nodes) {
+            Map<String, Double> nodes,
+            Map<String, Object> simResult) {
 
         if (spiceId == null) {
             return 0.0;
+        }
+
+        if (metric.startsWith("tran_")) {
+            return readTranMetric(metric, spiceId, simResult);
         }
 
         return switch (metric) {
@@ -172,6 +180,86 @@ public class CircuitValidationService {
             case "forward_current" -> readCurrent(spiceId, nodes, true);
             default -> 0.0;
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    private double readTranMetric(
+            String metric, String spiceId, Map<String, Object> simResult) {
+        if (!"tran".equals(simResult.get("analysis"))) {
+            return 0.0;
+        }
+
+        Map<String, Object> components =
+                (Map<String, Object>) simResult.getOrDefault("components", Map.of());
+        Object compObj = components.get(spiceId);
+        if (!(compObj instanceof Map<?, ?> comp)) {
+            return 0.0;
+        }
+
+        List<Double> series = readTranSeries((Map<String, Object>) comp);
+        if (series.isEmpty()) {
+            return 0.0;
+        }
+
+        return switch (metric) {
+            // Signed forward current: only positive values count as LED conduction.
+            case "tran_forward_current_start" -> series.get(0);
+            case "tran_forward_current_end" -> series.get(series.size() - 1);
+            case "tran_forward_current_peak" -> series.stream()
+                    .mapToDouble(v -> v)
+                    .max()
+                    .orElse(0.0);
+            case "tran_forward_current_early" ->
+                    readTranCurrentAtTime(simResult, spiceId, 0.1);
+            default -> 0.0;
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private double readTranCurrentAtTime(
+            Map<String, Object> simResult, String spiceId, double targetSec) {
+        List<Double> times = (List<Double>) simResult.get("time");
+        if (times == null || times.isEmpty()) {
+            return 0.0;
+        }
+
+        Map<String, Object> components =
+                (Map<String, Object>) simResult.getOrDefault("components", Map.of());
+        Object compObj = components.get(spiceId);
+        if (!(compObj instanceof Map<?, ?>)) {
+            return 0.0;
+        }
+
+        List<Double> series = readTranSeries((Map<String, Object>) compObj);
+        if (series.size() != times.size()) {
+            return 0.0;
+        }
+
+        for (int i = 0; i < times.size(); i++) {
+            if (times.get(i) >= targetSec) {
+                return series.get(i);
+            }
+        }
+        return series.get(series.size() - 1);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Double> readTranSeries(Map<String, Object> compMetrics) {
+        Object series = compMetrics.get("forward_current");
+        if (!(series instanceof List<?> list)) {
+            series = compMetrics.get("current");
+        }
+        if (!(series instanceof List<?> list)) {
+            return List.of();
+        }
+
+        List<Double> values = new ArrayList<>();
+        for (Object item : list) {
+            if (item instanceof Number n) {
+                values.add(n.doubleValue());
+            }
+        }
+        return values;
     }
 
     private double readCurrent(String spiceId, Map<String, Double> nodes, boolean signed) {

@@ -120,4 +120,111 @@ class TranSimulationTest {
                 forwardCurrent.get(0) > forwardCurrent.get(forwardCurrent.size() - 1),
                 "LED forward current should decay during discharge");
     }
+
+    /**
+     * CP.L1.2: charge resistor in series with button (soft charge), LED+R on cap rail.
+     */
+    private static final String CP_L12_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"6"},
+                {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["E3","C5"],"value":"10u"},
+                {"id":"r_chg","role":"resistor_1","type":"resistor","nodes":["A7","C4"],"value":"10000"},
+                {"id":"btn1","role":"button_1","type":"switch","nodes":["C4","C5"],"state":"open"},
+                {"id":"r_led","role":"resistor_2","type":"resistor","nodes":["C5","C3"],"value":"1000"},
+                {"id":"led1","role":"led_1","type":"led","nodes":["C3","E3"],"color":"red"}
+              ]
+            }
+            """;
+
+    @Test
+    void cpL12IdleIsDcWithLedOff() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L12_CIRCUIT, "CP.L1.2", "idle");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("dc", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Double> nodes = (Map<String, Double>) result.get("nodes");
+        Double ledCurrent = nodes.get("@d_led1[id]");
+        assertNotNull(ledCurrent);
+        assertTrue(Math.abs(ledCurrent) < 1e-3, "LED should be off at idle");
+    }
+
+    @Test
+    void cpL12PressedIsChargeTransientWithRisingCurrent() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L12_CIRCUIT, "CP.L1.2", "pressed");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+        assertEquals("pressed", result.get("simPhase"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> led = (Map<String, Object>) components.get("led1");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) led.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        assertTrue(forwardCurrent.size() > 10);
+        assertTrue(
+                forwardCurrent.get(forwardCurrent.size() - 1)
+                        > forwardCurrent.get(0) + 1e-4,
+                "LED current should rise during slow charge");
+        assertTrue(
+                forwardCurrent.get(0) < forwardCurrent.get(forwardCurrent.size() - 1) * 0.5,
+                "LED should not be at full current at t=0 during charge");
+    }
+
+    /** Regression: pressed JSON carries state=closed; ICs must still be uncharged. */
+    @Test
+    void cpL12ChargeIgnoresClosedButtonInJsonForInitialConditions() throws Exception {
+        String pressedJson = CP_L12_CIRCUIT.replace("\"state\":\"open\"", "\"state\":\"closed\"");
+
+        Map<String, Object> result = simulationService.simulateToMap(
+                pressedJson, "CP.L1.2", "pressed");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> led = (Map<String, Object>) components.get("led1");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) led.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        double i0 = forwardCurrent.get(0);
+        double iEnd = forwardCurrent.get(forwardCurrent.size() - 1);
+        assertTrue(i0 < 1e-3, "First sample should be near zero, was " + i0);
+        assertTrue(iEnd > i0 + 1e-4, "Current should rise from near-zero start");
+    }
+
+    @Test
+    void cpL12DischargeRunsTransientWithDecay() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L12_CIRCUIT, "CP.L1.2", "discharge");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+        assertEquals("discharge", result.get("simPhase"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> led = (Map<String, Object>) components.get("led1");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) led.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        assertTrue(forwardCurrent.size() > 10);
+        assertTrue(
+                forwardCurrent.get(0) > forwardCurrent.get(forwardCurrent.size() - 1),
+                "LED forward current should decay during discharge");
+    }
 }

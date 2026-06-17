@@ -293,6 +293,21 @@ public class SpiceGenerator {
     }
 
     /**
+     * Capacitor charge transient: switches closed, initial node voltages from prior idle DC.
+     */
+    public static TranSpiceBuild generateChargeTranSpice(
+            String json,
+            Map<String, Double> nodeVoltages,
+            TranScenario scenario) throws Exception {
+        TranSpiceBuild build = generateTranSpice(json, scenario);
+        String icBlock = buildInitialConditions(json, nodeVoltages);
+        String netlist = build.netlist().replace(
+                "\n.control\n",
+                icBlock + "\n.control\n");
+        return new TranSpiceBuild(netlist, build.probes(), scenario);
+    }
+
+    /**
      * Capacitor discharge transient: switches open, initial node voltages from a prior DC charge.
      */
     public static TranSpiceBuild generateDischargeTranSpice(
@@ -325,7 +340,7 @@ public class SpiceGenerator {
         nodes.remove("0");
 
         StringBuilder sb = new StringBuilder();
-        sb.append("* initial conditions from charged DC state\n");
+        sb.append("* initial conditions from prior DC state\n");
         for (String node : nodes) {
             if (node.startsWith("ctrl_")) {
                 continue;
@@ -366,6 +381,8 @@ public class SpiceGenerator {
                     scenario.pressEnd(),
                     scenario.pressEnd() + 1e-6,
                     scenario.stop()));
+        } else if (scenario.switchTimeline() == TranScenario.SwitchTimeline.CLOSED) {
+            sb.append(String.format(Locale.US, "PWL(0 6 %.6f 6)\n", scenario.stop()));
         } else {
             sb.append(String.format(Locale.US, "PWL(0 0 %.6f 0)\n", scenario.stop()));
         }

@@ -3,8 +3,8 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
 /**
  * @param {{ components: object[] }} circuitJson — from buildCircuitJson(placed)
- * @param {string} [problemCode] — selects DC vs transient analysis (e.g. CP.L1.1)
- * @param {'idle'|'pressed'|'discharge'} [simPhase] — live interaction phase (CP.L1.1)
+ * @param {string} [problemCode] — selects DC vs transient analysis (e.g. CP.L1.1, CP.L1.2)
+ * @param {'idle'|'pressed'|'discharge'} [simPhase] — live interaction phase (CP chapter)
  * @returns {Promise<{ nodes?: object, components?: object, error?: string }>}
  */
 export async function simulateCircuit(circuitJson, problemCode, simPhase) {

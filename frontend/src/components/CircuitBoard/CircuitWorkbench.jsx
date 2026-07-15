@@ -1348,50 +1348,20 @@ export default function CircuitWorkbench({ problemCode }) {
                     <h2 className={styles.paletteTitle}>
                         {lang === 'ka' ? 'დეტალები' : 'Components'}
                     </h2>
-                    <div className={styles.actionBtns}>
-                    <button
-                        type="button"
-                        className={styles.simulateBtn}
-                        onClick={handleSimulate}
-                        disabled={simulating || submitting || placed.length === 0}
-                    >
-                        {simulating
-                            ? lang === 'ka'
-                                ? 'ითვლება...'
-                                : 'Running...'
+                    <p className={styles.paletteHint}>
+                        {liveSimMode
+                            ? problemCode === 'ST.L1.3'
+                                ? lang === 'ka'
+                                    ? 'ჩართეთ ჩამრთველი, შემდეგ დააჭირეთ ღილაკს.'
+                                    : 'Turn the switch ON, then press and hold the button.'
+                                : lang === 'ka'
+                                  ? 'დააჭირეთ და არ გაუშვათ ღილაკი.'
+                                  : 'Press and hold the button.'
                             : lang === 'ka'
-                              ? 'სიმულაცია'
-                              : 'Simulate'}
-                    </button>
-                    <button
-                        type="button"
-                        className={styles.submitBtn}
-                        onClick={handleSubmit}
-                        disabled={submitting || simulating || placed.length === 0}
-                    >
-                        {submitting
-                            ? lang === 'ka'
-                                ? 'იმოწმება...'
-                                : 'Checking...'
-                            : lang === 'ka'
-                              ? 'შემოწმება'
-                              : 'Submit'}
-                    </button>
-                    </div>
+                              ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი — წაშლა'
+                              : '↻ rotate · drag to board · right-click to remove'}
+                    </p>
                 </div>
-                <p className={styles.paletteHint}>
-                    {liveSimMode
-                        ? problemCode === 'ST.L1.3'
-                            ? lang === 'ka'
-                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი — მაშინ ანთება ნათურა.'
-                                : 'Simulation mode: turn the switch ON, then press and hold the button to light the lamp.'
-                            : lang === 'ka'
-                              ? 'სიმულაციის რეჟიმი: დააჭირეთ და არ გაუშვათ ღილაკი (როგორც ნამდვილ ღილაკზე).'
-                              : 'Simulation mode: press and hold the button (release to open).'
-                        : lang === 'ka'
-                          ? '↻ — შებრუნება, შემდეგ გადაიტანეთ ფირზე. გადაიტანეთ ფირზე არსებული დეტალიც. მარჯვენა ღილაკი — წაშლა.'
-                        : '↻ to rotate, then drag onto the board. Drag placed parts to move them. Right-click to remove.'}
-                </p>
                 <div className={styles.paletteItems}>
                     {standardPalette.map(renderPaletteCard)}
                     {renderConnectorCard()}
@@ -1402,6 +1372,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 </div>
             </aside>
 
+            <div className={styles.stage}>
             <div
                 ref={boardHostRef}
                 className={`${styles.boardHost} ${activeDrag?.id ? styles.boardHostDragging : ''}`}
@@ -1625,19 +1596,52 @@ export default function CircuitWorkbench({ problemCode }) {
                 </CircuitBoard>
             </div>
 
-            {message && (
-                <p
-                    className={`${styles.message} ${
-                        submitStatus === 'pass'
-                            ? styles.messagePass
-                            : submitStatus === 'fail'
-                              ? styles.messageFail
-                              : ''
-                    }`}
-                >
-                    {message}
-                </p>
-            )}
+            <div className={styles.boardBar}>
+                <div className={styles.actionBtns}>
+                    <button
+                        type="button"
+                        className={styles.simulateBtn}
+                        onClick={handleSimulate}
+                        disabled={simulating || submitting || placed.length === 0}
+                    >
+                        {simulating
+                            ? lang === 'ka'
+                                ? 'ითვლება...'
+                                : 'Running...'
+                            : lang === 'ka'
+                              ? 'სიმულაცია'
+                              : 'Simulate'}
+                    </button>
+                    <button
+                        type="button"
+                        className={styles.submitBtn}
+                        onClick={handleSubmit}
+                        disabled={submitting || simulating || placed.length === 0}
+                    >
+                        {submitting
+                            ? lang === 'ka'
+                                ? 'იმოწმება...'
+                                : 'Checking...'
+                            : lang === 'ka'
+                              ? 'შემოწმება'
+                              : 'Submit'}
+                    </button>
+                </div>
+                {message && (
+                    <p
+                        className={`${styles.message} ${
+                            submitStatus === 'pass'
+                                ? styles.messagePass
+                                : submitStatus === 'fail'
+                                  ? styles.messageFail
+                                  : ''
+                        }`}
+                    >
+                        {message}
+                    </p>
+                )}
+            </div>
+            </div>
         </div>
     );
 }

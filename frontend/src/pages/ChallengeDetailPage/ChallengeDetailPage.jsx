@@ -7,18 +7,28 @@ import { useLang } from '../../context/LangContext';
 import { API_BASE } from '../../api';
 import styles from './ChallengeDetailPage.module.css';
 
+function hasText(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
 export default function ChallengeDetailPage() {
     const { chapterCode, problemSlug } = useParams();
     const { lang } = useLang();
     const [problem, setProblem] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [hintOpen, setHintOpen] = useState(false);
+    const [questionsOpen, setQuestionsOpen] = useState(false);
+    const [methodOpen, setMethodOpen] = useState(false);
 
     useEffect(() => {
         if (!chapterCode || !problemSlug) return;
 
         setLoading(true);
         setError('');
+        setHintOpen(false);
+        setQuestionsOpen(false);
+        setMethodOpen(false);
 
         fetch(
             `${API_BASE}/chapters/${encodeURIComponent(chapterCode)}/problems/${encodeURIComponent(problemSlug)}`
@@ -39,7 +49,11 @@ export default function ChallengeDetailPage() {
                 if (err.status === 404) {
                     setError(lang === 'ka' ? 'ამოცანა ვერ მოიძებნა' : 'Challenge not found');
                 } else {
-                    setError(lang === 'ka' ? 'სერვერთან კავშირი ვერ მოხერხდა' : 'Could not connect to server');
+                    setError(
+                        lang === 'ka'
+                            ? 'სერვერთან კავშირი ვერ მოხერხდა'
+                            : 'Could not connect to server'
+                    );
                 }
                 setLoading(false);
             });
@@ -50,7 +64,9 @@ export default function ChallengeDetailPage() {
     if (loading) {
         return (
             <main className={styles.main}>
-                <p className={styles.status}>{lang === 'ka' ? 'იტვირთება...' : 'Loading...'}</p>
+                <p className={styles.status}>
+                    {lang === 'ka' ? 'იტვირთება...' : 'Loading...'}
+                </p>
             </main>
         );
     }
@@ -66,54 +82,167 @@ export default function ChallengeDetailPage() {
         );
     }
 
-    const sections = [
-        { key: 'description', labelKa: 'ამოცანის პირობა', labelEn: 'Challenge', value: problem.description },
-        { key: 'hint', labelKa: 'დახმარება', labelEn: 'Hint', value: problem.hint },
-        { key: 'questions', labelKa: 'შეკითხვები', labelEn: 'Questions', value: problem.questions },
-        { key: 'methodology', labelKa: 'მეთოდიკა', labelEn: 'Methodology', value: problem.methodology },
-    ].filter((s) => s.value && s.value.trim());
+    const usesSim = supportsSimulator(problem.code);
+    const description = hasText(problem.description) ? problem.description.trim() : '';
+    const hint = hasText(problem.hint) ? problem.hint.trim() : '';
+    const questions = hasText(problem.questions) ? problem.questions.trim() : '';
+    const methodology = hasText(problem.methodology)
+        ? problem.methodology.trim()
+        : '';
 
     return (
-        <main className={styles.main}>
+        <main
+            className={`${styles.main} ${usesSim ? styles.mainWithWorkbench : ''}`}
+        >
             <div className={styles.layout}>
                 <div className={styles.contentColumn}>
-                    <div className={styles.header}>
-                <Link to={listPath} className={styles.backLink}>
-                    {lang === 'ka' ? `← ${chapterCode} ამოცანები` : `← ${chapterCode} challenges`}
-                </Link>
-                <span className={styles.eyebrow}>{problem.code}</span>
-                <h1 className={styles.title}>{problem.title}</h1>
-                {problem.difficulty && (
-                    <span className={styles.badge}>{problem.difficulty}</span>
-                )}
-            </div>
+                    <header className={styles.header}>
+                        <Link to={listPath} className={styles.backLink}>
+                            {lang === 'ka'
+                                ? `← ${chapterCode} ამოცანები`
+                                : `← ${chapterCode} challenges`}
+                        </Link>
+                        <div className={styles.titleRow}>
+                            <span className={styles.eyebrow}>{problem.code}</span>
+                            {problem.difficulty && (
+                                <span className={styles.badge}>
+                                    {problem.difficulty}
+                                </span>
+                            )}
+                        </div>
+                        <h1 className={styles.title}>{problem.title}</h1>
+                    </header>
 
-            {sections.length > 0 ? (
-                <div className={styles.sections}>
-                    {sections.map((section) => (
-                        <section key={section.key} className={styles.section}>
-                            <h2 className={styles.sectionTitle}>
-                                {lang === 'ka' ? section.labelKa : section.labelEn}
+                    {description ? (
+                        <section className={styles.challengeBrief} aria-labelledby="challenge-brief">
+                            <h2 id="challenge-brief" className={styles.briefLabel}>
+                                {lang === 'ka' ? 'ამოცანა' : 'Challenge'}
                             </h2>
-                            <p className={styles.sectionBody}>{section.value}</p>
+                            <p className={styles.briefBody}>{description}</p>
                         </section>
-                    ))}
-                </div>
-            ) : (
-                <p className={styles.placeholder}>
-                    {lang === 'ka'
-                        ? 'ამოცანის აღწერა მალე დაემატება.'
-                        : 'Challenge details will be added soon.'}
-                </p>
+                    ) : (
+                        <p className={styles.placeholder}>
+                            {lang === 'ka'
+                                ? 'ამოცანის აღწერა მალე დაემატება.'
+                                : 'Challenge details will be added soon.'}
+                        </p>
                     )}
 
-                <div className={styles.boardColumn}>
-                    {supportsSimulator(problem.code) ? (
-                        <CircuitWorkbench problemCode={problem.code} />
-                    ) : (
-                        <CircuitBoard label={problem.code} />
+                    <div className={styles.boardColumn}>
+                        {usesSim ? (
+                            <CircuitWorkbench problemCode={problem.code} />
+                        ) : (
+                            <CircuitBoard label={problem.code} />
+                        )}
+                    </div>
+
+                    {(hint || questions || methodology) && (
+                        <div className={styles.afterBoard}>
+                            {hint && (
+                                <div className={styles.hintPanel}>
+                                    {!hintOpen ? (
+                                        <button
+                                            type="button"
+                                            className={styles.hintRevealBtn}
+                                            onClick={() => setHintOpen(true)}
+                                        >
+                                            {lang === 'ka'
+                                                ? 'მინიშნების ჩვენება'
+                                                : 'Reveal hint'}
+                                        </button>
+                                    ) : (
+                                        <div className={styles.hintCard}>
+                                            <div className={styles.hintCardTop}>
+                                                <h3 className={styles.panelTitle}>
+                                                    {lang === 'ka'
+                                                        ? 'მინიშნება'
+                                                        : 'Hint'}
+                                                </h3>
+                                                <button
+                                                    type="button"
+                                                    className={styles.hintHideBtn}
+                                                    onClick={() => setHintOpen(false)}
+                                                >
+                                                    {lang === 'ka' ? 'დამალვა' : 'Hide'}
+                                                </button>
+                                            </div>
+                                            <p className={styles.panelBody}>{hint}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {(questions || methodology) && (
+                                <div className={styles.learnRail}>
+                                    <p className={styles.learnIntro}>
+                                        {lang === 'ka'
+                                            ? 'ააწყვე წრედი, შემდეგ გაიაზრე —'
+                                            : 'Build first, then reflect —'}
+                                    </p>
+
+                                    {questions && (
+                                        <div className={styles.learnItem}>
+                                            <button
+                                                type="button"
+                                                className={styles.learnSummary}
+                                                aria-expanded={questionsOpen}
+                                                onClick={() =>
+                                                    setQuestionsOpen((v) => !v)
+                                                }
+                                            >
+                                                <span>
+                                                    {lang === 'ka'
+                                                        ? 'შეკითხვები'
+                                                        : 'Think about it'}
+                                                </span>
+                                                <span
+                                                    className={styles.learnChevron}
+                                                    aria-hidden
+                                                >
+                                                    {questionsOpen ? '−' : '+'}
+                                                </span>
+                                            </button>
+                                            {questionsOpen && (
+                                                <p className={styles.panelBody}>
+                                                    {questions}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {methodology && (
+                                        <div className={styles.learnItem}>
+                                            <button
+                                                type="button"
+                                                className={styles.learnSummary}
+                                                aria-expanded={methodOpen}
+                                                onClick={() =>
+                                                    setMethodOpen((v) => !v)
+                                                }
+                                            >
+                                                <span>
+                                                    {lang === 'ka'
+                                                        ? 'როგორ მუშაობს'
+                                                        : 'How it works'}
+                                                </span>
+                                                <span
+                                                    className={styles.learnChevron}
+                                                    aria-hidden
+                                                >
+                                                    {methodOpen ? '−' : '+'}
+                                                </span>
+                                            </button>
+                                            {methodOpen && (
+                                                <p className={styles.panelBody}>
+                                                    {methodology}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     )}
-                </div>
                 </div>
             </div>
         </main>

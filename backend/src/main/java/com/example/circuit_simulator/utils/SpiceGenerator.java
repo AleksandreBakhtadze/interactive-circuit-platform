@@ -475,9 +475,10 @@ public class SpiceGenerator {
 
     private static void appendModels(StringBuilder sb) {
         sb.append(".model DIODE_MODEL    D (IS=1e-10 N=1.0  RS=1  BV=100)\n");
-        sb.append(".model LEDMODEL_RED   D (IS=1e-30 N=2.5  RS=3  BV=5)\n");
-        sb.append(".model LEDMODEL_GREEN D (IS=1e-40 N=3.0  RS=3  BV=5)\n");
-        sb.append(".model LEDMODEL_BLUE  D (IS=1e-50 N=3.5  RS=3  BV=5)\n");
+        // Realistic LED Vf (~1.8 / ~2.1 / ~3.0 V) so series pairs light on 12 V rails.
+        sb.append(".model LEDMODEL_RED   D (IS=9e-21 N=1.9  RS=2  BV=20)\n");
+        sb.append(".model LEDMODEL_GREEN D (IS=2e-21 N=2.0  RS=3  BV=20)\n");
+        sb.append(".model LEDMODEL_BLUE  D (IS=5e-22 N=2.2  RS=4  BV=20)\n");
         sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
         sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
         sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");

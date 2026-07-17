@@ -82,7 +82,13 @@ public class CircuitValidationService {
             for (ValidationCheck check : validationCase.checks()) {
                 String spiceId = roleToId.get(check.role());
                 double actual = readMetric(
-                        check.metric(), spiceId, componentVoltages, nodes, simResult);
+                        check.metric(),
+                        check.role(),
+                        spiceId,
+                        roleToId,
+                        componentVoltages,
+                        nodes,
+                        simResult);
                 boolean checkPassed = compare(check.op(), actual, check.value());
 
                 if (!checkPassed) {
@@ -112,16 +118,92 @@ public class CircuitValidationService {
                     .build());
         }
 
+        String failDetailEn = summarizeFailedCases(caseResults, false);
+        String failDetailKa = summarizeFailedCases(caseResults, true);
+
         return ValidationResultDTO.builder()
                 .passed(allPassed)
                 .message(allPassed
                         ? "Correct! Your circuit behaves as required."
-                        : "Not quite — check wiring and try again.")
+                        : "Not quite — check wiring and try again."
+                                + (failDetailEn.isEmpty() ? "" : "\n" + failDetailEn))
                 .messageKa(allPassed
                         ? "სწორია! თქვენი წრედი სწორად მუშაობს."
-                        : "ჯერ არაა სწორი — შეამოწმეთ შეერთებები და სცადეთ კვლავ.")
+                        : "ჯერ არაა სწორი — შეამოწმეთ შეერთებები და სცადეთ კვლავ."
+                                + (failDetailKa.isEmpty() ? "" : "\n" + failDetailKa))
                 .cases(caseResults)
                 .build();
+    }
+
+    private String summarizeFailedCases(List<CaseResultDTO> caseResults, boolean ka) {
+        StringBuilder sb = new StringBuilder();
+        for (CaseResultDTO c : caseResults) {
+            if (c.isPassed()) {
+                continue;
+            }
+            String label = ka
+                    ? (c.getLabelKa() != null ? c.getLabelKa() : c.getLabel())
+                    : (c.getLabel() != null ? c.getLabel() : c.getLabelKa());
+            if (label == null) {
+                label = "?";
+            }
+            if (c.getChecks() == null || c.getChecks().isEmpty()) {
+                if (sb.length() > 0) {
+                    sb.append('\n');
+                }
+                sb.append("• ").append(label);
+                continue;
+            }
+            for (CheckResultDTO check : c.getChecks()) {
+                if (check.isPassed()) {
+                    continue;
+                }
+                if (sb.length() > 0) {
+                    sb.append('\n');
+                }
+                if ("lit_count".equals(check.getMetric())) {
+                    sb.append("• ").append(label).append(": ");
+                    if (ka) {
+                        sb.append("ანთებული LED ")
+                                .append(formatNum(check.getActual()))
+                                .append(" (საჭიროა ")
+                                .append(formatNum(check.getExpected()))
+                                .append(')');
+                    } else {
+                        sb.append("lit LEDs ")
+                                .append(formatNum(check.getActual()))
+                                .append(" (need ")
+                                .append(formatNum(check.getExpected()))
+                                .append(')');
+                    }
+                } else if ("current_ratio".equals(check.getMetric())) {
+                    sb.append("• ").append(label).append(": ");
+                    if (ka) {
+                        sb.append("ნათების განსხვავება ")
+                                .append(formatNum(check.getActual()))
+                                .append("× (საჭიროა > ")
+                                .append(formatNum(check.getExpected()))
+                                .append(')');
+                    } else {
+                        sb.append("brightness ratio ")
+                                .append(formatNum(check.getActual()))
+                                .append("× (need > ")
+                                .append(formatNum(check.getExpected()))
+                                .append(')');
+                    }
+                } else {
+                    sb.append("• ").append(label);
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String formatNum(double v) {
+        if (Math.abs(v - Math.rint(v)) < 1e-9) {
+            return String.valueOf((long) Math.rint(v));
+        }
+        return String.format(Locale.US, "%.4g", v);
     }
 
     private Map<String, String> indexRoles(List<Map<String, Object>> components) {
@@ -148,6 +230,9 @@ public class CircuitValidationService {
 
         List<String> missing = new ArrayList<>();
         for (String role : required) {
+            if ("leds".equals(role)) {
+                continue;
+            }
             if (!roleToId.containsKey(role)) {
                 missing.add(role);
             }
@@ -157,10 +242,21 @@ public class CircuitValidationService {
 
     private double readMetric(
             String metric,
+            String role,
             String spiceId,
+            Map<String, String> roleToId,
             Map<String, Object> componentVoltages,
             Map<String, Double> nodes,
             Map<String, Object> simResult) {
+
+        // Count how many led_* roles have forward current above the lit threshold.
+        if ("lit_count".equals(metric)) {
+            return countLitLeds(roleToId, nodes);
+        }
+        // max(I_f)/min(I_f) among lit LEDs — used for unequal-brightness checks.
+        if ("current_ratio".equals(metric)) {
+            return litLedCurrentRatio(roleToId, nodes);
+        }
 
         if (spiceId == null) {
             return 0.0;
@@ -180,6 +276,43 @@ public class CircuitValidationService {
             case "forward_current" -> readCurrent(spiceId, nodes, true);
             default -> 0.0;
         };
+    }
+
+    private double countLitLeds(Map<String, String> roleToId, Map<String, Double> nodes) {
+        double lit = 0;
+        for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+            if (!entry.getKey().startsWith("led_")) {
+                continue;
+            }
+            double forward = readCurrent(entry.getValue(), nodes, true);
+            if (forward > 0.0005) {
+                lit += 1;
+            }
+        }
+        return lit;
+    }
+
+    /** Ratio of brightest to dimmest lit LED forward current (1 if fewer than 2 lit). */
+    private double litLedCurrentRatio(Map<String, String> roleToId, Map<String, Double> nodes) {
+        double max = 0;
+        double min = Double.POSITIVE_INFINITY;
+        int lit = 0;
+        for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+            if (!entry.getKey().startsWith("led_")) {
+                continue;
+            }
+            double forward = readCurrent(entry.getValue(), nodes, true);
+            if (forward <= 0.0005) {
+                continue;
+            }
+            lit += 1;
+            max = Math.max(max, forward);
+            min = Math.min(min, forward);
+        }
+        if (lit < 2 || min <= 0) {
+            return 1.0;
+        }
+        return max / min;
     }
 
     @SuppressWarnings("unchecked")

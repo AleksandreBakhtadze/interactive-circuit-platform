@@ -111,6 +111,42 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'ST.L1.3') {
             return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, ნათურა';
         }
+        if (problemCode === 'ST.L1.8') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.9') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2 წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L1.2') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, 2 წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L1.3') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, 2 წითელი LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, ნათურა, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, ნათურა, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.10') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, 2 ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.11') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, 2 ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.12') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, მწვანე და ლურჯი LED, რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.13') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, 2 ღილაკი, წითელი და ლურჯი LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'ST.L2.14') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, 2 მწვანე და 2 ლურჯი LED, 2 რეზისტორი';
+        }
         if (problemCode === 'CP.L1.1') {
             return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, რეზისტორი';
         }
@@ -124,6 +160,42 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'ST.L1.3') {
         return 'Place: power supply, switch, button, lamp';
+    }
+    if (problemCode === 'ST.L1.8') {
+        return 'Place: power supply, switch, button, red LED, resistor';
+    }
+    if (problemCode === 'ST.L2.9') {
+        return 'Place: 2 power supplies, switch, button, red and green LED, resistor';
+    }
+    if (problemCode === 'LR.L1.1') {
+        return 'Place: 2 power supplies, switch, button, 2 red LEDs, resistor';
+    }
+    if (problemCode === 'LR.L1.2') {
+        return 'Place: power supply, switch, button, 2 red LEDs, resistor';
+    }
+    if (problemCode === 'LR.L1.3') {
+        return 'Place: power supply, switch, button, 2 red LEDs, 2 resistors';
+    }
+    if (problemCode === 'LR.L2.4') {
+        return 'Place: 2 power supplies, switch, button, lamp, red LED, resistor';
+    }
+    if (problemCode === 'LR.L2.5') {
+        return 'Place: 2 power supplies, switch, 2 buttons, lamp, red LED, resistor';
+    }
+    if (problemCode === 'ST.L2.10') {
+        return 'Place: power supply, switch, 2 buttons, red LED, resistor';
+    }
+    if (problemCode === 'ST.L2.11') {
+        return 'Place: power supply, switch, 2 buttons, red LED, resistor';
+    }
+    if (problemCode === 'ST.L2.12') {
+        return 'Place: 2 power supplies, switch, 2 buttons, green and blue LED, resistor';
+    }
+    if (problemCode === 'ST.L2.13') {
+        return 'Place: power supply, switch, 2 buttons, red and blue LED, 2 resistors';
+    }
+    if (problemCode === 'ST.L2.14') {
+        return 'Place: 2 power supplies, switch, 2 buttons, 2 green and 2 blue LEDs, 2 resistors';
     }
     if (problemCode === 'CP.L1.1') {
         return 'Place: 2 power supplies, button, red LED, capacitor, resistor';
@@ -151,6 +223,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const [ledColor, setLedColor] = useState('red');
     const [transistorKey, setTransistorKey] = useState('q1');
     const [message, setMessage] = useState('');
+    const messageRef = useRef(null);
     const [simulating, setSimulating] = useState(false);
     const [liveSimMode, setLiveSimMode] = useState(false);
     const [switchStates, setSwitchStates] = useState({});
@@ -883,12 +956,24 @@ export default function CircuitWorkbench({ problemCode }) {
                     ? result.messageKa ?? result.message
                     : result.message
             );
+            queueMicrotask(() => {
+                messageRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                });
+            });
         } catch (err) {
             setSubmitStatus('fail');
             const detail = err?.message ?? String(err);
             setMessage(
                 lang === 'ka' ? `შეცდომა: ${detail}` : `Error: ${detail}`
             );
+            queueMicrotask(() => {
+                messageRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                });
+            });
         } finally {
             setSubmitting(false);
         }
@@ -1349,17 +1434,39 @@ export default function CircuitWorkbench({ problemCode }) {
                         {lang === 'ka' ? 'დეტალები' : 'Components'}
                     </h2>
                     <p className={styles.paletteHint}>
-                        {liveSimMode
-                            ? problemCode === 'ST.L1.3'
+                    {liveSimMode
+                        ? problemCode === 'ST.L2.4' || problemCode === 'ST.L2.10'
+                            ? lang === 'ka'
+                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ ერთდროულად დააჭირეთ ორივე ღილაკს.'
+                                : 'Simulation mode: turn the switch ON, then press and hold both buttons together.'
+                            : problemCode === 'ST.L2.11' || problemCode === 'ST.L2.12'
+                              ? lang === 'ka'
+                                  ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ნებისმიერ ღილაკს.'
+                                  : 'Simulation mode: turn the switch ON, then press either button.'
+                              : problemCode === 'ST.L2.13' || problemCode === 'ST.L2.14'
                                 ? lang === 'ka'
-                                    ? 'ჩართეთ ჩამრთველი, შემდეგ დააჭირეთ ღილაკს.'
-                                    : 'Turn the switch ON, then press and hold the button.'
-                                : lang === 'ka'
-                                  ? 'დააჭირეთ და არ გაუშვათ ღილაკი.'
-                                  : 'Press and hold the button.'
-                            : lang === 'ka'
-                              ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი — წაშლა'
-                              : '↻ rotate · drag to board · right-click to remove'}
+                                    ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); თითოეული ღილაკი თავის შუქდიოდ(ებ)ს ანთებს.'
+                                    : 'Simulation mode: turn the switch ON; each button lights its own LED(s).'
+                                : problemCode === 'LR.L2.5'
+                                  ? lang === 'ka'
+                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ერთი ღილაკი — ნათურა, მეორე — LED.'
+                                      : 'Simulation mode: turn the switch ON; one button lights the lamp, the other the LED.'
+                                  : problemCode === 'ST.L1.3' ||
+                                      problemCode === 'ST.L1.8' ||
+                                      problemCode === 'ST.L2.9' ||
+                                      problemCode === 'LR.L1.1' ||
+                                      problemCode === 'LR.L1.2' ||
+                                      problemCode === 'LR.L1.3' ||
+                                      problemCode === 'LR.L2.4'
+                                    ? lang === 'ka'
+                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი.'
+                                        : 'Simulation mode: turn the switch ON, then press and hold the button.'
+                                    : lang === 'ka'
+                                    ? 'დააჭირეთ და არ გაუშვათ ღილაკი.'
+                                    : 'Press and hold the button.'
+                        : lang === 'ka'
+                          ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი — წაშლა'
+                          : '↻ rotate · drag to board · right-click to remove'}
                     </p>
                 </div>
                 <div className={styles.paletteItems}>
@@ -1629,6 +1736,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 </div>
                 {message && (
                     <p
+                        ref={messageRef}
                         className={`${styles.message} ${
                             submitStatus === 'pass'
                                 ? styles.messagePass

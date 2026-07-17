@@ -310,6 +310,9 @@ export function getComponentVoltage(results, spiceComponentId, frameIndex) {
  * @param {number} maxCurrent — reference current (peak of charge or pressed DC).
  * @param {'charge'|'discharge'} [direction]
  */
+/** Below this fraction of peak current, treat the LED as fully off (no residual glow). */
+const LED_OFF_RATIO_FLOOR = 0.12;
+
 export function getLedBrightnessRatio(
     results,
     spiceComponentId,
@@ -326,12 +329,20 @@ export function getLedBrightnessRatio(
         { signed: true },
         frameIndex
     );
-    if (typeof current !== 'number' || current <= LED_LIT_CURRENT_THRESHOLD) {
+    // Scale relative to the known peak — do not apply the absolute lit threshold here,
+    // or LEDs near ~1 mA (e.g. CP.L2.5 red branch with 5k1) never glow.
+    if (typeof current !== 'number' || current <= 0) {
         return 0;
     }
     const linear = current / maxCurrent;
-    const gamma = direction === 'charge' ? 2.2 : 0.35;
-    const perceptual = Math.pow(linear, gamma);
+    // Cap still conducts a little at the end of a 4 s run; remapping to zero
+    // past the floor makes the board look fully dark after the pulse.
+    if (linear <= LED_OFF_RATIO_FLOOR) {
+        return 0;
+    }
+    const remapped = (linear - LED_OFF_RATIO_FLOOR) / (1 - LED_OFF_RATIO_FLOOR);
+    const gamma = direction === 'charge' ? 2.2 : 0.55;
+    const perceptual = Math.pow(remapped, gamma);
     return Math.max(0, Math.min(1, perceptual));
 }
 

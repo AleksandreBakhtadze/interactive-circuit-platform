@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import CircuitBoard from '../../components/CircuitBoard/CircuitBoard';
 import CircuitWorkbench from '../../components/CircuitBoard/CircuitWorkbench';
+import ProblemQuiz from '../../components/ProblemQuiz/ProblemQuiz';
 import { supportsSimulator } from '../../constants/componentCatalog';
+import { getFiguresForProblem } from '../../constants/problemFigures';
+import { getQuizForProblem } from '../../constants/problemQuizzes';
 import { useLang } from '../../context/LangContext';
 import { API_BASE } from '../../api';
 import styles from './ChallengeDetailPage.module.css';
@@ -83,9 +86,12 @@ export default function ChallengeDetailPage() {
     }
 
     const usesSim = supportsSimulator(problem.code);
+    const figures = getFiguresForProblem(problem.code);
+    const quiz = getQuizForProblem(problem.code);
     const description = hasText(problem.description) ? problem.description.trim() : '';
     const hint = hasText(problem.hint) ? problem.hint.trim() : '';
-    const questions = hasText(problem.questions) ? problem.questions.trim() : '';
+    const questions =
+        !quiz && hasText(problem.questions) ? problem.questions.trim() : '';
     const methodology = hasText(problem.methodology)
         ? problem.methodology.trim()
         : '';
@@ -119,6 +125,28 @@ export default function ChallengeDetailPage() {
                                 {lang === 'ka' ? 'ამოცანა' : 'Challenge'}
                             </h2>
                             <p className={styles.briefBody}>{description}</p>
+                            {figures.length > 0 && (
+                                <div className={styles.figureGrid}>
+                                    {figures.map((fig) => (
+                                        <figure key={fig.src} className={styles.figure}>
+                                            <img
+                                                src={fig.src}
+                                                alt={
+                                                    lang === 'ka'
+                                                        ? fig.altKa
+                                                        : fig.altEn
+                                                }
+                                                className={styles.figureImg}
+                                            />
+                                            <figcaption className={styles.figureCaption}>
+                                                {lang === 'ka'
+                                                    ? fig.captionKa
+                                                    : fig.captionEn}
+                                            </figcaption>
+                                        </figure>
+                                    ))}
+                                </div>
+                            )}
                         </section>
                     ) : (
                         <p className={styles.placeholder}>
@@ -136,7 +164,7 @@ export default function ChallengeDetailPage() {
                         )}
                     </div>
 
-                    {(hint || questions || methodology) && (
+                    {(hint || quiz || questions || methodology) && (
                         <div className={styles.afterBoard}>
                             {hint && (
                                 <div className={styles.hintPanel}>
@@ -169,6 +197,15 @@ export default function ChallengeDetailPage() {
                                             <p className={styles.panelBody}>{hint}</p>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {quiz && (
+                                <div className={styles.quizPanel}>
+                                    <ProblemQuiz
+                                        key={problem.code}
+                                        quiz={quiz}
+                                    />
                                 </div>
                             )}
 

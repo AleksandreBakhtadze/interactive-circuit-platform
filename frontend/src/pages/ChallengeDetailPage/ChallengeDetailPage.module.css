@@ -195,6 +195,36 @@
     white-space: pre-wrap;
 }
 
+.figureGrid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.figureImg {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(96, 197, 241, 0.22);
+    background: #0b1220;
+    object-fit: contain;
+}
+
+.figureCaption {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #8aa0b8);
+}
+
 /* Below board: hint + deepen learning */
 .afterBoard {
     margin-top: 36px;
@@ -265,6 +295,15 @@
 
 .hintHideBtn:hover {
     background: rgba(240, 160, 80, 0.12);
+}
+
+.quizPanel {
+    width: 100%;
+    padding: 16px 18px 18px;
+    border: 1px solid rgba(96, 197, 241, 0.22);
+    border-radius: 10px;
+    background: rgba(17, 29, 53, 0.45);
+    box-sizing: border-box;
 }
 
 .learnRail {

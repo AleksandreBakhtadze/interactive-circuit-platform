@@ -317,4 +317,157 @@ class TranSimulationTest {
         assertTrue(i0 > 1e-3, "LED should stay on at release start, was " + i0);
         assertTrue(iEnd > 1e-3, "LED should stay on at release end, was " + iEnd);
     }
+
+    /** CP.L2.5: master SPST open at idle → dark DC; closed → green charge transient. */
+    private static final String CP_L25_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A8","0"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","F7"],"value":"6"},
+                {"id":"led_g","role":"led_1","type":"led","nodes":["A4","C4"],"color":"green"},
+                {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["D5","F7"],"value":"470u"},
+                {"id":"led_r","role":"led_2","type":"led","nodes":["E4","G4"],"color":"red"},
+                {"id":"r1","role":"resistor_1","type":"resistor","nodes":["G4","F7"],"value":"5100"},
+                {"id":"r2","role":"resistor_2","type":"resistor","nodes":["A4","A6"],"value":"5100"},
+                {"id":"sw1","role":"switch","type":"switch","nodes":["A6","A8"],"state":"open"},
+                {"id":"slide1","role":"slide_switch","type":"slide_switch","nodes":["D5","C4","E4"],"state":"left"}
+              ]
+            }
+            """;
+
+    @Test
+    void cpL25IdleWithMasterOpenIsDcWithLedsOff() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L25_CIRCUIT, "CP.L2.5", "idle");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("dc", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Double> nodes = (Map<String, Double>) result.get("nodes");
+        Double greenCurrent = nodes.get("@d_led_g[id]");
+        Double redCurrent = nodes.get("@d_led_r[id]");
+        assertNotNull(greenCurrent);
+        assertNotNull(redCurrent);
+        assertTrue(
+                Math.abs(greenCurrent) < 1e-3,
+                "Green LED should be off before master switch ON, was " + greenCurrent);
+        assertTrue(
+                Math.abs(redCurrent) < 1e-3,
+                "Red LED should be off before master switch ON, was " + redCurrent);
+    }
+
+    @Test
+    void cpL25IdleWithMasterClosedRunsGreenChargeTran() throws Exception {
+        String closed = CP_L25_CIRCUIT.replace(
+                "\"state\":\"open\"", "\"state\":\"closed\"");
+
+        Map<String, Object> result = simulationService.simulateToMap(
+                closed, "CP.L2.5", "idle");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> green = (Map<String, Object>) components.get("led_g");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) green.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        assertFalse(forwardCurrent.isEmpty());
+        assertTrue(
+                forwardCurrent.get(0) > 1e-3,
+                "Green LED should pulse when master switch is ON, was "
+                        + forwardCurrent.get(0));
+        assertTrue(
+                forwardCurrent.get(0) > forwardCurrent.get(forwardCurrent.size() - 1),
+                "Green LED should fade as cap charges");
+    }
+
+    @Test
+    void cpL25PressedWithMasterOpenIsDcWithLedsOff() throws Exception {
+        String slideRight = CP_L25_CIRCUIT.replace(
+                "\"state\":\"left\"", "\"state\":\"right\"");
+
+        Map<String, Object> result = simulationService.simulateToMap(
+                slideRight, "CP.L2.5", "pressed");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("dc", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Double> nodes = (Map<String, Double>) result.get("nodes");
+        Double greenCurrent = nodes.get("@d_led_g[id]");
+        Double redCurrent = nodes.get("@d_led_r[id]");
+        assertNotNull(greenCurrent);
+        assertNotNull(redCurrent);
+        assertTrue(
+                Math.abs(greenCurrent) < 1e-3,
+                "Green LED must stay off with master open, was " + greenCurrent);
+        assertTrue(
+                Math.abs(redCurrent) < 1e-3,
+                "Red LED must stay off with master open (no phantom cap), was "
+                        + redCurrent);
+    }
+
+    @Test
+    void cpL27SlideCrossfadeShowsPriorLedThenOpposite() throws Exception {
+        String circuitRight = """
+                {
+                  "components": [
+                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A2","0"],"value":"6"},
+                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E2"],"value":"6"},
+                    {"id":"slide1","role":"slide_switch","type":"slide_switch","nodes":["D3","A2","E2"],"state":"right"},
+                    {"id":"r1","role":"resistor_1","type":"resistor","nodes":["D3","C5"],"value":"1000"},
+                    {"id":"r2","role":"resistor_2","type":"resistor","nodes":["C5","F5"],"value":"1000"},
+                    {"id":"led_r","role":"led_1","type":"led","nodes":["C5","C7"],"color":"red"},
+                    {"id":"led_g","role":"led_2","type":"led","nodes":["C7","C5"],"color":"green"},
+                    {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["C7","F5"],"value":"470u"},
+                    {"id":"sw1","role":"switch","type":"switch","nodes":["C7","0"],"state":"closed"}
+                  ]
+                }
+                """;
+
+        String circuitLeft = circuitRight.replace(
+                "\"nodes\":[\"D3\",\"A2\",\"E2\"],\"state\":\"right\"",
+                "\"nodes\":[\"D3\",\"A2\",\"E2\"],\"state\":\"left\"");
+
+        Map<String, Object> result = simulationService.simulateToMap(
+                circuitLeft, "CP.L2.7", "discharge");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> green = (Map<String, Object>) components.get("led_g");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> red = (Map<String, Object>) components.get("led_r");
+        @SuppressWarnings("unchecked")
+        List<Double> gI = (List<Double>) green.get("forward_current");
+        @SuppressWarnings("unchecked")
+        List<Double> rI = (List<Double>) red.get("forward_current");
+
+        System.out.println("green[0]=" + gI.get(0)
+                + " greenMax=" + gI.stream().mapToDouble(Double::doubleValue).max().orElse(0));
+        System.out.println("red[0]=" + rI.get(0) + " redEnd=" + rI.get(rI.size() - 1));
+        System.out.println("g20=" + gI.subList(0, Math.min(20, gI.size())));
+        System.out.println("r20=" + rI.subList(0, Math.min(20, rI.size())));
+
+        assertTrue(
+                gI.get(0) > 5e-4,
+                "Green should still be lit at start of flip from A–C, was " + gI.get(0));
+        assertTrue(
+                gI.get(0) > gI.get(Math.min(80, gI.size() - 1)),
+                "Green should fade during polarity ramp");
+        assertTrue(
+                rI.get(rI.size() - 1) > 5e-4,
+                "Red should be lit by end after flip to A–B, was " + rI.get(rI.size() - 1));
+        assertTrue(
+                rI.get(rI.size() - 1) > rI.get(0) + 5e-4,
+                "Red should rise slowly after green fades");
+    }
 }

@@ -1236,6 +1236,132 @@ export const CP_L2_4_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for CP.L2.5 — single cap charge (green) / discharge (red) via SPDT. */
+export const CP_L2_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.6 — anti-parallel LEDs, polarity reversal via SPDT.
+ * Master SPST + slide SPDT; practice/sim + quiz only (no circuit validation).
+ */
+export const CP_L2_6_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.7 — anti-parallel LEDs with parallel capacitor, polarity via SPDT.
+ * Master SPST + slide SPDT; practice/sim + quiz only (no circuit validation).
+ */
+export const CP_L2_7_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L1.1') {
         return ST_L1_1_PALETTE;
@@ -1300,6 +1426,15 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'CP.L2.4') {
         return CP_L2_4_PALETTE;
     }
+    if (problemCode === 'CP.L2.5') {
+        return CP_L2_5_PALETTE;
+    }
+    if (problemCode === 'CP.L2.6') {
+        return CP_L2_6_PALETTE;
+    }
+    if (problemCode === 'CP.L2.7') {
+        return CP_L2_7_PALETTE;
+    }
     return null;
 }
 
@@ -1325,7 +1460,10 @@ export function supportsSimulator(problemCode) {
         problemCode === 'CP.L1.1' ||
         problemCode === 'CP.L1.2' ||
         problemCode === 'CP.L2.3' ||
-        problemCode === 'CP.L2.4'
+        problemCode === 'CP.L2.4' ||
+        problemCode === 'CP.L2.5' ||
+        problemCode === 'CP.L2.6' ||
+        problemCode === 'CP.L2.7'
     );
 }
 
@@ -1334,7 +1472,10 @@ export function usesTransientSimulation(problemCode) {
         problemCode === 'CP.L1.1' ||
         problemCode === 'CP.L1.2' ||
         problemCode === 'CP.L2.3' ||
-        problemCode === 'CP.L2.4'
+        problemCode === 'CP.L2.4' ||
+        problemCode === 'CP.L2.5' ||
+        problemCode === 'CP.L2.6' ||
+        problemCode === 'CP.L2.7'
     );
 }
 
@@ -1343,9 +1484,16 @@ export function usesSlowChargeSimulation(problemCode) {
     return problemCode === 'CP.L1.2' || problemCode === 'CP.L2.4';
 }
 
-/** CP.L2.3: SPDT slide switch toggles dual-LED RC crossfade. */
+/**
+ * CP.L2.3 dual-RC crossfade; CP.L2.5–L2.7 polarity pulses via SPDT.
+ */
 export function usesSwitchCrossfadeSimulation(problemCode) {
-    return problemCode === 'CP.L2.3';
+    return (
+        problemCode === 'CP.L2.3' ||
+        problemCode === 'CP.L2.5' ||
+        problemCode === 'CP.L2.6' ||
+        problemCode === 'CP.L2.7'
+    );
 }
 
 /**
@@ -1353,6 +1501,41 @@ export function usesSwitchCrossfadeSimulation(problemCode) {
  */
 export function usesParallelCapDipSimulation(problemCode) {
     return problemCode === 'CP.L2.4';
+}
+
+/** CP.L2.5–L2.7: master SPST must be ON before charge/discharge transients. */
+export function usesMasterSwitchSimulation(problemCode) {
+    return (
+        problemCode === 'CP.L2.5' ||
+        problemCode === 'CP.L2.6' ||
+        problemCode === 'CP.L2.7'
+    );
+}
+
+/**
+ * CP.L2.7: opening master discharges parallel C through the LED (slow fade).
+ */
+export function usesMasterOffDischargeSimulation(problemCode) {
+    return problemCode === 'CP.L2.7';
+}
+
+/**
+ * CP.L2.7: parallel-cap polarity crossfade (slow LED fade then opposite rise).
+ */
+export function usesParallelCapPolaritySimulation(problemCode) {
+    return problemCode === 'CP.L2.7';
+}
+
+/** Circuit Submit / ngspice validation (practice-only problems return false). */
+export function usesCircuitValidation(problemCode) {
+    if (!supportsSimulator(problemCode)) {
+        return false;
+    }
+    return (
+        problemCode !== 'CP.L2.5' &&
+        problemCode !== 'CP.L2.6' &&
+        problemCode !== 'CP.L2.7'
+    );
 }
 
 /** Parts that must be on the board before Submit (per problem). */
@@ -1501,6 +1684,33 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
         { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
         { type: ledType('red'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L2.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L2.6': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'CP.L2.7': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
         { type: 'capacitor', maxCount: 1 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
     ],

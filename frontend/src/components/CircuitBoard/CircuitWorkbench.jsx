@@ -7,6 +7,7 @@ import {
     capacitorType,
     CONNECTOR_LENGTHS,
     connectorType,
+    COMPONENT_TYPES,
     getCapacitorGroupItem,
     getCapacitorMaxCount,
     getCapacitorSpec,
@@ -21,6 +22,10 @@ import {
     usesTransientSimulation,
     usesSwitchCrossfadeSimulation,
     usesParallelCapDipSimulation,
+    usesMasterSwitchSimulation,
+    usesMasterOffDischargeSimulation,
+    usesParallelCapPolaritySimulation,
+    usesCircuitValidation,
     getResistorGroupItem,
     getResistorMaxCount,
     getResistorSpec,
@@ -163,6 +168,15 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'CP.L2.4') {
             return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, 2 რეზისტორი';
         }
+        if (problemCode === 'CP.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, წითელი და მწვანე LED, კონდენსატორი, 2 რეზისტორი';
+        }
+        if (problemCode === 'CP.L2.6') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, წითელი და მწვანე LED (ანტიპარ.), კონდესატორი, 1 kΩ რეზისტორი';
+        }
+        if (problemCode === 'CP.L2.7') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ანტიპარ. LED-ები, პარალელური კონდესატორი, 2×1 kΩ';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -219,6 +233,15 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'CP.L2.4') {
         return 'Place: 2 power supplies, button, red LED, capacitor, 2 resistors';
     }
+    if (problemCode === 'CP.L2.5') {
+        return 'Place: 2 power supplies, switch, slide switch, red and green LEDs, capacitor, 2 resistors';
+    }
+    if (problemCode === 'CP.L2.6') {
+        return 'Place: 2 power supplies, switch, slide switch, anti-parallel red/green LEDs, capacitor, 1 kΩ resistor';
+    }
+    if (problemCode === 'CP.L2.7') {
+        return 'Place: 2 power supplies, switch, slide switch, anti-parallel LEDs, parallel capacitor, 2×1 kΩ';
+    }
     return 'Place: power supply, button, lamp';
 }
 
@@ -254,6 +277,25 @@ export default function CircuitWorkbench({ problemCode }) {
     useEffect(() => {
         switchStatesRef.current = switchStates;
     }, [switchStates]);
+
+    useEffect(() => {
+        if (
+            problemCode === 'CP.L2.5' ||
+            problemCode === 'CP.L2.6' ||
+            problemCode === 'CP.L2.7'
+        ) {
+            setCapacitorKey('470uf');
+        } else {
+            setCapacitorKey('10uf');
+        }
+        if (problemCode === 'CP.L2.5') {
+            setResistorKey('5ko1');
+        } else if (problemCode === 'CP.L2.6' || problemCode === 'CP.L2.7') {
+            setResistorKey('1ko');
+        } else {
+            setResistorKey('100o');
+        }
+    }, [problemCode]);
 
     const commitSwitchStates = useCallback((nextStates) => {
         switchStatesRef.current = nextStates;
@@ -755,13 +797,22 @@ export default function CircuitWorkbench({ problemCode }) {
                 typeof result.stop === 'number'
                     ? result.stop
                     : times[times.length - 1];
+            const fullDuration = options.fullDuration === true;
+            const readableCrossfade = options.readableCrossfade === true;
             const playUntilSec = keepLastFrame
-                ? (getTransientSettleTime(result) ?? simStopSec)
+                ? fullDuration
+                    ? simStopSec
+                    : (getTransientSettleTime(result) ?? simStopSec)
                 : simStopSec;
             // Stretch the active transition across a readable wall-clock fade
             // (RC settles in tens of ms; playing the full 4s stop makes fade look instant).
+            // L2.7 polarity: play settle window in ~2–2.5 s (not a full 4 s wait).
             const durationMs = keepLastFrame
-                ? Math.max(2800, Math.min(5000, playUntilSec * 12000))
+                ? fullDuration
+                    ? Math.max(3500, simStopSec * 1000)
+                    : readableCrossfade
+                      ? Math.max(2000, Math.min(2600, playUntilSec * 1100))
+                      : Math.max(2800, Math.min(5000, playUntilSec * 12000))
                 : Math.max(3000, simStopSec * 1000);
             const start = performance.now();
             setTranFrameIndex(0);
@@ -843,6 +894,9 @@ export default function CircuitWorkbench({ problemCode }) {
                     ) {
                         rememberPressedLedCurrent(result);
                     }
+                    if (isTransientResult(result)) {
+                        setTranFrameIndex(0);
+                    }
                     setSimResults(result);
                     if (isTransientResult(result)) {
                         const crossfade =
@@ -856,11 +910,20 @@ export default function CircuitWorkbench({ problemCode }) {
                             simPhase === 'idle'
                                 ? 'charge'
                                 : 'discharge';
+                        const parallelPolarity =
+                            usesParallelCapPolaritySimulation(problemCode);
                         startTranAnimation(result, animPhase, {
                             // Stretch settle so dip→reclaim (and L2.3 crossfade) is visible.
                             keepLastFrame:
                                 crossfade ||
                                 (parallelDip && animPhase === 'charge'),
+                            // CP.L2.5 / CP.L2.6: series-cap pulse over full 4s window.
+                            fullDuration:
+                                crossfade &&
+                                usesMasterSwitchSimulation(problemCode) &&
+                                !parallelPolarity,
+                            // CP.L2.7: fade then rise in ~2–2.5 s (not instant, not 4 s).
+                            readableCrossfade: parallelPolarity,
                         });
                     } else {
                         cancelTranAnimation();
@@ -871,13 +934,22 @@ export default function CircuitWorkbench({ problemCode }) {
 
                 if (!simulationHasError(result) && isLive) {
                     setMessage(
-                        usesSwitchCrossfadeSimulation(problemCode)
+                        usesMasterSwitchSimulation(problemCode) &&
+                            !isTransientResult(result)
                             ? lang === 'ka'
-                                ? 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
-                                : 'Click the slide switch on the board to toggle'
-                            : lang === 'ka'
-                              ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
-                              : 'Press and hold the button on the board'
+                                ? 'ჩართეთ ჩამრთველი ფირზე, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
+                                : 'Turn the switch ON on the board, then toggle the slide (A–B ↔ A–C)'
+                            : usesSwitchCrossfadeSimulation(problemCode)
+                              ? lang === 'ka'
+                                  ? usesMasterSwitchSimulation(problemCode)
+                                      ? 'ჩართეთ ჩამრთველი, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
+                                      : 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
+                                  : usesMasterSwitchSimulation(problemCode)
+                                    ? 'Turn the switch ON, then toggle the slide (A–B ↔ A–C)'
+                                    : 'Click the slide switch on the board to toggle'
+                              : lang === 'ka'
+                                ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
+                                : 'Press and hold the button on the board'
                     );
                 } else if (!simulationHasError(result)) {
                     setMessage(
@@ -941,10 +1013,33 @@ export default function CircuitWorkbench({ problemCode }) {
                 next = atLeft ? 'right' : 'left';
                 // left = green resting side; right = red side (pressed / discharge phases)
                 simPhase = next === 'right' ? 'pressed' : 'discharge';
+                // Master-switch problems: ignore slide pulses while SPST is open.
+                if (usesMasterSwitchSimulation(problemCode)) {
+                    const masterOpen = Object.entries(switchStatesRef.current).some(
+                        ([id, state]) => {
+                            const part = placed.find((p) => p.id === id);
+                            return (
+                                part?.type === COMPONENT_TYPES.SWITCH &&
+                                state !== 'closed'
+                            );
+                        }
+                    );
+                    // Also check nextStates will keep master open (slide-only change).
+                    if (masterOpen) {
+                        simPhase = 'idle';
+                    }
+                }
             } else {
                 const isClosed = current === 'closed';
                 next = isClosed ? 'open' : 'closed';
-                simPhase = next === 'closed' ? 'pressed' : 'discharge';
+                // Master SPST: closing → idle charge/rise; L2.7 opening → discharge fade.
+                if (usesMasterOffDischargeSimulation(problemCode)) {
+                    simPhase = next === 'closed' ? 'idle' : 'discharge';
+                } else if (usesSwitchCrossfadeSimulation(problemCode)) {
+                    simPhase = 'idle';
+                } else {
+                    simPhase = next === 'closed' ? 'pressed' : 'discharge';
+                }
             }
 
             const nextStates = {
@@ -1009,6 +1104,16 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const handleSubmit = async () => {
+        if (!usesCircuitValidation(problemCode)) {
+            setSubmitStatus(null);
+            setMessage(
+                lang === 'ka'
+                    ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და გამოიყენეთ სიმულაცია.'
+                    : 'No circuit check for this task — rebuild from the picture and use Simulate.'
+            );
+            return;
+        }
+
         if (!isBoardComplete(placed, problemCode)) {
             setSubmitStatus('fail');
             setMessage(incompleteBoardMessage(problemCode, lang));
@@ -1865,20 +1970,22 @@ export default function CircuitWorkbench({ problemCode }) {
                               ? 'სიმულაცია'
                               : 'Simulate'}
                     </button>
-                    <button
-                        type="button"
-                        className={styles.submitBtn}
-                        onClick={handleSubmit}
-                        disabled={submitting || simulating || placed.length === 0}
-                    >
-                        {submitting
-                            ? lang === 'ka'
-                                ? 'იმოწმება...'
-                                : 'Checking...'
-                            : lang === 'ka'
-                              ? 'შემოწმება'
-                              : 'Submit'}
-                    </button>
+                    {usesCircuitValidation(problemCode) && (
+                        <button
+                            type="button"
+                            className={styles.submitBtn}
+                            onClick={handleSubmit}
+                            disabled={submitting || simulating || placed.length === 0}
+                        >
+                            {submitting
+                                ? lang === 'ka'
+                                    ? 'იმოწმება...'
+                                    : 'Checking...'
+                                : lang === 'ka'
+                                  ? 'შემოწმება'
+                                  : 'Submit'}
+                        </button>
+                    )}
                 </div>
                 {message && (
                     <p

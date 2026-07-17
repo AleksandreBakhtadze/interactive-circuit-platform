@@ -63,10 +63,24 @@ public class SimulationService {
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);
                 if (AnalysisModes.usesSwitchCrossfade(problemCode)) {
+                    // Master SPST open: L2.5/L2.6 → dark DC; L2.7 discharge phase →
+                    // slow LED fade as parallel C empties through the LED.
+                    if (AnalysisModes.usesMasterSwitch(problemCode)
+                            && isMasterSwitchOpen(circuitJson)) {
+                        if (AnalysisModes.usesMasterOffDischarge(problemCode)
+                                && phase == SimPhase.discharge) {
+                            return runMasterOffDischargeTran(circuitJson);
+                        }
+                        return runDcToMap(circuitJson);
+                    }
                     return switch (phase) {
                         case idle -> runSwitchIdlePowerOnTran(circuitJson);
-                        case pressed -> runSwitchCrossfadeToClosed(circuitJson);
-                        case discharge -> runSwitchCrossfadeToOpen(circuitJson);
+                        case pressed -> AnalysisModes.usesParallelCapPolarity(problemCode)
+                                ? runParallelCapPolarityFlip(circuitJson, true)
+                                : runSwitchCrossfadeToClosed(circuitJson);
+                        case discharge -> AnalysisModes.usesParallelCapPolarity(problemCode)
+                                ? runParallelCapPolarityFlip(circuitJson, false)
+                                : runSwitchCrossfadeToOpen(circuitJson);
                     };
                 }
                 return switch (phase) {
@@ -168,6 +182,42 @@ public class SimulationService {
                         TranScenario.discharge()));
     }
 
+    /**
+     * CP.L2.7: slide polarity flip with slow PWL + prior-DC ICs (parallel C crossfade).
+     *
+     * @param toRight true when sliding to A–C (pressed); false when sliding to A–B (discharge)
+     */
+    private Map<String, Object> runParallelCapPolarityFlip(
+            String circuitJson, boolean toRight) throws Exception {
+        String priorJson = SpiceGenerator.applySwitchStates(
+                circuitJson,
+                Map.of("slide_switch", toRight ? "left" : "right"));
+        Map<String, Double> priorNodes = runDcAndParse(priorJson);
+        TranScenario scenario = toRight
+                ? TranScenario.charge()
+                : TranScenario.discharge();
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateParallelCapPolarityTranSpice(
+                        circuitJson, priorNodes, toRight, scenario));
+    }
+
+    /**
+     * CP.L2.7: master opened — ICs from master-closed DC, then open-switch discharge.
+     */
+    private Map<String, Object> runMasterOffDischargeTran(String circuitJson)
+            throws Exception {
+        String chargedJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("switch", "closed"));
+        Map<String, Double> chargedNodes = runDcAndParse(chargedJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateDischargeTranSpice(
+                        circuitJson,
+                        chargedNodes,
+                        TranScenario.discharge()));
+    }
+
     private SimPhase parseSimPhase(String simPhaseName) {
         if (simPhaseName == null || simPhaseName.isBlank()) {
             return SimPhase.idle;
@@ -177,6 +227,29 @@ public class SimulationService {
         } catch (IllegalArgumentException e) {
             return SimPhase.idle;
         }
+    }
+
+    /**
+     * CP.L2.5 master SPST ({@code role=switch}): when open, idle sim is dark DC only.
+     */
+    @SuppressWarnings("unchecked")
+    private boolean isMasterSwitchOpen(String circuitJson) throws Exception {
+        Map<String, Object> data = objectMapper.readValue(circuitJson, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return true;
+        }
+        for (Map<String, Object> comp : components) {
+            if (!"switch".equals(comp.get("role"))) {
+                continue;
+            }
+            if (!"switch".equals(comp.get("type"))) {
+                continue;
+            }
+            return !"closed".equals(comp.get("state"));
+        }
+        return true;
     }
 
     private Map<String, Object> simulateTranToMap(String circuitJson, TranSpiceBuild build)

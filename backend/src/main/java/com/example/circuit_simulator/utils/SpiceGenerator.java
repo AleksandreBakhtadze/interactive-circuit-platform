@@ -237,7 +237,8 @@ public class SpiceGenerator {
                     probes.add(new TranProbe(id, "voltage", voltageExpression(nodes)));
                 }
 
-                case "switch" -> appendTranSwitch(sb, nodesSet, id, role, nodes, scenario);
+                case "switch" -> appendTranSwitch(
+                        sb, nodesSet, id, role, nodes, scenario, (String) comp.get("state"));
 
                 case "led" -> {
                     String color = (String) comp.get("color");
@@ -290,6 +291,150 @@ public class SpiceGenerator {
         sb.append("\nquit\n.endc\n.end\n");
 
         return new TranSpiceBuild(sb.toString(), probes, scenario);
+    }
+
+    /**
+     * CP.L2.7 polarity flip: replace SPDT resistors with a slow PWL on the common
+     * node (prior rail → new rail) plus capacitor/LED-node ICs from prior DC.
+     * Instant SPDT reconnect fights node ICs and snaps the old LED off.
+     */
+    @SuppressWarnings("unchecked")
+    public static TranSpiceBuild generateParallelCapPolarityTranSpice(
+            String json,
+            Map<String, Double> priorNodes,
+            boolean toRight,
+            TranScenario scenario) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        StringBuilder sb = new StringBuilder();
+        Set<String> nodesSet = new HashSet<>();
+        Set<String> drivenNodes = new HashSet<>();
+        List<TranProbe> probes = new ArrayList<>();
+
+        sb.append("* CP.L2.7 parallel-cap polarity transient\n");
+
+        for (Map<String, Object> comp : components) {
+            String type = (String) comp.get("type");
+            List<String> nodes = (List<String>) comp.get("nodes");
+            if ("voltage".equals(type) && nodes != null) {
+                drivenNodes.addAll(nodes);
+            }
+        }
+        drivenNodes.remove("0");
+
+        for (Map<String, Object> comp : components) {
+            String id = (String) comp.get("id");
+            String type = (String) comp.get("type");
+            List<String> nodes = (List<String>) comp.get("nodes");
+            String value = (String) comp.get("value");
+            String role = (String) comp.get("role");
+
+            nodesSet.addAll(nodes);
+
+            switch (type) {
+                case "voltage" -> sb.append("V_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1))
+                        .append(" DC ").append(value).append("\n");
+
+                case "resistor" -> sb.append("R_").append(id).append(" ")
+                        .append(nodes.get(0)).append(" ")
+                        .append(nodes.get(1)).append(" ")
+                        .append(value).append("\n");
+
+                case "switch" -> appendTranSwitch(
+                        sb, nodesSet, id, role, nodes, scenario, (String) comp.get("state"));
+
+                case "led" -> {
+                    String color = (String) comp.get("color");
+                    String ledModel = ledModelForColor(color);
+                    sb.append("D_").append(id).append(" ")
+                            .append(nodes.get(0)).append(" ")
+                            .append(nodes.get(1)).append(" ")
+                            .append(ledModel).append("\n");
+                    probes.add(new TranProbe(id, "forward_current",
+                            "@d_" + id.toLowerCase() + "[id]"));
+                }
+
+                case "capacitor" -> {
+                    double ic = nodeVoltage(priorNodes, nodes.get(0))
+                            - nodeVoltage(priorNodes, nodes.get(1));
+                    sb.append("C_").append(id).append(" ")
+                            .append(nodes.get(0)).append(" ")
+                            .append(nodes.get(1)).append(" ")
+                            .append(value)
+                            .append(String.format(Locale.US, " ic=%.6f\n", ic));
+                }
+
+                case "slide_switch" -> {
+                    drivenNodes.add(nodes.get(0));
+                    appendPolarityPwlDrive(
+                            sb, id, nodes, priorNodes, toRight, scenario.stop());
+                }
+
+                default -> { /* unused in L2.7 polarity tran */ }
+            }
+        }
+
+        nodesSet.remove("0");
+        for (String node : nodesSet) {
+            sb.append("R_GND_").append(node)
+                    .append(" ").append(node).append(" 0 1e12\n");
+        }
+
+        appendModels(sb);
+        sb.append(".model SW_BTN SW(Ron=1e-5 Roff=1e12 Vt=2.5 Vh=-0.5)\n");
+        sb.append(".options savecurrents\n");
+
+        sb.append("* ICs from prior polarity (skip PWL/voltage-driven nodes)\n");
+        for (String node : nodesSet) {
+            if (node.startsWith("ctrl_") || drivenNodes.contains(node)) {
+                continue;
+            }
+            double v = nodeVoltage(priorNodes, node);
+            sb.append(String.format(Locale.US, ".ic v(%s)=%.6f\n", node, v));
+        }
+
+        sb.append("\n.control\n");
+        sb.append(String.format(Locale.US, "tran %.6f %.6f uic\n",
+                scenario.step(), scenario.stop()));
+        sb.append("wrdata tran_out.txt");
+        for (TranProbe probe : probes) {
+            sb.append(" ").append(probe.wrdataExpression());
+        }
+        sb.append("\nquit\n.endc\n.end\n");
+
+        return new TranSpiceBuild(sb.toString(), probes, scenario);
+    }
+
+    /**
+     * Drive SPDT common from prior rail voltage to the new rail with a slow ramp
+     * so parallel-cap LED brightness tracks recharge (quiz crossfade).
+     */
+    private static void appendPolarityPwlDrive(
+            StringBuilder sb,
+            String id,
+            List<String> nodes,
+            Map<String, Double> priorNodes,
+            boolean toRight,
+            double stop) {
+        String common = nodes.get(0);
+        String left = nodes.get(1);
+        String right = nodes.get(2);
+        double vPrior = nodeVoltage(priorNodes, common);
+        double vNew = toRight
+                ? nodeVoltage(priorNodes, right)
+                : nodeVoltage(priorNodes, left);
+        // Hold prior briefly, ramp through 0 (old LED fades), then to new rail (new LED rises).
+        // ~2 s active window — frontend plays that window in ~2–2.5 s wall time.
+        double vMid = 0.0;
+        sb.append("V_pol_").append(id).append(" ").append(common).append(" 0 ");
+        sb.append(String.format(Locale.US,
+                "PWL(0 %.6f 0.050000 %.6f 1.000000 %.6f 2.000000 %.6f %.6f %.6f)\n",
+                vPrior, vPrior, vMid, vNew, stop, vNew));
     }
 
     /**
@@ -366,7 +511,8 @@ public class SpiceGenerator {
             String id,
             String role,
             List<String> nodes,
-            TranScenario scenario) {
+            TranScenario scenario,
+            String switchState) {
         String ctrlNode = "ctrl_" + id.replaceAll("[^a-zA-Z0-9_]", "_");
         nodesSet.add(ctrlNode);
 
@@ -381,6 +527,13 @@ public class SpiceGenerator {
                     scenario.pressEnd(),
                     scenario.pressEnd() + 1e-6,
                     scenario.stop()));
+        } else if ("switch".equals(role)) {
+            // CP.L2.5 master SPST — follow JSON state; do not force closed on idle/charge/discharge.
+            if ("closed".equals(switchState)) {
+                sb.append(String.format(Locale.US, "PWL(0 6 %.6f 6)\n", scenario.stop()));
+            } else {
+                sb.append(String.format(Locale.US, "PWL(0 0 %.6f 0)\n", scenario.stop()));
+            }
         } else if (scenario.switchTimeline() == TranScenario.SwitchTimeline.CLOSED) {
             sb.append(String.format(Locale.US, "PWL(0 6 %.6f 6)\n", scenario.stop()));
         } else {

@@ -21,6 +21,17 @@ public class ValidationSpecRegistry {
             Map.entry("ST.L1.5", stL15()),
             Map.entry("ST.L1.8", stL18()),
             Map.entry("ST.L2.4", stL24()),
+            Map.entry("ST.L2.9", stL29()),
+            Map.entry("ST.L2.10", stL210()),
+            Map.entry("ST.L2.11", stL211()),
+            Map.entry("ST.L2.12", stL212()),
+            Map.entry("ST.L2.13", stL213()),
+            Map.entry("ST.L2.14", stL214()),
+            Map.entry("LR.L1.1", lrL11()),
+            Map.entry("LR.L1.2", lrL12()),
+            Map.entry("LR.L1.3", lrL13()),
+            Map.entry("LR.L2.4", lrL24()),
+            Map.entry("LR.L2.5", lrL25()),
             Map.entry("CP.L1.1", cpL11()),
             Map.entry("CP.L1.2", cpL12()),
             Map.entry("CP.L2.3", cpL23()),
@@ -181,6 +192,533 @@ public class ValidationSpecRegistry {
                                         // Forward-biased LED: positive [id] well above reverse leakage.
                                         new ValidationCheck("led_1", "forward_current", "gt", 0.01)
                                 )
+                        )
+                )
+        );
+    }
+
+    /**
+     * LR.L1.1 — two red LEDs + switch + button + one resistor + two supplies.
+     * Accepts series or parallel LED wiring (lit_count does not care about topology).
+     */
+    private static ProblemValidationSpec lrL11() {
+        return switchButtonBothLedsLit("LR.L1.1");
+    }
+
+    /** LR.L1.2 — same as L1.1 but one supply (parallel is the working solution). */
+    private static ProblemValidationSpec lrL12() {
+        return switchButtonBothLedsLit("LR.L1.2");
+    }
+
+    /**
+     * LR.L1.3 — both LEDs lit with clearly different brightness (different series resistors).
+     */
+    private static ProblemValidationSpec lrL13() {
+        return new ProblemValidationSpec(
+                "LR.L1.3",
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch off, button pressed",
+                                "ჩამრთველი გამორთული, ღილაკი დაჭერილი",
+                                Map.of("switch", "open", "button_1", "closed"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, button open",
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, button pressed",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 2),
+                                        // 1k vs 5.1k → roughly 5×; require at least 2×.
+                                        new ValidationCheck("leds", "current_ratio", "gt", 2.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /** LR.L2.4 — lamp || (R+LED), switch + button, two supplies. */
+    private static ProblemValidationSpec lrL24() {
+        return new ProblemValidationSpec(
+                "LR.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Switch off, button pressed",
+                                "ჩამრთველი გამორთული, ღილაკი დაჭერილი",
+                                Map.of("switch", "open", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Switch on, button open",
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Switch on, button pressed",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.01),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * LR.L2.5 — independent branches: one button → lamp, other → LED; two supplies.
+     * Roles follow placement order: button_1 ↔ lamp, button_2 ↔ LED.
+     */
+    private static ProblemValidationSpec lrL25() {
+        return new ProblemValidationSpec(
+                "LR.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Switch on, both buttons open",
+                                "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Only first button pressed (lamp)",
+                                "ჩართულია მხოლოდ პირველი ღილაკი — ნათურა",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.01),
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Only second button pressed (LED)",
+                                "ჩართულია მხოლოდ მეორე ღილაკი — შუქდიოდი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "Both buttons pressed",
+                                "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.01),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /** Switch + button: off cases → 0 LEDs lit; pressed → both LEDs lit. */
+    private static ProblemValidationSpec switchButtonBothLedsLit(String code) {
+        return new ProblemValidationSpec(
+                code,
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch off, button pressed",
+                                "ჩამრთველი გამორთული, ღილაკი დაჭერილი",
+                                Map.of("switch", "open", "button_1", "closed"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, button open",
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, button pressed",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 2))
+                        )
+                )
+        );
+    }
+
+    /** ST.L2.9 — series red+green LEDs, switch + button, two supplies. */
+    private static ProblemValidationSpec stL29() {
+        return new ProblemValidationSpec(
+                "ST.L2.9",
+                List.of(
+                        new ValidationCase(
+                                "switch_off_button_open",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001),
+                                        new ValidationCheck("led_2", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_off_button_pressed",
+                                "ჩამრთველი გამორთული, ღილაკი დაჭერილი",
+                                Map.of("switch", "open", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001),
+                                        new ValidationCheck("led_2", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001),
+                                        new ValidationCheck("led_2", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        // Two LEDs in series drop significant Vf; ~1 mA is visibly “on”.
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "gt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /** ST.L2.10 — series two buttons + red LED; both buttons required (like ST.L2.4). */
+    private static ProblemValidationSpec stL210() {
+        return new ProblemValidationSpec(
+                "ST.L2.10",
+                List.of(
+                        new ValidationCase(
+                                "switch_off_both_open",
+                                "ჩამრთველი გამორთული",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_both_open",
+                                "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button1_only",
+                                "ჩართულია მხოლოდ პირველი ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button2_only",
+                                "ჩართულია მხოლოდ მეორე ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_both_pressed",
+                                "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /** ST.L2.11 — parallel two buttons + red LED; either button lights (OR). */
+    private static ProblemValidationSpec stL211() {
+        return new ProblemValidationSpec(
+                "ST.L2.11",
+                List.of(
+                        new ValidationCase(
+                                "switch_off_both_open",
+                                "ჩამრთველი გამორთული",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_both_open",
+                                "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("led_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button1_only",
+                                "ჩართულია მხოლოდ პირველი ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button2_only",
+                                "ჩართულია მხოლოდ მეორე ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_both_pressed",
+                                "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /** ST.L2.12 — OR buttons; green + blue LEDs in series; two supplies. */
+    private static ProblemValidationSpec stL212() {
+        return orButtonsLitCountSpec("ST.L2.12", 2);
+    }
+
+    /**
+     * ST.L2.13 — independent branches: button1 ↔ red, button2 ↔ blue.
+     * Uses lit_count so placement order of LEDs does not matter.
+     */
+    private static ProblemValidationSpec stL213() {
+        return independentBranchesLitCountSpec("ST.L2.13", 1);
+    }
+
+    /** ST.L2.14 — independent branches: 2 green / 2 blue; two supplies. */
+    private static ProblemValidationSpec stL214() {
+        return independentBranchesLitCountSpec("ST.L2.14", 2);
+    }
+
+    /** Parallel buttons (OR): either / both light exactly {@code litWhenOn} LEDs. */
+    private static ProblemValidationSpec orButtonsLitCountSpec(String code, double litWhenOn) {
+        return new ProblemValidationSpec(
+                code,
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, both buttons open",
+                                "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Only first button pressed",
+                                "ჩართულია მხოლოდ პირველი ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", litWhenOn))
+                        ),
+                        new ValidationCase(
+                                "Only second button pressed",
+                                "ჩართულია მხოლოდ მეორე ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", litWhenOn))
+                        ),
+                        new ValidationCase(
+                                "Both buttons pressed",
+                                "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", litWhenOn))
+                        )
+                )
+        );
+    }
+
+    /**
+     * Independent button→LED branches: each button lights {@code perBranch} LEDs;
+     * both buttons light {@code 2 * perBranch}.
+     */
+    private static ProblemValidationSpec independentBranchesLitCountSpec(
+            String code, double perBranch) {
+        return new ProblemValidationSpec(
+                code,
+                List.of(
+                        new ValidationCase(
+                                "Switch off",
+                                "ჩამრთველი გამორთული",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Switch on, both buttons open",
+                                "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(new ValidationCheck("leds", "lit_count", "eq", 0))
+                        ),
+                        new ValidationCase(
+                                "Only first button pressed",
+                                "ჩართულია მხოლოდ პირველი ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", perBranch))
+                        ),
+                        new ValidationCase(
+                                "Only second button pressed",
+                                "ჩართულია მხოლოდ მეორე ღილაკი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", perBranch))
+                        ),
+                        new ValidationCase(
+                                "Both buttons pressed",
+                                "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 2 * perBranch))
                         )
                 )
         );

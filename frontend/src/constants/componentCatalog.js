@@ -799,6 +799,375 @@ export const ST_L1_8_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for ST.L2.9 — red + green LEDs in series, switch, button, two supplies. */
+export const ST_L2_9_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for LR.L1.1 — two red LEDs (series or parallel), switch, button, two supplies. */
+export const LR_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** LR.L1.2 — same as L1.1 but one supply (parallel LEDs). */
+export const LR_L1_2_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** LR.L1.3 — unequal brightness: two resistors of different values. */
+export const LR_L1_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** LR.L2.4 — lamp || (R+LED), switch + button, two supplies. */
+export const LR_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** LR.L2.5 — independent button→lamp / button→LED branches. */
+export const LR_L2_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for ST.L2.10 — two buttons + red LED; both buttons required (AND). */
+export const ST_L2_10_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for ST.L2.11 — two buttons in parallel (OR); either lights the LED. */
+export const ST_L2_11_PALETTE = ST_L2_10_PALETTE;
+
+/** ST.L2.12 — OR buttons; green + blue LEDs in series; two supplies. */
+export const ST_L2_12_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** ST.L2.13 — independent branches: red / blue, one supply. */
+export const ST_L2_13_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** ST.L2.14 — independent branches: 2×green / 2×blue; two supplies. */
+export const ST_L2_14_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 2,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 10,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 /** CP.L1.2 — same parts as CP.L1.1 (charge resistor + discharge resistor). */
 export const CP_L1_2_PALETTE = CP_L1_1_PALETTE;
 
@@ -886,6 +1255,39 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L2.4') {
         return ST_L2_4_PALETTE;
     }
+    if (problemCode === 'ST.L2.9') {
+        return ST_L2_9_PALETTE;
+    }
+    if (problemCode === 'LR.L1.1') {
+        return LR_L1_1_PALETTE;
+    }
+    if (problemCode === 'LR.L1.2') {
+        return LR_L1_2_PALETTE;
+    }
+    if (problemCode === 'LR.L1.3') {
+        return LR_L1_3_PALETTE;
+    }
+    if (problemCode === 'LR.L2.4') {
+        return LR_L2_4_PALETTE;
+    }
+    if (problemCode === 'LR.L2.5') {
+        return LR_L2_5_PALETTE;
+    }
+    if (problemCode === 'ST.L2.10') {
+        return ST_L2_10_PALETTE;
+    }
+    if (problemCode === 'ST.L2.11') {
+        return ST_L2_11_PALETTE;
+    }
+    if (problemCode === 'ST.L2.12') {
+        return ST_L2_12_PALETTE;
+    }
+    if (problemCode === 'ST.L2.13') {
+        return ST_L2_13_PALETTE;
+    }
+    if (problemCode === 'ST.L2.14') {
+        return ST_L2_14_PALETTE;
+    }
     if (problemCode === 'CP.L1.1') {
         return CP_L1_1_PALETTE;
     }
@@ -909,6 +1311,17 @@ export function supportsSimulator(problemCode) {
         problemCode === 'ST.L1.5' ||
         problemCode === 'ST.L1.8' ||
         problemCode === 'ST.L2.4' ||
+        problemCode === 'ST.L2.9' ||
+        problemCode === 'LR.L1.1' ||
+        problemCode === 'LR.L1.2' ||
+        problemCode === 'LR.L1.3' ||
+        problemCode === 'LR.L2.4' ||
+        problemCode === 'LR.L2.5' ||
+        problemCode === 'ST.L2.10' ||
+        problemCode === 'ST.L2.11' ||
+        problemCode === 'ST.L2.12' ||
+        problemCode === 'ST.L2.13' ||
+        problemCode === 'ST.L2.14' ||
         problemCode === 'CP.L1.1' ||
         problemCode === 'CP.L1.2' ||
         problemCode === 'CP.L2.3' ||
@@ -978,6 +1391,89 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
         { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
         { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'ST.L2.9': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'LR.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'LR.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'LR.L1.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'LR.L2.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'LR.L2.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'ST.L2.10': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'ST.L2.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'ST.L2.12': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'ST.L2.13': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 1 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'ST.L2.14': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: ledType('green'), maxCount: 2 },
+        { type: ledType('blue'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
     ],
     'CP.L1.1': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },

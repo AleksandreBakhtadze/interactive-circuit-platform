@@ -10,7 +10,10 @@ import {
     parseConnectorLength,
     getResistorSpec,
 } from '../constants/componentCatalog';
-import { getRotatedSnapOffsets } from '../constants/componentRotation';
+import {
+    getRotatedFootprint,
+    getRotatedSnapOffsets,
+} from '../constants/componentRotation';
 import { pinName } from '../components/CircuitBoard/boardPlacement';
 
 /** Union-find over breadboard pin ids (e.g. A3, C7). */
@@ -56,6 +59,28 @@ export function getComponentTerminalPins(component) {
     return offsets.map((o) => pinName(component.row + o.dr, component.col + o.dc));
 }
 
+/**
+ * Every board pin under a connector footprint (including middle segments).
+ * Placement only treats endpoints as terminals, but electrically a wire/bus
+ * must short every hole it covers — otherwise a long ground rail leaves
+ * middle cathodes floating.
+ */
+export function getConnectorSpanPins(component) {
+    const len = parseConnectorLength(component.type);
+    if (len === null) {
+        return getComponentTerminalPins(component);
+    }
+    const rotation = component.rotation ?? 0;
+    const { w, h } = getRotatedFootprint(component.type, rotation);
+    const pins = [];
+    for (let dr = 0; dr < h; dr += 1) {
+        for (let dc = 0; dc < w; dc += 1) {
+            pins.push(pinName(component.row + dr, component.col + dc));
+        }
+    }
+    return pins;
+}
+
 /** Same id normalization as ngspice netlist / simulation result keys. */
 export function toSpiceId(id) {
     return String(id).replace(/[^a-zA-Z0-9_]/g, '_');
@@ -65,6 +90,7 @@ const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.POWER_SUPPLY]: 'power_supply',
     [COMPONENT_TYPES.BUTTON]: 'button',
     [COMPONENT_TYPES.SWITCH]: 'switch',
+    [COMPONENT_TYPES.SLIDE_SWITCH]: 'slide_switch',
     [COMPONENT_TYPES.LAMP]: 'lamp',
     [COMPONENT_TYPES.RESISTOR]: 'resistor',
 };
@@ -85,9 +111,12 @@ export function isMomentaryInteractive(type) {
     return type === COMPONENT_TYPES.BUTTON;
 }
 
-/** Latching parts (click to toggle open/closed). */
+/** Latching parts (click to toggle). SPST open/closed or SPDT left/right. */
 export function isToggleInteractive(type) {
-    return type === COMPONENT_TYPES.SWITCH;
+    return (
+        type === COMPONENT_TYPES.SWITCH ||
+        type === COMPONENT_TYPES.SLIDE_SWITCH
+    );
 }
 
 /** Parts the student can operate during live simulation. */
@@ -95,13 +124,16 @@ export function isInteractivePart(type) {
     return isMomentaryInteractive(type) || isToggleInteractive(type);
 }
 
-/** Default switch states for live simulation (all open / off). */
+export function isSlideSwitchType(type) {
+    return type === COMPONENT_TYPES.SLIDE_SWITCH;
+}
+
+/** Default interactive states for live simulation. */
 export function createInitialSwitchStates(placed) {
     const states = {};
     for (const comp of placed) {
-        if (isInteractivePart(comp.type)) {
-            states[comp.id] = 'open';
-        }
+        if (!isInteractivePart(comp.type)) continue;
+        states[comp.id] = isSlideSwitchType(comp.type) ? 'left' : 'open';
     }
     return states;
 }
@@ -109,18 +141,27 @@ export function createInitialSwitchStates(placed) {
 /**
  * Build ngspice-ready circuit JSON from workbench placement state.
  * @param {object[]} placed
- * @param {Record<string, 'open'|'closed'>} [switchStatesById] — per placed component id
+ * @param {Record<string, string>} [switchStatesById] — per placed component id
+ *   (open/closed for SPST; left/right for slide switch)
  */
 export function buildCircuitJson(placed, switchStatesById = {}) {
     const uf = new UnionFind();
 
     for (const comp of placed) {
+        if (isConnectorType(comp.type)) {
+            const spanPins = getConnectorSpanPins(comp);
+            for (const pin of spanPins) {
+                uf.add(pin);
+            }
+            for (let i = 1; i < spanPins.length; i += 1) {
+                uf.union(spanPins[0], spanPins[i]);
+            }
+            continue;
+        }
+
         const pins = getComponentTerminalPins(comp);
         for (const pin of pins) {
             uf.add(pin);
-        }
-        if (isConnectorType(comp.type) && pins.length >= 2) {
-            uf.union(pins[0], pins[1]);
         }
     }
 
@@ -206,6 +247,16 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                     type: 'switch',
                     nodes,
                     state: switchStatesById[comp.id] ?? 'open',
+                });
+                break;
+
+            case COMPONENT_TYPES.SLIDE_SWITCH:
+                components.push({
+                    id,
+                    role,
+                    type: 'slide_switch',
+                    nodes,
+                    state: switchStatesById[comp.id] ?? 'left',
                 });
                 break;
 

@@ -19,6 +19,8 @@ import {
     getLedSpec,
     getPaletteForProblem,
     usesTransientSimulation,
+    usesSwitchCrossfadeSimulation,
+    usesParallelCapDipSimulation,
     getResistorGroupItem,
     getResistorMaxCount,
     getResistorSpec,
@@ -49,6 +51,7 @@ import {
     getComponentVoltage,
     getLedBrightnessRatio,
     getTransientSeriesMax,
+    getTransientSettleTime,
     getPlacedComponentImage,
     isTransientResult,
     normalizeSimulationResults,
@@ -61,6 +64,7 @@ import {
     isInteractivePart,
     isMomentaryInteractive,
     isToggleInteractive,
+    isSlideSwitchType,
     toSpiceId,
 } from '../../utils/circuitNetlist';
 import {
@@ -117,6 +121,12 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'CP.L1.2') {
             return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, 2 რეზისტორი';
         }
+        if (problemCode === 'CP.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი (სლაიდერი), წითელი და მწვანე LED, 2 კონდენსატორი, რეზისტორები';
+        }
+        if (problemCode === 'CP.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი LED, კონდენსატორი, 2 რეზისტორი';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -129,6 +139,12 @@ function incompleteBoardMessage(problemCode, lang) {
         return 'Place: 2 power supplies, button, red LED, capacitor, resistor';
     }
     if (problemCode === 'CP.L1.2') {
+        return 'Place: 2 power supplies, button, red LED, capacitor, 2 resistors';
+    }
+    if (problemCode === 'CP.L2.3') {
+        return 'Place: 2 power supplies, slide switch, red and green LEDs, 2 capacitors, resistors';
+    }
+    if (problemCode === 'CP.L2.4') {
         return 'Place: 2 power supplies, button, red LED, capacitor, 2 resistors';
     }
     return 'Place: power supply, button, lamp';
@@ -589,6 +605,13 @@ export default function CircuitWorkbench({ problemCode }) {
         }
     }, []);
 
+    /** End of a CP.L2.3 crossfade: keep final frame (do not snap back to power-on idle). */
+    const finishCrossfadeAnimation = useCallback((result) => {
+        setLedTranAnimPhase(null);
+        const last = Array.isArray(result?.time) ? result.time.length - 1 : 0;
+        setTranFrameIndex(Math.max(0, last));
+    }, []);
+
     const rememberPressedLedCurrent = useCallback(
         (result) => {
             const ledComp = placed.find((p) => isLedType(p.type));
@@ -618,11 +641,12 @@ export default function CircuitWorkbench({ problemCode }) {
     );
 
     const startTranAnimation = useCallback(
-        (result, phase) => {
+        (result, phase, options = {}) => {
             cancelTranAnimation();
+            const keepLastFrame = options.keepLastFrame === true;
             const times = result?.time;
             if (!Array.isArray(times) || times.length < 2) {
-                if (phase === 'discharge') {
+                if (phase === 'discharge' && !keepLastFrame) {
                     finishTranAnimation();
                 } else {
                     setLedTranAnimPhase(null);
@@ -658,13 +682,20 @@ export default function CircuitWorkbench({ problemCode }) {
                 typeof result.stop === 'number'
                     ? result.stop
                     : times[times.length - 1];
-            const durationMs = Math.max(3000, simStopSec * 1000);
+            const playUntilSec = keepLastFrame
+                ? (getTransientSettleTime(result) ?? simStopSec)
+                : simStopSec;
+            // Stretch the active transition across a readable wall-clock fade
+            // (RC settles in tens of ms; playing the full 4s stop makes fade look instant).
+            const durationMs = keepLastFrame
+                ? Math.max(2800, Math.min(5000, playUntilSec * 12000))
+                : Math.max(3000, simStopSec * 1000);
             const start = performance.now();
             setTranFrameIndex(0);
 
             const tick = (now) => {
                 const progress = Math.min(1, (now - start) / durationMs);
-                const targetTime = progress * times[times.length - 1];
+                const targetTime = progress * playUntilSec;
                 let idx = 0;
                 while (idx < times.length - 1 && times[idx + 1] < targetTime) {
                     idx += 1;
@@ -674,7 +705,9 @@ export default function CircuitWorkbench({ problemCode }) {
                     tranAnimRef.current = requestAnimationFrame(tick);
                 } else {
                     tranAnimRef.current = null;
-                    if (phase === 'discharge') {
+                    if (keepLastFrame) {
+                        finishCrossfadeAnimation(result);
+                    } else if (phase === 'discharge') {
                         finishTranAnimation();
                     } else {
                         setLedTranAnimPhase(null);
@@ -689,6 +722,7 @@ export default function CircuitWorkbench({ problemCode }) {
         [
             cancelTranAnimation,
             finishTranAnimation,
+            finishCrossfadeAnimation,
             placed,
             rememberPressedLedCurrent,
         ]
@@ -738,12 +772,23 @@ export default function CircuitWorkbench({ problemCode }) {
                     }
                     setSimResults(result);
                     if (isTransientResult(result)) {
+                        const crossfade =
+                            usesSwitchCrossfadeSimulation(problemCode);
+                        const parallelDip =
+                            usesParallelCapDipSimulation(problemCode);
                         const animPhase =
                             result.simPhase === 'pressed' ||
-                            simPhase === 'pressed'
+                            result.simPhase === 'idle' ||
+                            simPhase === 'pressed' ||
+                            simPhase === 'idle'
                                 ? 'charge'
                                 : 'discharge';
-                        startTranAnimation(result, animPhase);
+                        startTranAnimation(result, animPhase, {
+                            // Stretch settle so dip→reclaim (and L2.3 crossfade) is visible.
+                            keepLastFrame:
+                                crossfade ||
+                                (parallelDip && animPhase === 'charge'),
+                        });
                     } else {
                         cancelTranAnimation();
                         setLedTranAnimPhase(null);
@@ -753,9 +798,13 @@ export default function CircuitWorkbench({ problemCode }) {
 
                 if (!simulationHasError(result) && isLive) {
                     setMessage(
-                        lang === 'ka'
-                            ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
-                            : 'Press and hold the button on the board'
+                        usesSwitchCrossfadeSimulation(problemCode)
+                            ? lang === 'ka'
+                                ? 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
+                                : 'Click the slide switch on the board to toggle'
+                            : lang === 'ka'
+                              ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
+                              : 'Press and hold the button on the board'
                     );
                 } else if (!simulationHasError(result)) {
                     setMessage(
@@ -810,12 +859,36 @@ export default function CircuitWorkbench({ problemCode }) {
         e.preventDefault();
 
         if (isToggleInteractive(comp.type)) {
-            const current = switchStatesRef.current[comp.id] ?? 'open';
+            const current = switchStatesRef.current[comp.id];
+            let next;
+            let simPhase;
+
+            if (isSlideSwitchType(comp.type)) {
+                const atLeft = (current ?? 'left') !== 'right';
+                next = atLeft ? 'right' : 'left';
+                // left = green resting side; right = red side (pressed / discharge phases)
+                simPhase = next === 'right' ? 'pressed' : 'discharge';
+            } else {
+                const isClosed = current === 'closed';
+                next = isClosed ? 'open' : 'closed';
+                simPhase = next === 'closed' ? 'pressed' : 'discharge';
+            }
+
             const nextStates = {
                 ...switchStatesRef.current,
-                [comp.id]: current === 'closed' ? 'open' : 'closed',
+                [comp.id]: next,
             };
             commitSwitchStates(nextStates);
+
+            if (usesSwitchCrossfadeSimulation(problemCode)) {
+                // Keep the last lit frame until the new .tran arrives — resetting
+                // to frame 0 on the old series snaps the fading LED off instantly.
+                cancelTranAnimation();
+                setLedTranAnimPhase(null);
+                await runLiveSimulation(nextStates, { simPhase });
+                return;
+            }
+
             await runLiveSimulation(nextStates);
             return;
         }
@@ -1423,36 +1496,103 @@ export default function CircuitWorkbench({ problemCode }) {
                             simResults &&
                             !simulationHasError(simResults);
                         const spiceComponentId = toSpiceId(comp.id);
+                        const slideState = isSlideSwitchType(comp.type)
+                            ? (switchStatesRef.current[comp.id] ?? 'left')
+                            : null;
                         const switchClosed =
-                            switchStatesRef.current[comp.id] === 'closed';
+                            switchStatesRef.current[comp.id] === 'closed' ||
+                            slideState === 'right';
                         const frameIndex = isTransientResult(simResults)
                             ? tranFrameIndex
                             : 0;
                         const isChargeTranResult =
                             simResults?.simPhase === 'pressed' && switchClosed;
-                        const isLedTranFade =
+                        const switchCrossfade =
+                            usesSwitchCrossfadeSimulation(problemCode) &&
                             isLedType(comp.type) &&
-                            isTransientResult(simResults) &&
-                            pressedLedCurrentMaxRef.current &&
-                            (ledTranAnimPhase === 'charge' ||
-                                ledTranAnimPhase === 'discharge' ||
-                                isChargeTranResult);
-                        const ledBrightnessDirection =
-                            ledTranAnimPhase === 'charge' || isChargeTranResult
-                                ? 'charge'
-                                : 'discharge';
-                        const ledBrightnessRatio = isLedTranFade
-                            ? getLedBrightnessRatio(
-                                  simResults,
-                                  spiceComponentId,
-                                  frameIndex,
-                                  pressedLedCurrentMaxRef.current,
-                                  ledBrightnessDirection
-                              )
-                            : undefined;
+                            isTransientResult(simResults);
+                        let isLedTranFade = false;
+                        let ledBrightnessDirection = 'discharge';
+                        let ledBrightnessRatio;
+
+                        if (switchCrossfade) {
+                            const i0 =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    0
+                                ) ?? 0;
+                            const lastIdx = Math.max(
+                                0,
+                                (simResults.time?.length ?? 1) - 1
+                            );
+                            const iLast =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    lastIdx
+                                ) ?? 0;
+                            const seriesPeak =
+                                getTransientSeriesMax(
+                                    simResults,
+                                    spiceComponentId,
+                                    'forward_current',
+                                    { forwardOnly: true }
+                                ) ??
+                                getTransientSeriesMax(
+                                    simResults,
+                                    spiceComponentId,
+                                    'current',
+                                    { forwardOnly: true }
+                                );
+                            // Discharge must scale from the start current so fade
+                            // begins fully lit; charge scales from the series peak.
+                            const peak = Math.max(
+                                seriesPeak ?? 0,
+                                i0,
+                                iLast
+                            );
+                            if (peak > 0) {
+                                isLedTranFade = true;
+                                ledBrightnessDirection =
+                                    iLast > i0 ? 'charge' : 'discharge';
+                                ledBrightnessRatio = getLedBrightnessRatio(
+                                    simResults,
+                                    spiceComponentId,
+                                    frameIndex,
+                                    peak,
+                                    ledBrightnessDirection
+                                );
+                            }
+                        } else {
+                            isLedTranFade =
+                                isLedType(comp.type) &&
+                                isTransientResult(simResults) &&
+                                pressedLedCurrentMaxRef.current &&
+                                (ledTranAnimPhase === 'charge' ||
+                                    ledTranAnimPhase === 'discharge' ||
+                                    isChargeTranResult);
+                            ledBrightnessDirection =
+                                ledTranAnimPhase === 'charge' ||
+                                isChargeTranResult
+                                    ? 'charge'
+                                    : 'discharge';
+                            ledBrightnessRatio = isLedTranFade
+                                ? getLedBrightnessRatio(
+                                      simResults,
+                                      spiceComponentId,
+                                      frameIndex,
+                                      pressedLedCurrentMaxRef.current,
+                                      ledBrightnessDirection
+                                  )
+                                : undefined;
+                        }
                         const img = getPlacedComponentImage(comp.type, {
                             liveSimMode,
                             switchClosed,
+                            slideState: slideState ?? undefined,
                             simOk,
                             simResults,
                             spiceId: spiceComponentId,
@@ -1541,9 +1681,15 @@ export default function CircuitWorkbench({ problemCode }) {
                                 }
                                 aria-label={
                                     interactive
-                                        ? isToggleInteractive(comp.type)
-                                            ? `${getLabel(comp.type)} — ${switchClosed ? (lang === 'ka' ? 'ჩართული' : 'on') : lang === 'ka' ? 'გამორთული' : 'off'}`
-                                            : getLabel(comp.type)
+                                        ? isSlideSwitchType(comp.type)
+                                            ? `${getLabel(comp.type)} — ${
+                                                  slideState === 'right'
+                                                      ? 'A–C'
+                                                      : 'A–B'
+                                              }`
+                                            : isToggleInteractive(comp.type)
+                                              ? `${getLabel(comp.type)} — ${switchClosed ? (lang === 'ka' ? 'ჩართული' : 'on') : lang === 'ka' ? 'გამორთული' : 'off'}`
+                                              : getLabel(comp.type)
                                         : undefined
                                 }
                             >

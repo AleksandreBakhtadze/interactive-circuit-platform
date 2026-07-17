@@ -227,4 +227,94 @@ class TranSimulationTest {
                 forwardCurrent.get(0) > forwardCurrent.get(forwardCurrent.size() - 1),
                 "LED forward current should decay during discharge");
     }
+
+    /**
+     * CP.L2.4: LED on through series R; button parallels discharged C across LED;
+     * discharge R across C.
+     */
+    private static final String CP_L24_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","MID"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"3"},
+                {"id":"r_ser","role":"resistor_1","type":"resistor","nodes":["A7","C5"],"value":"1000"},
+                {"id":"led1","role":"led_1","type":"led","nodes":["C5","0"],"color":"red"},
+                {"id":"btn1","role":"button_1","type":"switch","nodes":["C5","C4"],"state":"open"},
+                {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["C4","0"],"value":"470u"},
+                {"id":"r_dis","role":"resistor_2","type":"resistor","nodes":["C4","0"],"value":"10000"}
+              ]
+            }
+            """;
+
+    @Test
+    void cpL24IdleIsDcWithLedOn() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L24_CIRCUIT, "CP.L2.4", "idle");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("dc", result.get("analysis"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Double> nodes = (Map<String, Double>) result.get("nodes");
+        Double ledCurrent = nodes.get("@d_led1[id]");
+        assertNotNull(ledCurrent);
+        assertTrue(
+                Math.abs(ledCurrent) > 1e-3,
+                "LED should be on at idle, was " + ledCurrent);
+    }
+
+    @Test
+    void cpL24PressedDipsThenRecovers() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L24_CIRCUIT, "CP.L2.4", "pressed");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+        assertEquals("pressed", result.get("simPhase"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> led = (Map<String, Object>) components.get("led1");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) led.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        assertTrue(forwardCurrent.size() > 10);
+
+        double i0 = forwardCurrent.get(0);
+        double iEnd = forwardCurrent.get(forwardCurrent.size() - 1);
+        double iMin = forwardCurrent.stream().mapToDouble(Double::doubleValue).min().orElse(0);
+
+        assertTrue(iEnd > 1e-3, "LED should recover by end of press, was " + iEnd);
+        assertTrue(
+                iMin < iEnd * 0.4,
+                "Cap parallel should dip LED current (min=" + iMin + ", end=" + iEnd + ")");
+        assertTrue(
+                i0 < iEnd * 0.5 || iMin < i0 * 0.5,
+                "Early samples should show blackout vs recovered brightness");
+    }
+
+    @Test
+    void cpL24DischargeKeepsLedOn() throws Exception {
+        Map<String, Object> result = simulationService.simulateToMap(
+                CP_L24_CIRCUIT, "CP.L2.4", "discharge");
+
+        assertFalse(result.containsKey("error"), String.valueOf(result.get("error")));
+        assertEquals("tran", result.get("analysis"));
+        assertEquals("discharge", result.get("simPhase"));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> components = (Map<String, Object>) result.get("components");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> led = (Map<String, Object>) components.get("led1");
+        @SuppressWarnings("unchecked")
+        List<Double> forwardCurrent = (List<Double>) led.get("forward_current");
+
+        assertNotNull(forwardCurrent);
+        double i0 = forwardCurrent.get(0);
+        double iEnd = forwardCurrent.get(forwardCurrent.size() - 1);
+        assertTrue(i0 > 1e-3, "LED should stay on at release start, was " + i0);
+        assertTrue(iEnd > 1e-3, "LED should stay on at release end, was " + iEnd);
+    }
 }

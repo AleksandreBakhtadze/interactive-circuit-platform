@@ -378,8 +378,12 @@ public class CircuitValidationService {
                     .mapToDouble(v -> v)
                     .min()
                     .orElse(0.0);
+            // ~100 ms — soft RC turn-on (CP.L1.2 / CP.L2.3).
             case "tran_forward_current_early" ->
                     readTranCurrentAtTime(simResult, spiceId, 0.1);
+            // ~50 ms — CP.L2.4 blackout window (12 V / 470 µF recovers by ~0.1 s).
+            case "tran_forward_current_early_50ms" ->
+                    readTranCurrentAtTime(simResult, spiceId, 0.05);
             default -> 0.0;
         };
     }

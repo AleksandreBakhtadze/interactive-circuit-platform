@@ -149,6 +149,33 @@ class CapacitorValidationTest {
         assertTrue(result.getCases().stream().allMatch(c -> c.isPassed()));
     }
 
+    /**
+     * Breadboard-style 2×6 V rails (12 V effective) — same topology as the
+     * student photo; reclaim finishes near 0.1 s so early check must sample ~50 ms.
+     */
+    private static final String CP_L24_TWELVE_VOLT_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A6","0"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","G3"],"value":"6"},
+                {"id":"r_dis","role":"resistor_1","type":"resistor","nodes":["D4","G3"],"value":"10000"},
+                {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["G3","D4"],"value":"470u"},
+                {"id":"led1","role":"led_1","type":"led","nodes":["C6","G3"],"color":"red"},
+                {"id":"btn1","role":"button_1","type":"switch","nodes":["D4","C6"],"state":"open"},
+                {"id":"r_ser","role":"resistor_2","type":"resistor","nodes":["A6","C6"],"value":"1000"}
+              ]
+            }
+            """;
+
+    @Test
+    void cpL24TwelveVoltBreadboardCircuitPassesValidation() throws Exception {
+        ValidationResultDTO result =
+                validationService.validate("CP.L2.4", CP_L24_TWELVE_VOLT_CIRCUIT);
+
+        assertTrue(result.isPassed(), describeFailures(result));
+        assertTrue(result.getCases().stream().allMatch(c -> c.isPassed()));
+    }
+
     @Test
     void cpL12CircuitFailsCpL24IdleLedOn() throws Exception {
         ValidationResultDTO result = validationService.validate("CP.L2.4", CP_L12_CIRCUIT);

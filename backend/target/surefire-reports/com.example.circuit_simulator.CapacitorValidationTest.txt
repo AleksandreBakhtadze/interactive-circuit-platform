@@ -1,16 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.circuit_simulator.CapacitorValidationTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 7.642 s <<< FAILURE! -- in com.example.circuit_simulator.CapacitorValidationTest
-com.example.circuit_simulator.CapacitorValidationTest.cpL12ReferenceCircuitPassesValidation -- Time elapsed: 0.070 s <<< FAILURE!
-org.opentest4j.AssertionFailedError: Not quite — check wiring and try again. | case slow_charge [tran_forward_current_end gt 0.003 actual=8.0E-4] | case discharge_fade [tran_forward_current_start gt 0.001 actual=8.0E-4] ==> expected: <true> but was: <false>
-	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
-	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
-	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
-	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
-	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
-	at com.example.circuit_simulator.CapacitorValidationTest.cpL12ReferenceCircuitPassesValidation(CapacitorValidationTest.java:80)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
-
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.781 s -- in com.example.circuit_simulator.CapacitorValidationTest

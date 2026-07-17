@@ -1015,7 +1015,7 @@ public class ValidationSpecRegistry {
                                                 0.001),
                                         new ValidationCheck(
                                                 "led_1",
-                                                "tran_forward_current_early",
+                                                "tran_forward_current_early_50ms",
                                                 "lt",
                                                 0.003),
                                         new ValidationCheck(

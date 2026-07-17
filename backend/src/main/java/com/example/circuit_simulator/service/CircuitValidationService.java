@@ -36,7 +36,7 @@ public class CircuitValidationService {
         }
 
         Map<String, String> roleToId = indexRoles(components);
-        List<String> missingRoles = findMissingRoles(spec, roleToId);
+        List<String> missingRoles = findMissingRoles(spec, roleToId, components);
         if (!missingRoles.isEmpty()) {
             return ValidationResultDTO.builder()
                     .passed(false)
@@ -80,7 +80,7 @@ public class CircuitValidationService {
             boolean casePassed = true;
 
             for (ValidationCheck check : validationCase.checks()) {
-                String spiceId = roleToId.get(check.role());
+                String spiceId = resolveSpiceId(check.role(), roleToId, components);
                 double actual = readMetric(
                         check.metric(), spiceId, componentVoltages, nodes, simResult);
                 boolean checkPassed = compare(check.op(), actual, check.value());
@@ -136,7 +136,9 @@ public class CircuitValidationService {
     }
 
     private List<String> findMissingRoles(
-            ProblemValidationSpec spec, Map<String, String> roleToId) {
+            ProblemValidationSpec spec,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components) {
         Set<String> required = new HashSet<>();
         for (ValidationCase c : spec.cases()) {
             required.addAll(c.switchStates().keySet());
@@ -148,11 +150,40 @@ public class CircuitValidationService {
 
         List<String> missing = new ArrayList<>();
         for (String role : required) {
-            if (!roleToId.containsKey(role)) {
+            if (resolveSpiceId(role, roleToId, components) == null) {
                 missing.add(role);
             }
         }
         return missing;
+    }
+
+    /**
+     * Resolve a validation role to a spice component id.
+     * Supports {@code led_green}/{@code led_red} via the LED {@code color} field
+     * (placement order still uses {@code led_1}/{@code led_2} in the netlist).
+     */
+    private String resolveSpiceId(
+            String role,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components) {
+        if (role == null) {
+            return null;
+        }
+        if (roleToId.containsKey(role)) {
+            return roleToId.get(role);
+        }
+        if (role.startsWith("led_")) {
+            String color = role.substring("led_".length());
+            for (Map<String, Object> comp : components) {
+                if (!"led".equals(comp.get("type"))) {
+                    continue;
+                }
+                if (color.equals(comp.get("color"))) {
+                    return (String) comp.get("id");
+                }
+            }
+        }
+        return null;
     }
 
     private double readMetric(
@@ -208,6 +239,10 @@ public class CircuitValidationService {
             case "tran_forward_current_peak" -> series.stream()
                     .mapToDouble(v -> v)
                     .max()
+                    .orElse(0.0);
+            case "tran_forward_current_min" -> series.stream()
+                    .mapToDouble(v -> v)
+                    .min()
                     .orElse(0.0);
             case "tran_forward_current_early" ->
                     readTranCurrentAtTime(simResult, spiceId, 0.1);

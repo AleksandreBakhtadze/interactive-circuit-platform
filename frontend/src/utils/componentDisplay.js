@@ -13,6 +13,12 @@ const ON_IMAGES = {
     [COMPONENT_TYPES.LAMP]: '/components/lightninglamp.svg',
 };
 
+/** SPDT slide switch: left = A–B, right = A–C. */
+const SLIDE_SWITCH_IMAGES = {
+    left: '/components/slide-switch-ab.svg',
+    right: '/components/slide-switch.svg',
+};
+
 const LED_ON_IMAGES = {
     red: '/components/lightningled-red.svg',
     green: '/components/lightningled-green.svg',
@@ -113,6 +119,73 @@ export function getTransientSeriesMax(
     return max > 0 ? max : undefined;
 }
 
+/**
+ * Earliest sim time after which every LED forward_current series is within
+ * 5% of its final value (crossfade / dip-reclaim "interesting" window).
+ * Falls back to stop. Handles dip-then-rise (settle from valley to end).
+ */
+export function getTransientSettleTime(results) {
+    const times = results?.time;
+    if (!Array.isArray(times) || times.length < 2) return undefined;
+    const stop = times[times.length - 1];
+    let settle = 0;
+    let found = false;
+
+    const components = results?.components;
+    if (!components || typeof components !== 'object') return stop;
+
+    for (const metrics of Object.values(components)) {
+        if (!metrics || typeof metrics !== 'object') continue;
+        const series = metrics.forward_current ?? metrics.current;
+        if (!Array.isArray(series) || series.length < 2) continue;
+
+        const start = series[0];
+        const end = series[series.length - 1];
+        if (typeof start !== 'number' || typeof end !== 'number') continue;
+
+        let min = start;
+        let minIdx = 0;
+        for (let i = 0; i < series.length; i += 1) {
+            const v = series[i];
+            if (typeof v === 'number' && v < min) {
+                min = v;
+                minIdx = i;
+            }
+        }
+
+        // Dip then reclaim: measure rise from valley to end.
+        const dipThenRise =
+            minIdx > 0 &&
+            minIdx < series.length - 1 &&
+            end - min > Math.abs(end - start) + 5e-5 &&
+            end - min > 5e-5;
+
+        const from = dipThenRise ? min : start;
+        const span = Math.abs(end - from);
+        if (span < 5e-5) continue;
+
+        const rising = end > from;
+        const threshold = rising ? from + 0.95 * span : from - 0.95 * span;
+        const searchFrom = dipThenRise ? minIdx : 0;
+
+        let idx = series.length - 1;
+        for (let i = searchFrom; i < series.length; i += 1) {
+            const v = series[i];
+            if (typeof v !== 'number') continue;
+            if (rising ? v >= threshold : v <= threshold) {
+                idx = i;
+                break;
+            }
+        }
+        settle = Math.max(settle, times[Math.min(idx, times.length - 1)]);
+        found = true;
+    }
+
+    if (!found) return stop;
+    // Pad slightly past settle; never exceed the run stop.
+    return Math.min(stop, Math.max(settle * 1.25, 0.2));
+}
+
 /** Sample one metric from a transient component series at a frame index. */
 export function getTransientMetric(results, spiceComponentId, metric, frameIndex = 0) {
     const metrics = results?.components?.[spiceComponentId];
@@ -129,6 +202,7 @@ export function getTransientMetric(results, spiceComponentId, metric, frameIndex
  * @param {{
  *   liveSimMode?: boolean,
  *   switchClosed?: boolean,
+ *   slideState?: 'left'|'right',
  *   voltage?: number,
  *   simOk?: boolean,
  *   simResults?: object,
@@ -145,6 +219,7 @@ export function getPlacedComponentImage(type, opts = {}) {
     const {
         liveSimMode,
         switchClosed,
+        slideState,
         voltage,
         simOk,
         simResults,
@@ -153,6 +228,16 @@ export function getPlacedComponentImage(type, opts = {}) {
         ledBrightnessRatio,
         dischargeFading = false,
     } = opts;
+
+    if (type === COMPONENT_TYPES.SLIDE_SWITCH) {
+        const throwSide =
+            slideState === 'right' || slideState === 'left'
+                ? slideState
+                : switchClosed
+                  ? 'right'
+                  : 'left';
+        return SLIDE_SWITCH_IMAGES[throwSide] ?? SLIDE_SWITCH_IMAGES.left;
+    }
 
     if (type === COMPONENT_TYPES.BUTTON || type === COMPONENT_TYPES.SWITCH) {
         if (switchClosed) {

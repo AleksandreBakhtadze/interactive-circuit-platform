@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.circuit_simulator.TranSimulationTest
 -------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.975 s -- in com.example.circuit_simulator.TranSimulationTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.061 s -- in com.example.circuit_simulator.TranSimulationTest

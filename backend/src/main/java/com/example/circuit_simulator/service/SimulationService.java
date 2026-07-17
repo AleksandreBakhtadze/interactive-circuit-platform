@@ -62,6 +62,13 @@ public class SimulationService {
         try {
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);
+                if (AnalysisModes.usesSwitchCrossfade(problemCode)) {
+                    return switch (phase) {
+                        case idle -> runSwitchIdlePowerOnTran(circuitJson);
+                        case pressed -> runSwitchCrossfadeToClosed(circuitJson);
+                        case discharge -> runSwitchCrossfadeToOpen(circuitJson);
+                    };
+                }
                 return switch (phase) {
                     case idle -> runDcToMap(circuitJson);
                     case pressed -> AnalysisModes.usesSlowCharge(problemCode)
@@ -112,6 +119,52 @@ public class SimulationService {
                 SpiceGenerator.generateDischargeTranSpice(
                         circuitJson,
                         chargedNodes,
+                        TranScenario.discharge()));
+    }
+
+    /**
+     * CP.L2.3 Simulate: .tran from uncharged UIC with the slide position in the
+     * circuit JSON (left → green charges up). Same result shape as toggle runs.
+     */
+    private Map<String, Object> runSwitchIdlePowerOnTran(String circuitJson)
+            throws Exception {
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateTranSpice(
+                        circuitJson,
+                        TranScenario.idlePowerOn()));
+    }
+
+    /**
+     * CP.L2.3: slide switch toggled to right — ICs from prior left DC, then right-position transient.
+     * Uses role {@code slide_switch} (SPDT), not {@code button_1} / SPST {@code switch}.
+     */
+    private Map<String, Object> runSwitchCrossfadeToClosed(String circuitJson)
+            throws Exception {
+        String priorJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("slide_switch", "left"));
+        Map<String, Double> priorNodes = runDcAndParse(priorJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        priorNodes,
+                        TranScenario.charge()));
+    }
+
+    /**
+     * CP.L2.3: slide switch toggled to left — ICs from prior right DC, then left-position transient.
+     */
+    private Map<String, Object> runSwitchCrossfadeToOpen(String circuitJson)
+            throws Exception {
+        String priorJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("slide_switch", "right"));
+        Map<String, Double> priorNodes = runDcAndParse(priorJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateDischargeTranSpice(
+                        circuitJson,
+                        priorNodes,
                         TranScenario.discharge()));
     }
 

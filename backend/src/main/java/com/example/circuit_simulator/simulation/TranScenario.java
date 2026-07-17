@@ -31,6 +31,14 @@ public record TranScenario(
         return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "pressed");
     }
 
+    /**
+     * CP.L2.3 Simulate: power-on from uncharged UIC with current slide position
+     * (typically left → green branch charges).
+     */
+    public static TranScenario idlePowerOn() {
+        return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
+    }
+
     public boolean pulsesRole(String role) {
         return switchTimeline == SwitchTimeline.PULSED
                 && role != null

@@ -802,6 +802,71 @@ export const ST_L1_8_PALETTE = [
 /** CP.L1.2 — same parts as CP.L1.1 (charge resistor + discharge resistor). */
 export const CP_L1_2_PALETTE = CP_L1_1_PALETTE;
 
+/** Inventory for CP.L2.3 — dual-cap RC LEDs with SPDT slide switch. */
+export const CP_L2_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.4 — button paralleling cap across LED (instant off, slow on).
+ * Needs series LED resistor + parallel discharge resistor.
+ */
+export const CP_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L1.1') {
         return ST_L1_1_PALETTE;
@@ -827,6 +892,12 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'CP.L1.2') {
         return CP_L1_2_PALETTE;
     }
+    if (problemCode === 'CP.L2.3') {
+        return CP_L2_3_PALETTE;
+    }
+    if (problemCode === 'CP.L2.4') {
+        return CP_L2_4_PALETTE;
+    }
     return null;
 }
 
@@ -839,17 +910,36 @@ export function supportsSimulator(problemCode) {
         problemCode === 'ST.L1.8' ||
         problemCode === 'ST.L2.4' ||
         problemCode === 'CP.L1.1' ||
-        problemCode === 'CP.L1.2'
+        problemCode === 'CP.L1.2' ||
+        problemCode === 'CP.L2.3' ||
+        problemCode === 'CP.L2.4'
     );
 }
 
 export function usesTransientSimulation(problemCode) {
-    return problemCode === 'CP.L1.1' || problemCode === 'CP.L1.2';
+    return (
+        problemCode === 'CP.L1.1' ||
+        problemCode === 'CP.L1.2' ||
+        problemCode === 'CP.L2.3' ||
+        problemCode === 'CP.L2.4'
+    );
 }
 
-/** CP.L1.2: slow LED turn-on on button press (charge transient). */
+/** CP.L1.2 / CP.L2.4: charge .tran on button press. */
 export function usesSlowChargeSimulation(problemCode) {
-    return problemCode === 'CP.L1.2';
+    return problemCode === 'CP.L1.2' || problemCode === 'CP.L2.4';
+}
+
+/** CP.L2.3: SPDT slide switch toggles dual-LED RC crossfade. */
+export function usesSwitchCrossfadeSimulation(problemCode) {
+    return problemCode === 'CP.L2.3';
+}
+
+/**
+ * CP.L2.4: press dips LED then slow reclaim — stretch settle window like crossfade.
+ */
+export function usesParallelCapDipSimulation(problemCode) {
+    return problemCode === 'CP.L2.4';
 }
 
 /** Parts that must be on the board before Submit (per problem). */
@@ -897,6 +987,21 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
     ],
     'CP.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L2.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L2.4': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
         { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
         { type: ledType('red'), maxCount: 1 },

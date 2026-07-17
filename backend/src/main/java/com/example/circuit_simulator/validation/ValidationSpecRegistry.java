@@ -14,15 +14,17 @@ import java.util.Optional;
 @Component
 public class ValidationSpecRegistry {
 
-    private static final Map<String, ProblemValidationSpec> SPECS = Map.of(
-            "ST.L1.1", stL11(),
-            "ST.L1.2", stL12(),
-            "ST.L1.3", stL13(),
-            "ST.L1.5", stL15(),
-            "ST.L1.8", stL18(),
-            "ST.L2.4", stL24(),
-            "CP.L1.1", cpL11(),
-            "CP.L1.2", cpL12()
+    private static final Map<String, ProblemValidationSpec> SPECS = Map.ofEntries(
+            Map.entry("ST.L1.1", stL11()),
+            Map.entry("ST.L1.2", stL12()),
+            Map.entry("ST.L1.3", stL13()),
+            Map.entry("ST.L1.5", stL15()),
+            Map.entry("ST.L1.8", stL18()),
+            Map.entry("ST.L2.4", stL24()),
+            Map.entry("CP.L1.1", cpL11()),
+            Map.entry("CP.L1.2", cpL12()),
+            Map.entry("CP.L2.3", cpL23()),
+            Map.entry("CP.L2.4", cpL24())
     );
 
     public Optional<ProblemValidationSpec> findByProblemCode(String problemCode) {
@@ -342,6 +344,165 @@ public class ValidationSpecRegistry {
                                                 "tran_forward_current_end",
                                                 "lt",
                                                 0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.3 — SPDT slide switch, green on left (A–B), red on right (A–C).
+     * LED roles {@code led_green}/{@code led_red} are resolved by color, not placement order.
+     */
+    private static ProblemValidationSpec cpL23() {
+        return new ProblemValidationSpec(
+                "CP.L2.3",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_green_on",
+                                "გადამრთველი A–B — მწვანე ანთებული",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.003),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "idle"
+                        ),
+                        new ValidationCase(
+                                "slide_right_crossfade",
+                                "გადართვა A–C — მწვანე ნელა ქრება, წითელი ნელა ინთება",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_early",
+                                                "lt",
+                                                0.005),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.003)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "slide_left_crossfade",
+                                "გადართვა A–B — წითელი ნელა ქრება, მწვანე ნელა ინთება",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_early",
+                                                "lt",
+                                                0.005),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.003)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.4 — LED on at idle; button parallels discharged C across LED
+     * (instant blackout, slow reclaim); release keeps LED on while C bleeds.
+     * Thresholds use ~6 V (2×3 V) LED current (~2 mA), not the 12 V CP.L1.x rails.
+     */
+    private static ProblemValidationSpec cpL24() {
+        return new ProblemValidationSpec(
+                "CP.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "button_open",
+                                "წრედის აწყობის შემდეგ შუქდიოდი ანთებულია",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0015)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_dip_reclaim",
+                                "ღილაკის დაჭერისას მყისიერი ჩაქრობა და ნელი ანთება",
+                                Map.of("button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_min",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_early",
+                                                "lt",
+                                                0.003),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0015)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_led_stays_on",
+                                "ღილაკის გაშვების შემდეგ შუქდიოდი რჩება ანთებული",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0015)
                                 ),
                                 "discharge"
                         )

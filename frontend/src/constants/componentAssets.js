@@ -51,7 +51,7 @@ export const COMPONENT_IMAGES = {
     motor: '/components/motor.svg',
     diode: '/components/diode.svg',
     relay: '/components/relay.svg',
-    slide_switch: '/components/slide-switch.svg',
+    slide_switch: '/components/slide-switch-ab.svg',
     var_resistor: '/components/var-resistor-10k.svg',
     ...CONNECTOR_IMAGES,
     ...RESISTOR_IMAGES,

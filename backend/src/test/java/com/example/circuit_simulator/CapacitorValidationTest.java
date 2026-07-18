@@ -300,21 +300,23 @@ class CapacitorValidationTest {
     }
 
     /**
-     * CP.L2.13 — 2×3 V, soft-charge 470 µF via 1 kΩ; RGB branches 10k / 5.1k / 1k.
+     * CP.L2.13 — two supplies (represented as 6 V sources by the board netlist),
+     * soft-charge 470 µF via 1 kΩ; RGB branches
+     * red 1 kΩ / green 5.1 kΩ / blue 10 kΩ, as shown in the challenge.
      */
     private static final String CP_L213_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","MID"],"value":"3"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"3"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","MID"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"6"},
                 {"id":"btn1","role":"button_1","type":"switch","nodes":["A7","B1"],"state":"open"},
                 {"id":"r_chg","role":"resistor_1","type":"resistor","nodes":["B1","C5"],"value":"1000"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["C5","0"],"value":"470u"},
-                {"id":"r_red","role":"resistor_2","type":"resistor","nodes":["C5","D1"],"value":"10000"},
+                {"id":"r_red","role":"resistor_2","type":"resistor","nodes":["C5","D1"],"value":"1000"},
                 {"id":"led_r","role":"led_1","type":"led","nodes":["D1","0"],"color":"red"},
                 {"id":"r_grn","role":"resistor_3","type":"resistor","nodes":["C5","D2"],"value":"5100"},
                 {"id":"led_g","role":"led_2","type":"led","nodes":["D2","0"],"color":"green"},
-                {"id":"r_blu","role":"resistor_4","type":"resistor","nodes":["C5","D3"],"value":"1000"},
+                {"id":"r_blu","role":"resistor_4","type":"resistor","nodes":["C5","D3"],"value":"10000"},
                 {"id":"led_b","role":"led_3","type":"led","nodes":["D3","0"],"color":"blue"}
               ]
             }
@@ -334,15 +336,15 @@ class CapacitorValidationTest {
         String noCap = """
                 {
                   "components": [
-                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","MID"],"value":"3"},
-                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"3"},
+                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","MID"],"value":"6"},
+                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"6"},
                     {"id":"btn1","role":"button_1","type":"switch","nodes":["A7","B1"],"state":"open"},
                     {"id":"r_chg","role":"resistor_1","type":"resistor","nodes":["B1","C5"],"value":"1000"},
-                    {"id":"r_red","role":"resistor_2","type":"resistor","nodes":["C5","D1"],"value":"10000"},
+                    {"id":"r_red","role":"resistor_2","type":"resistor","nodes":["C5","D1"],"value":"1000"},
                     {"id":"led_r","role":"led_1","type":"led","nodes":["D1","0"],"color":"red"},
                     {"id":"r_grn","role":"resistor_3","type":"resistor","nodes":["C5","D2"],"value":"5100"},
                     {"id":"led_g","role":"led_2","type":"led","nodes":["D2","0"],"color":"green"},
-                    {"id":"r_blu","role":"resistor_4","type":"resistor","nodes":["C5","D3"],"value":"1000"},
+                    {"id":"r_blu","role":"resistor_4","type":"resistor","nodes":["C5","D3"],"value":"10000"},
                     {"id":"led_b","role":"led_3","type":"led","nodes":["D3","0"],"color":"blue"}
                   ]
                 }

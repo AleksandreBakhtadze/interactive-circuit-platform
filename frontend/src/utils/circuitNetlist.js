@@ -148,7 +148,11 @@ export function createInitialSwitchStates(placed) {
  */
 export function buildCircuitJson(placed, switchStatesById = {}, problemCode = null) {
     const uf = new UnionFind();
-    const supplyVolts = problemCode === 'CP.L4.19' ? '3' : '6';
+    const supplyVolts =
+        problemCode === 'CP.L4.19' ||
+        (typeof problemCode === 'string' && problemCode.startsWith('LR.'))
+            ? '3'
+            : '6';
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -246,6 +250,7 @@ export function buildCircuitJson(placed, switchStatesById = {}, problemCode = nu
                     role,
                     type: 'voltage',
                     nodes,
+                    // Default packs are 6 V (CP/SW); LR.* and CP.L4.19 use 3 V packs.
                     value: supplyVolts,
                 });
                 break;

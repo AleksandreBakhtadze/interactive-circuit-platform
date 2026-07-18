@@ -35,7 +35,27 @@ public class ValidationSpecRegistry {
             Map.entry("CP.L1.1", cpL11()),
             Map.entry("CP.L1.2", cpL12()),
             Map.entry("CP.L2.3", cpL23()),
-            Map.entry("CP.L2.4", cpL24())
+            Map.entry("CP.L2.4", cpL24()),
+            Map.entry("CP.L2.8", cpL28()),
+            Map.entry("CP.L2.9", cpL29()),
+            Map.entry("CP.L2.13", cpL213()),
+            Map.entry("CP.L2.14", cpL214()),
+            Map.entry("CP.L2.15", cpL215()),
+            Map.entry("CP.L2.16", cpL216()),
+            Map.entry("CP.L4.19", cpL419()),
+            Map.entry("SW.L1.1", swL11()),
+            Map.entry("SW.L1.2", swL12()),
+            Map.entry("SW.L1.13", swL113()),
+            Map.entry("SW.L4.14", swL414()),
+            Map.entry("SW.L2.3", swL23()),
+            Map.entry("SW.L2.4", swL24()),
+            Map.entry("SW.L2.5", swL25()),
+            Map.entry("SW.L2.9", swL29()),
+            Map.entry("SW.L2.10", swL210()),
+            Map.entry("SW.L3.6", swL36()),
+            Map.entry("SW.L3.7", swL37()),
+            Map.entry("SW.L3.8", swL38()),
+            Map.entry("SW.L3.11", swL311())
     );
 
     public Optional<ProblemValidationSpec> findByProblemCode(String problemCode) {
@@ -1043,6 +1063,1346 @@ public class ValidationSpecRegistry {
                                                 0.0015)
                                 ),
                                 "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.8 — dual-rail SPDT, series motor + capacitor.
+     * Idle: motor settles stopped. Each slide flip: brief |I| pulse then stop.
+     * Opposite spin directions follow from polarity reversal (topology).
+     */
+    private static ProblemValidationSpec cpL28() {
+        return new ProblemValidationSpec(
+                "CP.L2.8",
+                List.of(
+                        new ValidationCase(
+                                "idle_motor_stopped",
+                                "წრედის აწყობის შემდეგ ძრავი გაჩერებულია",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "idle"
+                        ),
+                        new ValidationCase(
+                                "slide_right_pulse",
+                                "გადართვა A–C — ძრავი მოკლედ ტრიალებს და ჩერდება",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "gt",
+                                                0.02),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "slide_left_pulse",
+                                "გადართვა A–B — ძრავი მოკლედ ტრიალებს საპირისპიროდ და ჩერდება",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        // Compare polarity to the previous (A–C) pulse before
+                                        // abs_peak overwrites the remembered extremum.
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_flip_sign",
+                                                "lt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "gt",
+                                                0.02),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.9 — 12 V H-bridge with two SPDTs, series motor + capacitor.
+     * Matched throws: strong opposite pulses. Mismatched: weaker / no sustained spin.
+     */
+    private static ProblemValidationSpec cpL29() {
+        return new ProblemValidationSpec(
+                "CP.L2.9",
+                List.of(
+                        new ValidationCase(
+                                "idle_both_left_stopped",
+                                "ორივე გადამრთველი ერთნაირად — ძრავი გაჩერებულია",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "idle"
+                        ),
+                        new ValidationCase(
+                                "both_right_strong_pulse",
+                                "ორივე გადართულია A–C — ძლიერი პულსი და გაჩერება",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "gt",
+                                                0.28),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "both_left_opposite_pulse",
+                                "ორივე უკან A–B — საპირისპირო ძლიერი პულსი და გაჩერება",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_flip_sign",
+                                                "lt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "gt",
+                                                0.28),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "discharge"
+                        ),
+                        new ValidationCase(
+                                "only_slide1_right_weak",
+                                "მხოლოდ ერთი გადამრთველი — სრული პულსი არ უნდა იყოს",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "lt",
+                                                0.28),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "only_slide2_right_weak",
+                                "მხოლოდ მეორე გადამრთველი — სრული პულსი არ უნდა იყოს",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "lt",
+                                                0.28),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "pressed"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.13 — soft-charge 470 µF across RGB LED branches (Vf order).
+     * Press: red → green → blue. Release: blue → green → red.
+     * Order uses {@code tran_lit_before:}/{@code tran_extinguish_before:} (Δt &gt; 0).
+     */
+    private static ProblemValidationSpec cpL213() {
+        return new ProblemValidationSpec(
+                "CP.L2.13",
+                List.of(
+                        new ValidationCase(
+                                "button_open",
+                                "ღილაკი არ არის დაჭერილი — ყველა LED ჩამქრალი",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.001),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.001),
+                                        new ValidationCheck(
+                                                "led_blue", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slow_charge_rgb",
+                                "ღილაკის დაჭერა — წითელი → მწვანე → ლურჯი",
+                                Map.of("button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_blue",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_lit_before:led_green",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_lit_before:led_blue",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.00015),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.00015),
+                                        new ValidationCheck(
+                                                "led_blue",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.00015)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "discharge_rgb",
+                                "ღილაკის გაშვება — ლურჯი → მწვანე → წითელი",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.00015),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.00015),
+                                        new ValidationCheck(
+                                                "led_blue",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.00015),
+                                        new ValidationCheck(
+                                                "led_blue",
+                                                "tran_extinguish_before:led_green",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_extinguish_before:led_red",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_blue",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.14 — master SPST; dim LED via high R; button soft-charges C so
+     * brightness rises gradually, then fades back to baseline on release.
+     * Absolute currents vary (6 V/10 kΩ ≈ 0.4 mA vs 12 V/5.1 kΩ ≈ 2 mA); use
+     * rise/fall and early/end ratio so both correct topologies pass.
+     */
+    private static ProblemValidationSpec cpL214() {
+        return new ProblemValidationSpec(
+                "CP.L2.14",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — შუქდიოდი ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "baseline_dim",
+                                "ჩამრთველი ჩართულია — შუქდიოდი ანთებულია (საწყისი ნათება)",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002),
+                                        // Cap at ~2.5 mA: allows 5.1 kΩ on 12 V rails.
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0025)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_gradual_brighten",
+                                "ღილაკის დაჭერა — ნათება თანდათან იზრდება",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.0025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_rise",
+                                                "gt",
+                                                0.00025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_early_ratio",
+                                                "lt",
+                                                0.92)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_fade_to_baseline",
+                                "ღილაკის გაშვება — ნათება თანდათან უბრუნდება საწყისს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_fall",
+                                                "gt",
+                                                0.00025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.0025)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.15 — dual soft-charge RC-LED branches; green must rise/fall faster than red
+     * (typically smaller C on green). Uses lit/extinguish order metrics.
+     */
+    private static ProblemValidationSpec cpL215() {
+        return new ProblemValidationSpec(
+                "CP.L2.15",
+                List.of(
+                        new ValidationCase(
+                                "button_open",
+                                "ღილაკი არ არის დაჭერილი — ორივე LED ჩამქრალია",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.001),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_green_faster",
+                                "ღილაკის დაჭერა — ორივე აინთება, მწვანე უფრო ჩქარა",
+                                Map.of("button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_lit_before:led_red",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0005)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_green_faster",
+                                "ღილაკის გაშვება — ორივე ჩაქრება, მწვანე უფრო ჩქარა",
+                                Map.of("button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_extinguish_before:led_red",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_green",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L2.16 — SPDT selects half vs full series supply; RC softens LED brighten/fade.
+     * Left (A–B) = lower voltage (lit dim); right (A–C) = higher (brighter).
+     */
+    private static ProblemValidationSpec cpL216() {
+        return new ProblemValidationSpec(
+                "CP.L2.16",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_baseline",
+                                "გადამრთველი A–B — შუქდიოდი ანთებულია (საწყისი ნათება)",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.0025)
+                                ),
+                                "idle"
+                        ),
+                        new ValidationCase(
+                                "slide_right_gradual_brighten",
+                                "გადართვა A–C — ნათება თანდათან იზრდება",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_rise",
+                                                "gt",
+                                                0.00025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_early_ratio",
+                                                "lt",
+                                                0.92),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0008)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "slide_left_gradual_fade",
+                                "გადართვა A–B — ნათება თანდათან მცირდება",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.0008),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_fall",
+                                                "gt",
+                                                0.00025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.0025)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * CP.L4.19 — dual-SPDT capacitor voltage doubler.
+     * Both left: C charges across 2×3 V, series G+G+B+B dark.
+     * Both right: C stacks with supply → brief LED pulse, then dark as C empties.
+     */
+    private static ProblemValidationSpec cpL419() {
+        return new ProblemValidationSpec(
+                "CP.L4.19",
+                List.of(
+                        new ValidationCase(
+                                "idle_charge_leds_off",
+                                "ორივე გადამრთველი A–B — კონდესატორი იტენება, LED-ები ჩამქრალია",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_4",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "idle"
+                        ),
+                        new ValidationCase(
+                                "boost_pulse_leds_on",
+                                "ორივე გადართულია A–C — ოთხივე LED მოკლედ აინთება",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0008),
+                                        new ValidationCheck(
+                                                "led_4",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0008),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "return_charge_leds_off",
+                                "ორივე უკან A–B — LED-ები ჩამქრალია (კონდესატორი ისევ იტენება)",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_4",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L1.1 — SPDT selects between two red LEDs (DC).
+     * One lit on A–B, the other on A–C (single shared R or two branch Rs both OK).
+     */
+    private static ProblemValidationSpec swL11() {
+        return new ProblemValidationSpec(
+                "SW.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_one_led",
+                                "გადამრთველი A–B — ანთებულია მხოლოდ ერთი შუქდიოდი",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_other_led",
+                                "გადამრთველი A–C — ანთებულია მეორე შუქდიოდი",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L1.2 — SPDT selects high-R vs low-R path into one LED (dim ↔ bright).
+     * Either throw may be the dim side. Require ≥1.8× current change so
+     * 1 kΩ↔5.1 kΩ and 5.1 kΩ↔10 kΩ pass; equal resistors (~1×) fail.
+     */
+    private static ProblemValidationSpec swL12() {
+        return new ProblemValidationSpec(
+                "SW.L1.2",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_lit",
+                                "გადამრთველი A–B — შუქდიოდი ანთებულია",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_different_brightness",
+                                "გადამრთველი A–C — ნათება შესამჩნევად განსხვავებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L1.13 — SPDT mid-tap vs full rail; lamp ‖ (R+LED). Both loads dim↔bright together.
+     * Either throw may be the dim (mid) side.
+     */
+    private static ProblemValidationSpec swL113() {
+        return new ProblemValidationSpec(
+                "SW.L1.13",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_both_lit",
+                                "გადამრთველი A–B — ნათურა და შუქდიოდი ანთებულია",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "current", "gt", 0.02),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current",
+                                                "gt",
+                                                0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_brighter",
+                                "გადამრთველი A–C — ორივეს ნათება განსხვავებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "current", "gt", 0.02),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior_ratio",
+                                                "gt",
+                                                1.5),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L4.14 — SPDT mid vs full; lamp on common→GND, LED between full rail and common.
+     * Left: lamp dim + LED bright; right: lamp bright + LED dim (inverse).
+     */
+    private static ProblemValidationSpec swL414() {
+        return new ProblemValidationSpec(
+                "SW.L4.14",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_inverse",
+                                "გადამრთველი A–B — ნათურა სუსტად, შუქდიოდი ძლიერად",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "current", "gt", 0.02),
+                                        new ValidationCheck(
+                                                "lamp", "current", "lt", 0.09),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current",
+                                                "gt",
+                                                0.002)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_swapped",
+                                "გადამრთველი A–C — ნათურა ძლიერად, შუქდიოდი სუსტად",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "current", "gt", 0.08),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior",
+                                                "gt",
+                                                1.5),
+                                        // Inverse dimming — need not extinguish (divider / series-R variants).
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior",
+                                                "lt",
+                                                0.7)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L2.3 — one resistor; SPDT selects supply mid-tap (dim) vs full rail (bright).
+     * Left (A–B) must be dimmer; right (A–C) ≥1.8× brighter.
+     */
+    private static ProblemValidationSpec swL23() {
+        return new ProblemValidationSpec(
+                "SW.L2.3",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_dim",
+                                "გადამრთველი A–B — შუქდიოდი ანთებულია სუსტად",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.007)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_bright",
+                                "გადამრთველი A–C — შუქდიოდის ნათება მომატებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior",
+                                                "gt",
+                                                1.8)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L2.4 — lamp (no R); SPDT selects supply mid-tap (dim) vs full rail (bright).
+     * 100 Ω model: ~60 mA @ half V, ~120 mA @ full V → ratio ≈ 2.
+     */
+    private static ProblemValidationSpec swL24() {
+        return new ProblemValidationSpec(
+                "SW.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_dim",
+                                "გადამრთველი A–B — ნათურა ანთებულია სუსტად",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.02),
+                                        new ValidationCheck("lamp", "current", "lt", 0.09)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_bright",
+                                "გადამრთველი A–C — ნათურის ნათება მომატებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.08),
+                                        new ValidationCheck(
+                                                "lamp", "current_vs_prior", "gt", 1.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L2.5 — lamp + low-R on one throw, bypass on the other (no mid-tap).
+     * 20 Ω + 100 Ω lamp @ 12 V: ~100 mA / ~120 mA (ratio ≈ 1.2).
+     * Either throw may be the series-R path; both currents stay high (≥0.09)
+     * so mid-tap-only (~60 mA) fails.
+     */
+    private static ProblemValidationSpec swL25() {
+        return new ProblemValidationSpec(
+                "SW.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ნათურა ანთებულია (დაბალი R გზა)",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.09),
+                                        new ValidationCheck("lamp", "current", "lt", 0.125)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_different",
+                                "გადამრთველი A–C — ნათება შესამჩნევად განსხვავებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.09),
+                                        new ValidationCheck("lamp", "current", "lt", 0.125),
+                                        new ValidationCheck(
+                                                "lamp", "current_vs_prior_ratio", "gt", 1.12)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L2.9 — master SPST; baseline dim via 5.1 kΩ; button adds parallel boost R
+     * selected by SPDT (10 kΩ weak / nearly same glow vs 1 kΩ strong).
+     * Either throw may be the strong path.
+     */
+    private static ProblemValidationSpec swL29() {
+        return new ProblemValidationSpec(
+                "SW.L2.9",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — შუქდიოდი ჩამქრალია",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "baseline_dim",
+                                "ჩამრთველი ჩართულია — შუქდიოდი ანთებულია სუსტად",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.004)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_boost_a",
+                                "ღილაკი დაჭერილია (A–B) — ნათება მომატებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior",
+                                                "gt",
+                                                1.15)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_boost_b",
+                                "ღილაკი დაჭერილია (A–C) — მომატება განსხვავებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L2.10 — master SPST; series R with button bypass for boost; SPDT selects
+     * green vs blue LED. Either throw / either color orientation OK.
+     */
+    private static ProblemValidationSpec swL210() {
+        return new ProblemValidationSpec(
+                "SW.L2.10",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ორივე შუქდიოდი ჩამქრალია",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_left_dim",
+                                "ჩამრთველი ჩართულია (A–B) — ერთი შუქდიოდი ანთებულია სუსტად",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current",
+                                                "gt",
+                                                0.0003),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current",
+                                                "lt",
+                                                0.004)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_left_boost",
+                                "ღილაკი დაჭერილია (A–B) — ნათება მომატებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current_vs_prior",
+                                                "gt",
+                                                1.25)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_swap",
+                                "გადამრთველი A–C — ანთებულია მეორე შუქდიოდი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_set_changed",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current",
+                                                "gt",
+                                                0.0003),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current",
+                                                "lt",
+                                                0.004)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_boost",
+                                "ღილაკი დაჭერილია (A–C) — მეორე შუქდიოდის ნათება მომატებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_forward_current_vs_prior",
+                                                "gt",
+                                                1.25)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L3.6 — reversible (3-way) lamp switch: two SPDTs, crossed or parallel travelers.
+     * Toggling either switch must flip lamp on↔off. Initial state may be on or off.
+     */
+    private static ProblemValidationSpec swL36() {
+        return new ProblemValidationSpec(
+                "SW.L3.6",
+                List.of(
+                        new ValidationCase(
+                                "both_left",
+                                "ორივე გადამრთველი A–B — საწყისი მდგომარეობა",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of()
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1",
+                                "პირველი გადამრთველი გადაირთო — ნათურა შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "lamp_lit_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw2",
+                                "მეორე გადამრთველი გადაირთო — ნათურა შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "lamp_lit_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1_again",
+                                "პირველი გადამრთველი კვლავ — ნათურა შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "lamp_lit_changed", "gt", 0.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L3.7 — 3-way reversible path selects red LED in parallel with always-on green.
+     * Red's lower Vf clamps the shared node so only one LED is lit; toggling either
+     * SPDT swaps which LED is on.
+     */
+    private static ProblemValidationSpec swL37() {
+        return new ProblemValidationSpec(
+                "SW.L3.7",
+                List.of(
+                        new ValidationCase(
+                                "both_left",
+                                "ორივე გადამრთველი A–B — ანთებულია მხოლოდ ერთი შუქდიოდი",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1",
+                                "პირველი გადამრთველი — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw2",
+                                "მეორე გადამრთველი — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1_again",
+                                "პირველი გადამრთველი კვლავ — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L3.8 — same as SW.L3.7 but both LEDs green; resistor divider raises the
+     * always-on LED's effective drive so the switched LED can steal current.
+     */
+    private static ProblemValidationSpec swL38() {
+        return new ProblemValidationSpec(
+                "SW.L3.8",
+                List.of(
+                        new ValidationCase(
+                                "both_left",
+                                "ორივე გადამრთველი A–B — ანთებულია მხოლოდ ერთი შუქდიოდი",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1",
+                                "პირველი გადამრთველი — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw2",
+                                "მეორე გადამრთველი — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "toggle_sw1_again",
+                                "პირველი გადამრთველი კვლავ — შუქდიოდები შეიცვალა",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * SW.L3.11 — SPDT selects green vs blue; button parallels red (lower Vf) onto the
+     * selected branch so red lights and the high-Vf LED extinguishes. Either throw
+     * may host blue vs green. Red via button from SPDT common works on both throws.
+     */
+    private static ProblemValidationSpec swL311() {
+        return new ProblemValidationSpec(
+                "SW.L3.11",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_color",
+                                "გადამრთველი A–B — ანთებულია ლურჯი ან მწვანე",
+                                Map.of("button_1", "open", "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "forward_current",
+                                                "lt",
+                                                0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_swap",
+                                "გადამრთველი A–C — მწვანე/ლურჯი შეიცვალა",
+                                Map.of("button_1", "open", "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "lit_set_changed",
+                                                "gt",
+                                                0.0),
+                                        new ValidationCheck(
+                                                "led_red",
+                                                "forward_current",
+                                                "lt",
+                                                0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_right",
+                                "ღილაკი დაჭერილია (A–C) — ერთი შუქდიოდი ანთებულია",
+                                Map.of(
+                                        "button_1", "closed",
+                                        "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "exclusive_red", "gte", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_left",
+                                "ღილაკი დაჭერილია (A–B) — ერთი შუქდიოდი ანთებულია",
+                                Map.of(
+                                        "button_1", "closed",
+                                        "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "exclusive_red", "gte", 0.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "saw_exclusive_red",
+                                                "gt",
+                                                0.0)
+                                )
                         )
                 )
         );

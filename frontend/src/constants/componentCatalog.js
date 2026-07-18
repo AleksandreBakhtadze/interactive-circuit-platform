@@ -471,7 +471,15 @@ export function isResistorGroupItem(item) {
 export function getResistorMaxCount(palette) {
     const group = palette?.find(isResistorGroupItem);
     if (!group) return 0;
+    // Prefer explicit total cap (e.g. SW.L2.3: only one resistor).
+    if (group.maxCount != null) return group.maxCount;
     return group.maxCountPerValue ?? 10;
+}
+
+/** True when palette caps total resistors across all values (not per-value). */
+export function usesResistorTotalCap(palette) {
+    const group = palette?.find(isResistorGroupItem);
+    return group?.maxCount != null;
 }
 
 export function getResistorGroupItem(palette = []) {
@@ -1362,6 +1370,714 @@ export const CP_L2_7_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/**
+ * Inventory for CP.L2.8 — series motor + capacitor, polarity via SPDT.
+ * Build-circuit task (validation / special sim to follow).
+ */
+export const CP_L2_8_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.9 — full-voltage H-bridge with two SPDTs + series motor/C.
+ */
+export const CP_L2_9_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.12 — series dual caps + anti-parallel LEDs, polarity via SPDT.
+ * Master SPST + slide; practice/sim + quiz only (no circuit validation).
+ */
+export const CP_L2_12_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.13 — soft-charge 470 µF; RGB LEDs light by Vf order.
+ * Button + charge R + three LED branches (build + validate).
+ */
+export const CP_L2_13_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.14 — master SPST; dim LED + button soft-charge C for gradual brighten/fade.
+ */
+export const CP_L2_14_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.15 — dual RC-LED branches; green faster than red (different C).
+ */
+export const CP_L2_15_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L2.16 — SPDT half/full voltage; RC softens LED brighten/fade.
+ */
+export const CP_L2_16_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for CP.L4.19 — dual SPDT capacitor voltage doubler; series 2×green + 2×blue.
+ * Optional resistors for surge / LED limiting (methodology).
+ */
+export const CP_L4_19_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 2,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 2,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L1.1 — SPDT selects between two red LEDs (DC).
+ */
+export const SW_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L1.2 — SPDT selects dim vs bright path (different R) for one red LED.
+ */
+export const SW_L1_2_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L1.13 — lamp ‖ (R+red LED); SPDT mid-tap vs full rail.
+ */
+export const SW_L1_13_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L4.14 — lamp vs LED inverse brightness (LED across full→common).
+ */
+export const SW_L4_14_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L2.3 — one R; SPDT selects mid-tap vs full supply for dim/bright LED.
+ */
+export const SW_L2_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        // Only one resistor allowed for this task.
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L2.4 — lamp; SPDT selects mid-tap vs full supply for dim/bright.
+ */
+export const SW_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L2.5 — lamp + one low-R; SPDT series vs bypass (no mid-tap).
+ */
+export const SW_L2_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L2.9 — master SPST; baseline dim R; button + SPDT selects weak/strong boost R.
+ */
+export const SW_L2_9_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L2.10 — master SPST; button R-bypass boost; SPDT selects green vs blue LED.
+ */
+export const SW_L2_10_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L3.11 — SPDT green↔blue; button parallels red (Vf clamp exclusive).
+ */
+export const SW_L3_11_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L3.6 — two SPDTs (3-way / reversible) controlling one lamp.
+ */
+export const SW_L3_6_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L3.7 — 3-way path + always-on green; red parallel (Vf clamp swap).
+ */
+export const SW_L3_7_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for SW.L3.8 — two green LEDs; resistor divider + 3-way swap (same-color).
+ */
+export const SW_L3_8_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 2,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 export function getPaletteForProblem(problemCode) {
     if (problemCode === 'ST.L1.1') {
         return ST_L1_1_PALETTE;
@@ -1435,6 +2151,69 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'CP.L2.7') {
         return CP_L2_7_PALETTE;
     }
+    if (problemCode === 'CP.L2.8') {
+        return CP_L2_8_PALETTE;
+    }
+    if (problemCode === 'CP.L2.9') {
+        return CP_L2_9_PALETTE;
+    }
+    if (problemCode === 'CP.L2.12') {
+        return CP_L2_12_PALETTE;
+    }
+    if (problemCode === 'CP.L2.13') {
+        return CP_L2_13_PALETTE;
+    }
+    if (problemCode === 'CP.L2.14') {
+        return CP_L2_14_PALETTE;
+    }
+    if (problemCode === 'CP.L2.15') {
+        return CP_L2_15_PALETTE;
+    }
+    if (problemCode === 'CP.L2.16') {
+        return CP_L2_16_PALETTE;
+    }
+    if (problemCode === 'CP.L4.19') {
+        return CP_L4_19_PALETTE;
+    }
+    if (problemCode === 'SW.L1.1') {
+        return SW_L1_1_PALETTE;
+    }
+    if (problemCode === 'SW.L1.2') {
+        return SW_L1_2_PALETTE;
+    }
+    if (problemCode === 'SW.L1.13') {
+        return SW_L1_13_PALETTE;
+    }
+    if (problemCode === 'SW.L4.14') {
+        return SW_L4_14_PALETTE;
+    }
+    if (problemCode === 'SW.L2.3') {
+        return SW_L2_3_PALETTE;
+    }
+    if (problemCode === 'SW.L2.4') {
+        return SW_L2_4_PALETTE;
+    }
+    if (problemCode === 'SW.L2.5') {
+        return SW_L2_5_PALETTE;
+    }
+    if (problemCode === 'SW.L2.9') {
+        return SW_L2_9_PALETTE;
+    }
+    if (problemCode === 'SW.L2.10') {
+        return SW_L2_10_PALETTE;
+    }
+    if (problemCode === 'SW.L3.11') {
+        return SW_L3_11_PALETTE;
+    }
+    if (problemCode === 'SW.L3.6') {
+        return SW_L3_6_PALETTE;
+    }
+    if (problemCode === 'SW.L3.7') {
+        return SW_L3_7_PALETTE;
+    }
+    if (problemCode === 'SW.L3.8') {
+        return SW_L3_8_PALETTE;
+    }
     return null;
 }
 
@@ -1463,7 +2242,28 @@ export function supportsSimulator(problemCode) {
         problemCode === 'CP.L2.4' ||
         problemCode === 'CP.L2.5' ||
         problemCode === 'CP.L2.6' ||
-        problemCode === 'CP.L2.7'
+        problemCode === 'CP.L2.7' ||
+        problemCode === 'CP.L2.8' ||
+        problemCode === 'CP.L2.9' ||
+        problemCode === 'CP.L2.12' ||
+        problemCode === 'CP.L2.13' ||
+        problemCode === 'CP.L2.14' ||
+        problemCode === 'CP.L2.15' ||
+        problemCode === 'CP.L2.16' ||
+        problemCode === 'CP.L4.19' ||
+        problemCode === 'SW.L1.1' ||
+        problemCode === 'SW.L1.2' ||
+        problemCode === 'SW.L1.13' ||
+        problemCode === 'SW.L4.14' ||
+        problemCode === 'SW.L2.3' ||
+        problemCode === 'SW.L2.4' ||
+        problemCode === 'SW.L2.5' ||
+        problemCode === 'SW.L2.9' ||
+        problemCode === 'SW.L2.10' ||
+        problemCode === 'SW.L3.6' ||
+        problemCode === 'SW.L3.7' ||
+        problemCode === 'SW.L3.8' ||
+        problemCode === 'SW.L3.11'
     );
 }
 
@@ -1475,24 +2275,43 @@ export function usesTransientSimulation(problemCode) {
         problemCode === 'CP.L2.4' ||
         problemCode === 'CP.L2.5' ||
         problemCode === 'CP.L2.6' ||
-        problemCode === 'CP.L2.7'
+        problemCode === 'CP.L2.7' ||
+        problemCode === 'CP.L2.8' ||
+        problemCode === 'CP.L2.9' ||
+        problemCode === 'CP.L2.12' ||
+        problemCode === 'CP.L2.13' ||
+        problemCode === 'CP.L2.14' ||
+        problemCode === 'CP.L2.15' ||
+        problemCode === 'CP.L2.16' ||
+        problemCode === 'CP.L4.19'
     );
 }
 
-/** CP.L1.2 / CP.L2.4: charge .tran on button press. */
+/** CP.L1.2 / CP.L2.4 / CP.L2.13–L2.15: charge .tran on button press. */
 export function usesSlowChargeSimulation(problemCode) {
-    return problemCode === 'CP.L1.2' || problemCode === 'CP.L2.4';
+    return (
+        problemCode === 'CP.L1.2' ||
+        problemCode === 'CP.L2.4' ||
+        problemCode === 'CP.L2.13' ||
+        problemCode === 'CP.L2.14' ||
+        problemCode === 'CP.L2.15'
+    );
 }
 
 /**
- * CP.L2.3 dual-RC crossfade; CP.L2.5–L2.7 polarity pulses via SPDT.
+ * CP.L2.3 dual-RC crossfade; CP.L2.5–L2.8 polarity pulses via SPDT.
  */
 export function usesSwitchCrossfadeSimulation(problemCode) {
     return (
         problemCode === 'CP.L2.3' ||
         problemCode === 'CP.L2.5' ||
         problemCode === 'CP.L2.6' ||
-        problemCode === 'CP.L2.7'
+        problemCode === 'CP.L2.7' ||
+        problemCode === 'CP.L2.8' ||
+        problemCode === 'CP.L2.9' ||
+        problemCode === 'CP.L2.12' ||
+        problemCode === 'CP.L2.16' ||
+        problemCode === 'CP.L4.19'
     );
 }
 
@@ -1503,12 +2322,14 @@ export function usesParallelCapDipSimulation(problemCode) {
     return problemCode === 'CP.L2.4';
 }
 
-/** CP.L2.5–L2.7: master SPST must be ON before charge/discharge transients. */
+/** CP.L2.5–L2.7 / L2.12 / L2.14: master SPST must be ON before charge/discharge transients. */
 export function usesMasterSwitchSimulation(problemCode) {
     return (
         problemCode === 'CP.L2.5' ||
         problemCode === 'CP.L2.6' ||
-        problemCode === 'CP.L2.7'
+        problemCode === 'CP.L2.7' ||
+        problemCode === 'CP.L2.12' ||
+        problemCode === 'CP.L2.14'
     );
 }
 
@@ -1534,7 +2355,8 @@ export function usesCircuitValidation(problemCode) {
     return (
         problemCode !== 'CP.L2.5' &&
         problemCode !== 'CP.L2.6' &&
-        problemCode !== 'CP.L2.7'
+        problemCode !== 'CP.L2.7' &&
+        problemCode !== 'CP.L2.12'
     );
 }
 
@@ -1712,6 +2534,153 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: ledType('red'), maxCount: 1 },
         { type: ledType('green'), maxCount: 1 },
         { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L2.8': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+    ],
+    'CP.L2.9': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+    ],
+    'CP.L2.12': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'CP.L2.13': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 4 },
+    ],
+    'CP.L2.14': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'CP.L2.15': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 4 },
+    ],
+    'CP.L2.16': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'CP.L4.19': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: ledType('green'), maxCount: 2 },
+        { type: ledType('blue'), maxCount: 2 },
+        { type: 'capacitor', maxCount: 1 },
+    ],
+    'SW.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'SW.L1.13': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L4.14': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'SW.L2.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L2.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'SW.L2.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L2.9': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'SW.L2.10': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'SW.L3.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L3.6': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'SW.L3.7': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'SW.L3.8': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: ledType('green'), maxCount: 2 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
     ],
 };

@@ -93,6 +93,7 @@ const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.SLIDE_SWITCH]: 'slide_switch',
     [COMPONENT_TYPES.LAMP]: 'lamp',
     [COMPONENT_TYPES.RESISTOR]: 'resistor',
+    [COMPONENT_TYPES.MOTOR]: 'motor',
 };
 
 function boardTypeToRole(boardType) {
@@ -143,9 +144,11 @@ export function createInitialSwitchStates(placed) {
  * @param {object[]} placed
  * @param {Record<string, string>} [switchStatesById] — per placed component id
  *   (open/closed for SPST; left/right for slide switch)
+ * @param {string|null} [problemCode] — optional; some tasks use non-default supply V
  */
-export function buildCircuitJson(placed, switchStatesById = {}) {
+export function buildCircuitJson(placed, switchStatesById = {}, problemCode = null) {
     const uf = new UnionFind();
+    const supplyVolts = problemCode === 'CP.L4.19' ? '3' : '6';
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -187,6 +190,11 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
     let resistorIndex = 0;
     let ledIndex = 0;
     let capacitorIndex = 0;
+    let motorIndex = 0;
+    let slideSwitchIndex = 0;
+    const slideSwitchCount = placed.filter(
+        (c) => c.type === COMPONENT_TYPES.SLIDE_SWITCH
+    ).length;
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -218,6 +226,18 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
             capacitorIndex += 1;
             role = `capacitor_${capacitorIndex}`;
         }
+        if (comp.type === COMPONENT_TYPES.MOTOR) {
+            motorIndex += 1;
+            role = `motor_${motorIndex}`;
+        }
+        if (comp.type === COMPONENT_TYPES.SLIDE_SWITCH) {
+            if (slideSwitchCount > 1) {
+                slideSwitchIndex += 1;
+                role = `slide_switch_${slideSwitchIndex}`;
+            } else {
+                role = 'slide_switch';
+            }
+        }
 
         switch (comp.type) {
             case COMPONENT_TYPES.POWER_SUPPLY:
@@ -226,7 +246,7 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                     role,
                     type: 'voltage',
                     nodes,
-                    value: '6',
+                    value: supplyVolts,
                 });
                 break;
 
@@ -265,6 +285,15 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                     id,
                     role,
                     type: 'lamp',
+                    nodes,
+                });
+                break;
+
+            case COMPONENT_TYPES.MOTOR:
+                components.push({
+                    id,
+                    role,
+                    type: 'motor',
                     nodes,
                 });
                 break;

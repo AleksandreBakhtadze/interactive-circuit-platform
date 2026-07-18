@@ -17,7 +17,45 @@ public class CircuitValidationService {
     private final ValidationSpecRegistry specRegistry;
     private final ObjectMapper objectMapper;
 
+    /** Signed motor current extremum from the previous validation case (CP.L2.8). */
+    private final ThreadLocal<Double> lastMotorSignedExtremum = new ThreadLocal<>();
+
+    /** Bitmask of lit LED roles from the previous case (SW.L1.1 exclusive toggle). */
+    private final ThreadLocal<Integer> lastLitLedMask = new ThreadLocal<>();
+
+    /** Load current from the previous case (SW dim→bright: LED or lamp). */
+    private final ThreadLocal<Double> lastLedForwardCurrent = new ThreadLocal<>();
+
+    /** Lamp |I| from the previous case (SW.L1.13 lamp+LED together). */
+    private final ThreadLocal<Double> lastLampCurrent = new ThreadLocal<>();
+
+    /** Whether the lamp was lit in the previous case (SW.L3.6 3-way toggle). */
+    private final ThreadLocal<Boolean> lastLampLit = new ThreadLocal<>();
+
+    /** SW.L3.11: saw red exclusive (Vf clamp) on any press case so far. */
+    private final ThreadLocal<Boolean> sawExclusiveRed = new ThreadLocal<>();
+
     public ValidationResultDTO validate(String problemCode, String circuitJson) throws Exception {
+        lastMotorSignedExtremum.set(null);
+        lastLitLedMask.set(null);
+        lastLedForwardCurrent.set(null);
+        lastLampCurrent.set(null);
+        lastLampLit.set(null);
+        sawExclusiveRed.set(false);
+        try {
+            return validateInner(problemCode, circuitJson);
+        } finally {
+            lastMotorSignedExtremum.remove();
+            lastLitLedMask.remove();
+            lastLedForwardCurrent.remove();
+            lastLampCurrent.remove();
+            lastLampLit.remove();
+            sawExclusiveRed.remove();
+        }
+    }
+
+    private ValidationResultDTO validateInner(String problemCode, String circuitJson)
+            throws Exception {
         ProblemValidationSpec spec = specRegistry.findByProblemCode(problemCode)
                 .orElseThrow(() -> new RuntimeException(
                         "No validation spec for problem: " + problemCode));
@@ -86,6 +124,7 @@ public class CircuitValidationService {
                         check.role(),
                         spiceId,
                         roleToId,
+                        components,
                         componentVoltages,
                         nodes,
                         simResult);
@@ -107,6 +146,25 @@ public class CircuitValidationService {
 
             if (!casePassed) {
                 allPassed = false;
+            }
+
+            // Remember which LEDs were lit (for lit_set_changed on the next case).
+            lastLitLedMask.set(litLedMask(roleToId, nodes));
+            // Remember lamp and LED currents separately (SW.L1.13 has both).
+            String lampId = resolveSpiceId("lamp", roleToId, components);
+            if (lampId != null) {
+                double lampI = readCurrent(lampId, nodes, false);
+                lastLampCurrent.set(lampI);
+                lastLampLit.set(lampI > 0.01);
+            }
+            double litLedI = maxLitLedForwardCurrent(roleToId, nodes);
+            String led1Id = resolveSpiceId("led_1", roleToId, components);
+            if (led1Id != null) {
+                lastLedForwardCurrent.set(readCurrent(led1Id, nodes, true));
+            } else if (litLedI > 0) {
+                lastLedForwardCurrent.set(litLedI);
+            } else if (lampId != null) {
+                lastLedForwardCurrent.set(lastLampCurrent.get());
             }
 
             caseResults.add(CaseResultDTO.builder()
@@ -272,11 +330,18 @@ public class CircuitValidationService {
         return null;
     }
 
+    /** Forward current (A) treated as “lit” for RGB sequence timing. */
+    private static final double LED_LIT_THRESHOLD = 0.0001;
+
+    /** Fraction of each LED’s own peak used for rise/fall order (Vf, not |I|). */
+    private static final double LED_SEQUENCE_FRACTION = 0.35;
+
     private double readMetric(
             String metric,
             String role,
             String spiceId,
             Map<String, String> roleToId,
+            List<Map<String, Object>> components,
             Map<String, Object> componentVoltages,
             Map<String, Double> nodes,
             Map<String, Object> simResult) {
@@ -285,9 +350,116 @@ public class CircuitValidationService {
         if ("lit_count".equals(metric)) {
             return countLitLeds(roleToId, nodes);
         }
+        // SW.L1.1: different LED lit than previous case (gt 0 = changed).
+        if ("lit_set_changed".equals(metric)) {
+            int mask = litLedMask(roleToId, nodes);
+            Integer prev = lastLitLedMask.get();
+            if (prev == null || prev == 0 || mask == 0) {
+                return 0.0;
+            }
+            return prev != mask ? 1.0 : 0.0;
+        }
+        // SW.L3.6: lamp on↔off flipped vs previous case.
+        if ("lamp_lit_changed".equals(metric)) {
+            boolean now = spiceId != null && readCurrent(spiceId, nodes, false) > 0.01;
+            Boolean prev = lastLampLit.get();
+            if (prev == null) {
+                return 0.0;
+            }
+            return now != prev ? 1.0 : 0.0;
+        }
+        // SW.L1.2: |I_now / I_prior| brightness change (either dim→bright or bright→dim).
+        if ("forward_current_vs_prior_ratio".equals(metric)) {
+            double now = spiceId == null ? 0.0 : readCurrent(spiceId, nodes, true);
+            Double prev = lastLedForwardCurrent.get();
+            if (prev == null || prev <= 1e-9 || now <= 1e-9) {
+                return 0.0;
+            }
+            double a = now / prev;
+            double b = prev / now;
+            return Math.max(a, b);
+        }
+        // Max forward current among currently lit LEDs (SW.L2.10 color-agnostic).
+        if ("lit_forward_current".equals(metric)) {
+            return maxLitLedForwardCurrent(roleToId, nodes);
+        }
+        // lit LED current ÷ previous-case lit LED current (brighten only).
+        if ("lit_forward_current_vs_prior".equals(metric)) {
+            double now = maxLitLedForwardCurrent(roleToId, nodes);
+            Double prev = lastLedForwardCurrent.get();
+            if (prev == null || prev <= 1e-9) {
+                return 0.0;
+            }
+            return now / prev;
+        }
+        // SW.L3.11: red lit and green+blue off (Vf clamp). Sticky OR across cases.
+        if ("exclusive_red".equals(metric) || "saw_exclusive_red".equals(metric)) {
+            double redI = forwardCurrentByColor(components, nodes, "red");
+            double greenI = forwardCurrentByColor(components, nodes, "green");
+            double blueI = forwardCurrentByColor(components, nodes, "blue");
+            boolean now =
+                    redI > 0.0005 && greenI < 0.0005 && blueI < 0.0005;
+            if (now) {
+                sawExclusiveRed.set(true);
+            }
+            if ("exclusive_red".equals(metric)) {
+                return now ? 1.0 : 0.0;
+            }
+            return Boolean.TRUE.equals(sawExclusiveRed.get()) ? 1.0 : 0.0;
+        }
+        // SW.L1.2: this LED forward current ÷ previous-case current (brighten only).
+        if ("forward_current_vs_prior".equals(metric)) {
+            double now = spiceId == null ? 0.0 : readCurrent(spiceId, nodes, true);
+            Double prev = lastLedForwardCurrent.get();
+            if (prev == null || prev <= 1e-9) {
+                return 0.0;
+            }
+            return now / prev;
+        }
+        // SW.L2.4 / L1.13: lamp |I_now| / |I_prior| (brighten only).
+        if ("current_vs_prior".equals(metric)) {
+            double now = spiceId == null ? 0.0 : readCurrent(spiceId, nodes, false);
+            Double prev = priorLoadCurrent(role);
+            if (prev == null || prev <= 1e-9) {
+                return 0.0;
+            }
+            return now / prev;
+        }
+        // SW.L2.5: |I_now / I_prior| (either throw may be the dim path).
+        if ("current_vs_prior_ratio".equals(metric)) {
+            double now = spiceId == null ? 0.0 : readCurrent(spiceId, nodes, false);
+            Double prev = priorLoadCurrent(role);
+            if (prev == null || prev <= 1e-9 || now <= 1e-9) {
+                return 0.0;
+            }
+            double a = now / prev;
+            double b = prev / now;
+            return Math.max(a, b);
+        }
         // max(I_f)/min(I_f) among lit LEDs — used for unequal-brightness checks.
         if ("current_ratio".equals(metric)) {
             return litLedCurrentRatio(roleToId, nodes);
+        }
+
+        // CP.L2.13: positive ⇒ this LED lights/extinguishes before otherRole.
+        if (metric.startsWith("tran_lit_before:")
+                || metric.startsWith("tran_extinguish_before:")) {
+            boolean extinguish = metric.startsWith("tran_extinguish_before:");
+            String otherRole = metric.substring(metric.indexOf(':') + 1);
+            String otherId = resolveSpiceId(otherRole, roleToId, components);
+            if (spiceId == null || otherId == null) {
+                return 0.0;
+            }
+            double tSelf = extinguish
+                    ? readTranExtinguishTime(simResult, spiceId)
+                    : readTranLitTime(simResult, spiceId);
+            double tOther = extinguish
+                    ? readTranExtinguishTime(simResult, otherId)
+                    : readTranLitTime(simResult, otherId);
+            if (!Double.isFinite(tSelf) || !Double.isFinite(tOther)) {
+                return 0.0;
+            }
+            return tOther - tSelf;
         }
 
         if (spiceId == null) {
@@ -311,17 +483,83 @@ public class CircuitValidationService {
     }
 
     private double countLitLeds(Map<String, String> roleToId, Map<String, Double> nodes) {
-        double lit = 0;
+        return Integer.bitCount(litLedMask(roleToId, nodes));
+    }
+
+    /** Previous-case current for lamp vs LED ratio metrics. */
+    private Double priorLoadCurrent(String role) {
+        if ("lamp".equals(role)) {
+            Double lamp = lastLampCurrent.get();
+            if (lamp != null) {
+                return lamp;
+            }
+        }
+        return lastLedForwardCurrent.get();
+    }
+
+    /** Max forward current among LEDs above the lit threshold (0 if none lit). */
+    private double maxLitLedForwardCurrent(
+            Map<String, String> roleToId, Map<String, Double> nodes) {
+        double max = 0;
         for (Map.Entry<String, String> entry : roleToId.entrySet()) {
             if (!entry.getKey().startsWith("led_")) {
                 continue;
             }
+            // Skip color-alias roles (led_green) — placement roles led_1/led_2 cover each part.
+            String suffix = entry.getKey().substring("led_".length());
+            try {
+                Integer.parseInt(suffix);
+            } catch (NumberFormatException e) {
+                continue;
+            }
             double forward = readCurrent(entry.getValue(), nodes, true);
             if (forward > 0.0005) {
-                lit += 1;
+                max = Math.max(max, forward);
             }
         }
-        return lit;
+        return max;
+    }
+
+    private double forwardCurrentByColor(
+            List<Map<String, Object>> components,
+            Map<String, Double> nodes,
+            String color) {
+        if (components == null) {
+            return 0.0;
+        }
+        for (Map<String, Object> comp : components) {
+            if (!"led".equals(comp.get("type"))) {
+                continue;
+            }
+            if (color.equals(comp.get("color"))) {
+                return readCurrent((String) comp.get("id"), nodes, true);
+            }
+        }
+        return 0.0;
+    }
+
+    /** Bit i set ⇒ led_(i+1) is forward-lit (placement order). */
+    private int litLedMask(Map<String, String> roleToId, Map<String, Double> nodes) {
+        int mask = 0;
+        for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+            String role = entry.getKey();
+            if (!role.startsWith("led_")) {
+                continue;
+            }
+            double forward = readCurrent(entry.getValue(), nodes, true);
+            if (forward <= 0.0005) {
+                continue;
+            }
+            try {
+                int index = Integer.parseInt(role.substring("led_".length()));
+                if (index >= 1 && index <= 30) {
+                    mask |= 1 << (index - 1);
+                }
+            } catch (NumberFormatException ignored) {
+                // led_green / led_red style roles — skip bitmask index
+            }
+        }
+        return mask;
     }
 
     /** Ratio of brightest to dimmest lit LED forward current (1 if fewer than 2 lit). */
@@ -378,14 +616,141 @@ public class CircuitValidationService {
                     .mapToDouble(v -> v)
                     .min()
                     .orElse(0.0);
+            // Motor (signed series): magnitude helpers + polarity flip across cases.
+            case "tran_current_abs_start" -> Math.abs(series.get(0));
+            case "tran_current_abs_end" -> Math.abs(series.get(series.size() - 1));
+            case "tran_current_abs_peak" -> {
+                double peak = series.stream().mapToDouble(Math::abs).max().orElse(0.0);
+                lastMotorSignedExtremum.set(signedExtremum(series));
+                yield peak;
+            }
+            case "tran_current_flip_sign" -> {
+                double ext = signedExtremum(series);
+                Double prev = lastMotorSignedExtremum.get();
+                lastMotorSignedExtremum.set(ext);
+                if (prev == null
+                        || Math.abs(prev) < 1e-6
+                        || Math.abs(ext) < 1e-6) {
+                    yield 0.0;
+                }
+                // Opposite signs → product < 0 (passes "lt 0").
+                yield ext * prev;
+            }
             // ~100 ms — soft RC turn-on (CP.L1.2 / CP.L2.3).
             case "tran_forward_current_early" ->
                     readTranCurrentAtTime(simResult, spiceId, 0.1);
             // ~50 ms — CP.L2.4 blackout window (12 V / 470 µF recovers by ~0.1 s).
             case "tran_forward_current_early_50ms" ->
                     readTranCurrentAtTime(simResult, spiceId, 0.05);
+            // CP.L2.14: end − start (brighten) / start − end (fade).
+            case "tran_forward_current_rise" ->
+                    series.get(series.size() - 1) - series.get(0);
+            case "tran_forward_current_fall" ->
+                    series.get(0) - series.get(series.size() - 1);
+            // early/end — < 1 means still rising at 0.1 s (gradual RC).
+            case "tran_forward_current_early_ratio" -> {
+                double end = series.get(series.size() - 1);
+                if (end <= 1e-9) {
+                    yield 1.0;
+                }
+                yield readTranCurrentAtTime(simResult, spiceId, 0.1) / end;
+            }
+            // First time I_f exceeds lit threshold (CP.L2.13 RGB sequence).
+            case "tran_lit_time" -> readTranLitTime(simResult, spiceId);
+            // First time I_f falls below lit threshold after being lit (discharge).
+            case "tran_extinguish_time" -> readTranExtinguishTime(simResult, spiceId);
             default -> 0.0;
         };
+    }
+
+    /**
+     * First sample time where forward current exceeds a fraction of this LED’s
+     * own peak (so unequal series R does not invert Vf order).
+     */
+    @SuppressWarnings("unchecked")
+    private double readTranLitTime(Map<String, Object> simResult, String spiceId) {
+        if (!"tran".equals(simResult.get("analysis"))) {
+            return Double.POSITIVE_INFINITY;
+        }
+        List<Double> times = (List<Double>) simResult.get("time");
+        if (times == null || times.isEmpty()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        Map<String, Object> components =
+                (Map<String, Object>) simResult.getOrDefault("components", Map.of());
+        Object compObj = components.get(spiceId);
+        if (!(compObj instanceof Map<?, ?>)) {
+            return Double.POSITIVE_INFINITY;
+        }
+        List<Double> series = readTranSeries((Map<String, Object>) compObj);
+        if (series.size() != times.size()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double peak = series.stream().mapToDouble(v -> v).max().orElse(0.0);
+        if (peak < LED_LIT_THRESHOLD) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double trigger = Math.max(LED_LIT_THRESHOLD, peak * LED_SEQUENCE_FRACTION);
+        for (int i = 0; i < series.size(); i++) {
+            if (series.get(i) >= trigger) {
+                return times.get(i);
+            }
+        }
+        return Double.POSITIVE_INFINITY;
+    }
+
+    /**
+     * First sample time where forward current drops below a fraction of this
+     * LED’s own peak after having been above it (discharge extinguish order).
+     */
+    @SuppressWarnings("unchecked")
+    private double readTranExtinguishTime(Map<String, Object> simResult, String spiceId) {
+        if (!"tran".equals(simResult.get("analysis"))) {
+            return Double.POSITIVE_INFINITY;
+        }
+        List<Double> times = (List<Double>) simResult.get("time");
+        if (times == null || times.isEmpty()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        Map<String, Object> components =
+                (Map<String, Object>) simResult.getOrDefault("components", Map.of());
+        Object compObj = components.get(spiceId);
+        if (!(compObj instanceof Map<?, ?>)) {
+            return Double.POSITIVE_INFINITY;
+        }
+        List<Double> series = readTranSeries((Map<String, Object>) compObj);
+        if (series.size() != times.size()) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double peak = series.stream().mapToDouble(v -> v).max().orElse(0.0);
+        if (peak < LED_LIT_THRESHOLD) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double floor = Math.max(LED_LIT_THRESHOLD, peak * LED_SEQUENCE_FRACTION);
+        boolean wasAbove = false;
+        for (int i = 0; i < series.size(); i++) {
+            double iFwd = series.get(i);
+            if (iFwd >= floor) {
+                wasAbove = true;
+            } else if (wasAbove) {
+                return times.get(i);
+            }
+        }
+        return Double.POSITIVE_INFINITY;
+    }
+
+    /** Series sample with the largest |value|, keeping sign (motor spin polarity). */
+    private static double signedExtremum(List<Double> series) {
+        double best = 0;
+        double bestAbs = 0;
+        for (double v : series) {
+            double a = Math.abs(v);
+            if (a > bestAbs) {
+                bestAbs = a;
+                best = v;
+            }
+        }
+        return best;
     }
 
     @SuppressWarnings("unchecked")

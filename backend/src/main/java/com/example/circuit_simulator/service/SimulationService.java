@@ -83,6 +83,11 @@ public class SimulationService {
                                 : runSwitchCrossfadeToOpen(circuitJson);
                     };
                 }
+                // CP.L2.14: master SPST + button slow brighten/fade (no slide crossfade).
+                if (AnalysisModes.usesMasterSwitch(problemCode)
+                        && isMasterSwitchOpen(circuitJson)) {
+                    return runDcToMap(circuitJson);
+                }
                 return switch (phase) {
                     case idle -> runDcToMap(circuitJson);
                     case pressed -> AnalysisModes.usesSlowCharge(problemCode)
@@ -155,8 +160,7 @@ public class SimulationService {
      */
     private Map<String, Object> runSwitchCrossfadeToClosed(String circuitJson)
             throws Exception {
-        String priorJson = SpiceGenerator.applySwitchStates(
-                circuitJson, Map.of("slide_switch", "left"));
+        String priorJson = SpiceGenerator.applyAllSlideStates(circuitJson, "left");
         Map<String, Double> priorNodes = runDcAndParse(priorJson);
         return simulateTranToMap(
                 circuitJson,
@@ -171,8 +175,7 @@ public class SimulationService {
      */
     private Map<String, Object> runSwitchCrossfadeToOpen(String circuitJson)
             throws Exception {
-        String priorJson = SpiceGenerator.applySwitchStates(
-                circuitJson, Map.of("slide_switch", "right"));
+        String priorJson = SpiceGenerator.applyAllSlideStates(circuitJson, "right");
         Map<String, Double> priorNodes = runDcAndParse(priorJson);
         return simulateTranToMap(
                 circuitJson,
@@ -189,9 +192,8 @@ public class SimulationService {
      */
     private Map<String, Object> runParallelCapPolarityFlip(
             String circuitJson, boolean toRight) throws Exception {
-        String priorJson = SpiceGenerator.applySwitchStates(
-                circuitJson,
-                Map.of("slide_switch", toRight ? "left" : "right"));
+        String priorJson = SpiceGenerator.applyAllSlideStates(
+                circuitJson, toRight ? "left" : "right");
         Map<String, Double> priorNodes = runDcAndParse(priorJson);
         TranScenario scenario = toRight
                 ? TranScenario.charge()
@@ -266,7 +268,9 @@ public class SimulationService {
 
             int probeCount = build.probes().size();
             if (probeCount == 0) {
-                throw new RuntimeException("No transient probes defined for circuit");
+                // Incomplete board (e.g. slide+cap without motor/LED): no animated
+                // series to plot — fall back to steady DC instead of failing.
+                return runDcToMap(circuitJson);
             }
 
             if (!Files.exists(wrdataFile)) {

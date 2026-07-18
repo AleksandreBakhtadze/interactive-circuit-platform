@@ -256,9 +256,13 @@ public class SpiceGenerator {
                         .append(nodes.get(1)).append(" ")
                         .append(value).append("\n");
 
-                case "motor" -> sb.append("R_").append(id).append(" ")
-                        .append(nodes.get(0)).append(" ")
-                        .append(nodes.get(1)).append(" 50\n");
+                case "motor" -> {
+                    sb.append("R_").append(id).append(" ")
+                            .append(nodes.get(0)).append(" ")
+                            .append(nodes.get(1)).append(" 50\n");
+                    probes.add(new TranProbe(id, "current",
+                            "@r_" + id.toLowerCase() + "[i]"));
+                }
 
                 case "slide_switch" -> appendSlideSwitch(sb, id, nodes, comp);
 
@@ -647,6 +651,22 @@ public class SpiceGenerator {
 
         for (Map<String, Object> comp : components) {
             if ("switch".equals(comp.get("type"))) {
+                comp.put("state", state);
+            }
+        }
+
+        return mapper.writeValueAsString(data);
+    }
+
+    /** Set every slide_switch component to the same throw (left/right). */
+    public static String applyAllSlideStates(String json, String state) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        for (Map<String, Object> comp : components) {
+            if ("slide_switch".equals(comp.get("type"))) {
                 comp.put("state", state);
             }
         }

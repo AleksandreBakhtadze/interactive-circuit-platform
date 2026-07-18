@@ -51,6 +51,31 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'CP.L2.12': [
+        {
+            src: '/problems/CP.L2.12/board.png',
+            altKa: 'CP.L2.12 წრედი ფირზე',
+            altEn: 'CP.L2.12 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/CP.L2.12/schematic.png',
+            altKa: 'CP.L2.12 სქემა',
+            altEn: 'CP.L2.12 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
+    'CP.L2.16': [
+        {
+            src: '/problems/CP.L2.16/board.png',
+            altKa: 'CP.L2.16 წრედი ფირზე',
+            altEn: 'CP.L2.16 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

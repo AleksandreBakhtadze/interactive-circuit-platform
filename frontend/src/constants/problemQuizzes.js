@@ -403,10 +403,218 @@ const CP_L27_QUIZ = {
     ],
 };
 
+const CP_L212_QUIZ = {
+    problemCode: 'CP.L2.12',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa: 'რა მოხდება თუ ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn: 'What happens when you turn the circuit on with the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'წითელი შუქდიოდი აინთება მყისიერად',
+                    textEn: 'The red LED lights up instantly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მწვანე შუქდიოდი აინთება მყისიერად',
+                    textEn: 'The green LED lights up instantly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა და ჩაქრება',
+                    textEn: 'The red LED lights up slowly and goes out',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'მწვანე შუქდიოდი აინთება ნელა და ჩაქრება ნელა',
+                    textEn: 'The green LED lights up slowly and fades slowly',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'მწვანე შუქდიოდი აინთება მყისიერად და ჩაქრება ნელა',
+                    textEn: 'The green LED lights brightly then fades slowly',
+                },
+            ],
+            correctKey: 'ე',
+            explanationKa:
+                'ჩამრთველის ჩართვის შემდეგ კვებასთან მიერთებული კონდესატორები იწყებენ დამუხტვას '
+                + 'მხოლოდ მწვანე შუქდიოდის გავლით (წითელი საწინააღმდეგოდაა ჩართული). სანამ '
+                + 'კონდესატორები დაიმუხტება, მწვანე თავიდან ძლიერად აინთება, შემდეგ ნათება '
+                + 'იკლებს და ჩაქრება.',
+            explanationEn:
+                'After closing the switch the series capacitors charge only through the green LED '
+                + '(red is reverse-biased). Green lights brightly at first, then fades as charging finishes.',
+        },
+        {
+            id: 'q2',
+            promptKa: 'როგორ შეიცვლება შუქდიოდების ნათება თუ გადავრთავთ გადამრთველს?',
+            promptEn: 'How do the LEDs change when you toggle the slide switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'წითელი შუქდიოდი აინთება მყისიერად და ჩაქრება ნელა',
+                    textEn: 'The red LED lights brightly then fades slowly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა და ჩაქრება მყისიერად',
+                    textEn: 'The red LED lights slowly then goes out instantly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მწვანე შუქდიოდი აინთება მყისიერად',
+                    textEn: 'The green LED lights up instantly',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა და ჩაქრება ნელა',
+                    textEn: 'The red LED lights slowly and fades slowly',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'მწვანე შუქდიოდი აინთება ნელა და დარჩება ანთებული',
+                    textEn: 'The green LED lights slowly and stays on',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'გადამრთველის გადართვისას იცვლება კვების პოლარობა — კონდესატორები რევერსულად '
+                + 'გადაიმუხტება. დენი მიდის მხოლოდ წითელი შუქდიოდით: ის მყისიერად აინთება და '
+                + 'გადამუხტვისას ნელა ჩაქრება.',
+            explanationEn:
+                'Toggling the slide reverses polarity so the capacitors recharge the other way. '
+                + 'Current flows only through the red LED — it lights brightly then fades.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'როგორ შეიცვლება შუქდიოდების ნათება თუ გადამრთველს დავაბრუნებთ უკან?',
+            promptEn: 'How do the LEDs change when you toggle the slide switch back?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'მწვანე შუქდიოდი აინთება ნელა და ჩაქრება ნელა',
+                    textEn: 'The green LED lights slowly and fades slowly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მწვანე შუქდიოდი აინთება მყისიერად და ჩაქრება ნელა',
+                    textEn: 'The green LED lights brightly then fades slowly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'წითელი შუქდიოდი აინთება მყისიერად და ჩაქრება ნელა',
+                    textEn: 'The red LED lights brightly then fades slowly',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა და ჩაქრება მყისიერად',
+                    textEn: 'The red LED lights slowly then goes out instantly',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'არაფერი არ შეიცვლება',
+                    textEn: 'Nothing changes',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'გადამრთველის უკან დაბრუნებისას პოლარობა ისევ იცვლება — კონდესატორები თავიდან '
+                + 'გადაიმუხტება მწვანე შუქდიოდით: მწვანე მყისიერად აინთება და თანდათან ჩაქრება.',
+            explanationEn:
+                'Toggling back reverses polarity again. The capacitors recharge through green — '
+                + 'green lights brightly then fades.',
+        },
+    ],
+};
+
+const CP_L216_QUIZ = {
+    problemCode: 'CP.L2.16',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa: 'როგორ შეიცვლება წრედის მუშაობის პრინციპი თუ წინაღობებს გავზრდით?',
+            promptEn: 'How does the circuit behavior change if we increase the resistances?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ნათების ცვლილება უფრო სწრაფი გახდება',
+                    textEn: 'Brightness changes become faster',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ნათების ცვლილება უფრო ნელი გახდება (RC მეტია)',
+                    textEn: 'Brightness changes become slower (larger RC)',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'შუქდიოდი საერთოდ აღარ აინთება',
+                    textEn: 'The LED never lights',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'კონდესატორი აღარ იმუხტება',
+                    textEn: 'The capacitor no longer charges',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'უფრო დიდი წინაღობა ზრდის RC დროის მუდმივას, ამიტომ კონდესატორის დამუხტვა/'
+                + 'განმუხტვა უფრო ნელია და ნათებაც უფრო ნელა იცვლება.',
+            explanationEn:
+                'Higher resistance increases the RC time constant, so the capacitor charges/'
+                + 'discharges more slowly and brightness changes more gradually.',
+        },
+        {
+            id: 'q2',
+            promptKa:
+                'როგორ შეიცვლება წრედის მუშაობის პრინციპი თუ კონდესატორს საერთოდ ამოიღებთ წრედიდან?',
+            promptEn:
+                'How does the circuit behavior change if you remove the capacitor entirely?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ნათება კვლავ თანდათან შეიცვლება',
+                    textEn: 'Brightness still changes gradually',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდი საერთოდ აღარ აინთება',
+                    textEn: 'The LED never lights',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ნათება მყისიერად შეიცვლება გადამრთველის გადართვისას',
+                    textEn: 'Brightness jumps instantly when the switch is toggled',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'ნათება მხოლოდ გაიზრდება, შემცირება აღარ მოხდება',
+                    textEn: 'Brightness only increases; it never decreases',
+                },
+            ],
+            correctKey: 'გ',
+            explanationKa:
+                'კონდესატორი ქმნის რბილ გადასვლას. მის გარეშე ძაბვა შუქდიოდზე მყისიერად '
+                + 'იცვლება გადამრთველთან ერთად.',
+            explanationEn:
+                'The capacitor softens the transition. Without it, LED voltage (and brightness) '
+                + 'jumps immediately with the switch.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
     'CP.L2.7': CP_L27_QUIZ,
+    'CP.L2.12': CP_L212_QUIZ,
+    'CP.L2.16': CP_L216_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

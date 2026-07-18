@@ -27,8 +27,8 @@ const LED_ON_IMAGES = {
 
 const LIT_CURRENT_THRESHOLD = 0.01;
 
-/** LEDs can conduct visibly below 10 mA (e.g. ~8 mA with series resistor). */
-const LED_LIT_CURRENT_THRESHOLD = 0.001;
+/** LEDs can conduct visibly below 10 mA; ignore tiny leakage (e.g. 100 kΩ). */
+const LED_LIT_CURRENT_THRESHOLD = 0.0005;
 
 function isLitVoltage(voltage) {
     return typeof voltage === 'number' && voltage > LIT_VOLTAGE_THRESHOLD;
@@ -69,21 +69,83 @@ export function getComponentCurrent(
     }
 
     const nodes = results?.nodes;
-    if (!nodes) return undefined;
+    if (nodes) {
+        const idVariants = [spiceComponentId];
+        const lower = String(spiceComponentId).toLowerCase();
+        if (lower !== spiceComponentId) {
+            idVariants.push(lower);
+        }
+        for (const id of idVariants) {
+            const rKey = `@r_${id}[i]`;
+            const rVal = nodes[rKey];
+            if (typeof rVal === 'number') {
+                return opts.signed ? rVal : Math.abs(rVal);
+            }
 
-    const rKey = `@r_${spiceComponentId}[i]`;
-    const rVal = nodes[rKey];
-    if (typeof rVal === 'number') {
-        return opts.signed ? rVal : Math.abs(rVal);
+            const dKey = `@d_${id}[id]`;
+            const dVal = nodes[dKey];
+            if (typeof dVal === 'number') {
+                return opts.signed ? dVal : Math.abs(dVal);
+            }
+        }
     }
 
-    const dKey = `@d_${spiceComponentId}[id]`;
-    const dVal = nodes[dKey];
-    if (typeof dVal === 'number') {
-        return opts.signed ? dVal : Math.abs(dVal);
+    // DC motor: components[id] is current. For LEDs/resistors it is voltage (~Vf / IR drop)
+    // — never treat that as amperes (would clamp LED glow to full brightness).
+    const bare = results?.components?.[spiceComponentId];
+    if (typeof bare === 'number' && Math.abs(bare) < 0.5) {
+        return opts.signed ? bare : Math.abs(bare);
     }
 
     return undefined;
+}
+
+/** Below this |I|/peak fraction the motor fan is considered stopped. */
+const MOTOR_OFF_RATIO = 0.08;
+/** Typical full-speed reference when no series peak is available (~6 V / 50 Ω). */
+const MOTOR_REF_CURRENT = 0.12;
+const MOTOR_PERIOD_SLOW_SEC = 1.15;
+const MOTOR_PERIOD_FAST_SEC = 0.16;
+
+/**
+ * Map signed motor current to fan spin visuals.
+ * @returns {{ spinning: boolean, direction: 1|-1, speedRatio: number, periodSec: number }}
+ */
+export function getMotorSpinState(
+    results,
+    spiceComponentId,
+    frameIndex = 0,
+    peakCurrent
+) {
+    const current =
+        getComponentCurrent(results, spiceComponentId, { signed: true }, frameIndex) ??
+        0;
+    const abs = Math.abs(current);
+    const peak = Math.max(
+        typeof peakCurrent === 'number' ? peakCurrent : 0,
+        abs,
+        MOTOR_REF_CURRENT * 0.25
+    );
+    const speedRatio = peak > 0 ? abs / peak : 0;
+    if (speedRatio < MOTOR_OFF_RATIO) {
+        return {
+            spinning: false,
+            direction: 1,
+            speedRatio: 0,
+            periodSec: MOTOR_PERIOD_SLOW_SEC,
+        };
+    }
+    const t =
+        (speedRatio - MOTOR_OFF_RATIO) / Math.max(1e-9, 1 - MOTOR_OFF_RATIO);
+    const periodSec =
+        MOTOR_PERIOD_SLOW_SEC -
+        t * (MOTOR_PERIOD_SLOW_SEC - MOTOR_PERIOD_FAST_SEC);
+    return {
+        spinning: true,
+        direction: current >= 0 ? 1 : -1,
+        speedRatio,
+        periodSec,
+    };
 }
 
 function isLampLit(results, spiceComponentId, voltage) {
@@ -306,11 +368,10 @@ export function getComponentVoltage(results, spiceComponentId, frameIndex) {
 }
 
 /**
- * LED brightness ratio for transient charge/discharge (0–1).
+ * Map LED current onto [0,1] for fade overlays (peak-relative pulse fades).
  * @param {number} maxCurrent — reference current (peak of charge or pressed DC).
  * @param {'charge'|'discharge'} [direction]
  */
-/** Below this fraction of peak current, treat the LED as fully off (no residual glow). */
 const LED_OFF_RATIO_FLOOR = 0.12;
 
 export function getLedBrightnessRatio(
@@ -344,6 +405,116 @@ export function getLedBrightnessRatio(
     const gamma = direction === 'charge' ? 2.2 : 0.55;
     const perceptual = Math.pow(remapped, gamma);
     return Math.max(0, Math.min(1, perceptual));
+}
+
+/**
+ * Absolute DC lamp glow from current (SW.L2.4 mid vs full; SW.L2.5 R-bypass).
+ * 100 Ω model: ~60 mA @ 6 V, ~100 mA with 20 Ω series @ 12 V, ~120 mA @ 12 V.
+ * @param {{ fineContrast?: boolean }} [opts] — stretch upper range for small R-bypass steps
+ */
+export function getAbsoluteLampBrightness(current, opts = {}) {
+    const litMin = 0.02;
+    const fullCurrent = 0.12;
+    if (typeof current !== 'number' || current < litMin) {
+        return 0;
+    }
+    if (opts.fineContrast) {
+        // SW.L2.5: ~100 mA → ~0.7, ~120 mA → 1
+        const lo = 0.08;
+        const hi = 0.12;
+        const u = Math.max(0, Math.min(1, (current - lo) / (hi - lo)));
+        return 0.4 + 0.6 * u;
+    }
+    const t = Math.max(
+        0,
+        Math.min(1, (current - litMin) / (fullCurrent - litMin))
+    );
+    // ~60 mA → ~0.72; ~120 mA → 1.
+    return 0.5 + 0.5 * Math.pow(t, 0.65);
+}
+
+/**
+ * Absolute DC LED glow from forward current (SW dim/bright, etc.).
+ * Below ~0.5 mA → off (100 kΩ / 500 kΩ stay dark on 12 V).
+ * ~2 mA (5.1 kΩ) → clearly lit but dimmer than ~10 mA (1 kΩ).
+ * @param {{ fineContrast?: boolean, seriesBypass?: boolean }} [opts]
+ */
+export function getAbsoluteLedBrightness(current, opts = {}) {
+    const abs =
+        typeof current === 'number' ? Math.abs(current) : Number.NaN;
+    const litMin = 0.0005;
+    const fullCurrent = 0.01;
+    if (typeof abs !== 'number' || Number.isNaN(abs) || abs < litMin) {
+        return 0;
+    }
+    if (opts.seriesBypass) {
+        // SW.L2.10: ~1 mA (two series R) → dim, ~2 mA (one R bypassed) → clearly brighter
+        const lo = 0.0006;
+        const hi = 0.0025;
+        const u = Math.max(0, Math.min(1, (abs - lo) / (hi - lo)));
+        return 0.4 + 0.6 * Math.pow(u, 0.75);
+    }
+    if (opts.fineContrast) {
+        // SW.L2.9: baseline (~2 mA, 5.1k) and weak ‖10k (~3 mA) look the same;
+        // only strong ‖1k (~12 mA) raises glow clearly.
+        const weakTop = 0.004;
+        const strong = 0.012;
+        if (abs <= weakTop) {
+            // Flat dim glow across 5.1k alone and 5.1k‖10k
+            return 0.62;
+        }
+        const u = Math.max(
+            0,
+            Math.min(1, (abs - weakTop) / (strong - weakTop))
+        );
+        return 0.62 + 0.38 * Math.pow(u, 0.55);
+    }
+    const t = Math.max(
+        0,
+        Math.min(1, (abs - litMin) / (fullCurrent - litMin))
+    );
+    // ~2 mA → ~0.68; ~10 mA → 1 (still a clear step between 5.1 kΩ and 1 kΩ).
+    return 0.42 + 0.58 * Math.pow(t, 0.55);
+}
+
+/**
+ * CP.L2.14-style gradual brighten/fade.
+ * - Below ~0.35 mA → off (e.g. 100 kΩ branches look dark).
+ * - Only use baseline→peak mapping when press actually increases current.
+ * - Otherwise use a soft absolute scale (no fake 3 mA “full” peak).
+ */
+export function getBaselineRelativeLedBrightness(
+    current,
+    baselineCurrent,
+    peakCurrent
+) {
+    const litMin = 0.00035;
+    if (typeof current !== 'number' || current < litMin) {
+        return 0;
+    }
+
+    const baseline =
+        typeof baselineCurrent === 'number' && baselineCurrent > 0
+            ? baselineCurrent
+            : current;
+    const peak =
+        typeof peakCurrent === 'number' && peakCurrent > 0
+            ? peakCurrent
+            : current;
+
+    const rise = peak - baseline;
+    const hasContrast = peak > baseline * 1.2 && rise > 0.00015;
+
+    if (hasContrast) {
+        const t = Math.max(0, Math.min(1, (current - baseline) / rise));
+        // Dim baseline ~0.58, full peak ~1.
+        return 0.58 + 0.42 * t;
+    }
+
+    // High-R / no real brighten: absolute glow, stays dark near litMin.
+    // ~0.35 mA → 0, ~1 mA → ~0.32, ~2 mA → ~0.58, ≥3 mA → ~0.72.
+    const absT = Math.max(0, Math.min(1, (current - litMin) / 0.0027));
+    return Math.pow(absT, 0.85) * 0.72;
 }
 
 /** Last forward-current sample from a transient run (for LEDs). */

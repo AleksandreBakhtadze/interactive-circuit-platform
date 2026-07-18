@@ -33,6 +33,7 @@ import {
     getTransistorGroupItem,
     getTransistorMaxCount,
     getTransistorSpec,
+    isResistorType,
     LED_SPECS,
     ledType,
     parseCapacitorKey,
@@ -45,6 +46,7 @@ import {
     resistorType,
     TRANSISTOR_SPECS,
     transistorType,
+    usesResistorTotalCap,
 } from '../../constants/componentCatalog';
 import {
     getRotatedFootprint,
@@ -55,6 +57,10 @@ import {
     getComponentCurrent,
     getComponentVoltage,
     getLedBrightnessRatio,
+    getBaselineRelativeLedBrightness,
+    getAbsoluteLedBrightness,
+    getAbsoluteLampBrightness,
+    getMotorSpinState,
     getTransientSeriesMax,
     getTransientSettleTime,
     getPlacedComponentImage,
@@ -177,6 +183,69 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'CP.L2.7') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ანტიპარ. LED-ები, პარალელური კონდესატორი, 2×1 kΩ';
         }
+        if (problemCode === 'CP.L2.8') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი, კონდესატორი';
+        }
+        if (problemCode === 'CP.L2.9') {
+            return 'განათავსეთ: 2 კვების წყარო (სერიულად 12 ვ), 2 გადამრთველი, ძრავი, კონდესატორი';
+        }
+        if (problemCode === 'CP.L2.12') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ანტიპარ. LED-ები, 2×470 µF (მიმდევრობით), 1 kΩ';
+        }
+        if (problemCode === 'CP.L2.13') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი/მწვანე/ლურჯი LED, კონდესატორი, რეზისტორები';
+        }
+        if (problemCode === 'CP.L2.14') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი LED, კონდესატორი, რეზისტორები';
+        }
+        if (problemCode === 'CP.L2.15') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, წითელი და მწვანე LED, 2 კონდესატორი (მწვანესთან უფრო მცირე C), რეზისტორები';
+        }
+        if (problemCode === 'CP.L2.16') {
+            return 'განათავსეთ: 2 კვების წყარო (სერიულად), გადამრთველი, წითელი LED, კონდესატორი, 2 რეზისტორი';
+        }
+        if (problemCode === 'CP.L4.19') {
+            return 'განათავსეთ: 2×3 ვ კვება, 2 გადამრთველი, 2 მწვანე + 2 ლურჯი LED (მიმდევრობით), კონდესატორი';
+        }
+        if (problemCode === 'SW.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, 2 წითელი LED, რეზისტორი(ები)';
+        }
+        if (problemCode === 'SW.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, წითელი LED, 2 განსხვავებული რეზისტორი (მაგ. 5.1k და 1k)';
+        }
+        if (problemCode === 'SW.L1.13') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ნათურა, წითელი LED, 1 რეზისტორი (მაგ. 1 kΩ)';
+        }
+        if (problemCode === 'SW.L4.14') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ნათურა, წითელი LED, 2 რეზისტორი (მაგ. 1 kΩ)';
+        }
+        if (problemCode === 'SW.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, წითელი LED, მხოლოდ 1 რეზისტორი';
+        }
+        if (problemCode === 'SW.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ნათურა';
+        }
+        if (problemCode === 'SW.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ნათურა, 1 რეზისტორი (მაგ. 20 Ω)';
+        }
+        if (problemCode === 'SW.L2.9') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, გადამრთველი, წითელი LED, 3 რეზისტორი (5.1k მუდმივი; 1k და 10k — ღილაკის მომატება)';
+        }
+        if (problemCode === 'SW.L2.10') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, გადამრთველი, მწვანე და ლურჯი LED, 2 რეზისტორი (სერიულად; ღილაკი ერთს შემოავლებს)';
+        }
+        if (problemCode === 'SW.L3.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, გადამრთველი, წითელი/მწვანე/ლურჯი LED, 1 რეზისტორი (მაგ. 1 kΩ)';
+        }
+        if (problemCode === 'SW.L3.6') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 გადამრთველი, ნათურა';
+        }
+        if (problemCode === 'SW.L3.7') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 გადამრთველი, წითელი და მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'SW.L3.8') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 გადამრთველი, 2 მწვანე LED, რეზისტორები (ძაბვის გამყოფი)';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -242,6 +311,69 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'CP.L2.7') {
         return 'Place: 2 power supplies, switch, slide switch, anti-parallel LEDs, parallel capacitor, 2×1 kΩ';
     }
+    if (problemCode === 'CP.L2.8') {
+        return 'Place: 2 power supplies, slide switch, motor, capacitor';
+    }
+    if (problemCode === 'CP.L2.9') {
+        return 'Place: 2 series power supplies (12 V), 2 slide switches, motor, capacitor';
+    }
+    if (problemCode === 'CP.L2.12') {
+        return 'Place: 2 power supplies, switch, slide switch, anti-parallel LEDs, 2×470 µF series, 1 kΩ';
+    }
+    if (problemCode === 'CP.L2.13') {
+        return 'Place: 2 power supplies, button, red/green/blue LEDs, capacitor, resistors';
+    }
+    if (problemCode === 'CP.L2.14') {
+        return 'Place: 2 power supplies, switch, button, red LED, capacitor, resistors';
+    }
+    if (problemCode === 'CP.L2.15') {
+        return 'Place: 2 power supplies, button, red and green LED, 2 capacitors (smaller C on green), resistors';
+    }
+    if (problemCode === 'CP.L2.16') {
+        return 'Place: 2 series power supplies, slide switch, red LED, capacitor, 2 resistors';
+    }
+    if (problemCode === 'CP.L4.19') {
+        return 'Place: 2×3 V supplies, 2 slide switches, 2 green + 2 blue LEDs (series), capacitor';
+    }
+    if (problemCode === 'SW.L1.1') {
+        return 'Place: 2 power supplies, slide switch, 2 red LEDs, resistor(s)';
+    }
+    if (problemCode === 'SW.L1.2') {
+        return 'Place: 2 power supplies, slide switch, red LED, 2 different resistors (e.g. 5.1k and 1k)';
+    }
+    if (problemCode === 'SW.L1.13') {
+        return 'Place: 2 power supplies, slide switch, lamp, red LED, 1 resistor (e.g. 1 kΩ)';
+    }
+    if (problemCode === 'SW.L4.14') {
+        return 'Place: 2 power supplies, slide switch, lamp, red LED, 2 resistors (e.g. 1 kΩ)';
+    }
+    if (problemCode === 'SW.L2.3') {
+        return 'Place: 2 power supplies, slide switch, red LED, only 1 resistor';
+    }
+    if (problemCode === 'SW.L2.4') {
+        return 'Place: 2 power supplies, slide switch, lamp';
+    }
+    if (problemCode === 'SW.L2.5') {
+        return 'Place: 2 power supplies, slide switch, lamp, 1 resistor (e.g. 20 Ω)';
+    }
+    if (problemCode === 'SW.L2.9') {
+        return 'Place: 2 power supplies, switch, button, slide switch, red LED, 3 resistors (5.1k always-on; 1k and 10k for button boost)';
+    }
+    if (problemCode === 'SW.L2.10') {
+        return 'Place: 2 power supplies, switch, button, slide switch, green and blue LED, 2 resistors (series; button bypasses one)';
+    }
+    if (problemCode === 'SW.L3.11') {
+        return 'Place: 2 power supplies, button, slide switch, red/green/blue LEDs, 1 resistor (e.g. 1 kΩ)';
+    }
+    if (problemCode === 'SW.L3.6') {
+        return 'Place: 2 power supplies, 2 slide switches, lamp';
+    }
+    if (problemCode === 'SW.L3.7') {
+        return 'Place: 2 power supplies, 2 slide switches, red and green LED, resistor';
+    }
+    if (problemCode === 'SW.L3.8') {
+        return 'Place: 2 power supplies, 2 slide switches, 2 green LEDs, resistors (voltage divider)';
+    }
     return 'Place: power supply, button, lamp';
 }
 
@@ -271,18 +403,58 @@ export default function CircuitWorkbench({ problemCode }) {
     const tranAnimRef = useRef(null);
     /** Max LED forward current reference for brightness scaling during tran animation. */
     const pressedLedCurrentMaxRef = useRef(null);
+    /** CP.L2.14: dim baseline current with master ON / button open. */
+    const baselineLedCurrentRef = useRef(null);
     const [ledTranAnimPhase, setLedTranAnimPhase] = useState(null);
     const idleSimResultsRef = useRef(null);
+    /** Motor fan: deg/sec by component id + accumulated angle. */
+    const motorSpeedsRef = useRef({});
+    const motorAnglesRef = useRef({});
+    const [, setMotorSpinTick] = useState(0);
 
     useEffect(() => {
         switchStatesRef.current = switchStates;
     }, [switchStates]);
 
     useEffect(() => {
+        if (!liveSimMode) {
+            motorSpeedsRef.current = {};
+            return undefined;
+        }
+        let raf = 0;
+        let last = performance.now();
+        const tick = (now) => {
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            let moving = false;
+            for (const [id, spd] of Object.entries(motorSpeedsRef.current)) {
+                if (!spd) continue;
+                moving = true;
+                motorAnglesRef.current[id] =
+                    (motorAnglesRef.current[id] ?? 0) + spd * dt;
+            }
+            if (moving) {
+                setMotorSpinTick((n) => n + 1);
+            }
+            raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [liveSimMode]);
+
+    useEffect(() => {
         if (
             problemCode === 'CP.L2.5' ||
             problemCode === 'CP.L2.6' ||
-            problemCode === 'CP.L2.7'
+            problemCode === 'CP.L2.7' ||
+            problemCode === 'CP.L2.8' ||
+            problemCode === 'CP.L2.9' ||
+            problemCode === 'CP.L2.12' ||
+            problemCode === 'CP.L2.13' ||
+            problemCode === 'CP.L2.14' ||
+            problemCode === 'CP.L2.15' ||
+            problemCode === 'CP.L2.16' ||
+            problemCode === 'CP.L4.19'
         ) {
             setCapacitorKey('470uf');
         } else {
@@ -290,8 +462,36 @@ export default function CircuitWorkbench({ problemCode }) {
         }
         if (problemCode === 'CP.L2.5') {
             setResistorKey('5ko1');
-        } else if (problemCode === 'CP.L2.6' || problemCode === 'CP.L2.7') {
-            setResistorKey('1ko');
+        } else if (
+            problemCode === 'CP.L2.6' ||
+            problemCode === 'CP.L2.7' ||
+            problemCode === 'CP.L2.12' ||
+            problemCode === 'CP.L2.13' ||
+            problemCode === 'CP.L2.14' ||
+            problemCode === 'CP.L2.15' ||
+            problemCode === 'CP.L2.16' ||
+            problemCode === 'CP.L4.19' ||
+            problemCode === 'SW.L1.1' ||
+            problemCode === 'SW.L1.2' ||
+            problemCode === 'SW.L1.13' ||
+            problemCode === 'SW.L4.14' ||
+            problemCode === 'SW.L2.3' ||
+            problemCode === 'SW.L2.5' ||
+            problemCode === 'SW.L2.9' ||
+            problemCode === 'SW.L2.10' ||
+            problemCode === 'SW.L3.7' ||
+            problemCode === 'SW.L3.8' ||
+            problemCode === 'SW.L3.11'
+        ) {
+            setResistorKey(
+                problemCode === 'SW.L2.5'
+                    ? '20o'
+                    : problemCode === 'SW.L3.11' ||
+                        problemCode === 'SW.L1.13' ||
+                        problemCode === 'SW.L4.14'
+                      ? '1ko'
+                      : '5ko1'
+            );
         } else {
             setResistorKey('100o');
         }
@@ -311,6 +511,8 @@ export default function CircuitWorkbench({ problemCode }) {
         switchStatesRef.current = {};
         setSwitchStates({});
         setSimResults(null);
+        pressedLedCurrentMaxRef.current = null;
+        baselineLedCurrentRef.current = null;
     }, [placed]);
     const connectorGroup = getConnectorGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
@@ -370,7 +572,10 @@ export default function CircuitWorkbench({ problemCode }) {
         const rKey = parseResistorKey(type);
         if (rKey !== null) {
             const max = getResistorMaxCount(palette);
-            return max - countPlacedByType(placed, type);
+            const used = usesResistorTotalCap(palette)
+                ? placed.filter((p) => isResistorType(p.type)).length
+                : countPlacedByType(placed, type);
+            return max - used;
         }
         const ledKey = parseLedKey(type);
         if (ledKey !== null) {
@@ -414,11 +619,18 @@ export default function CircuitWorkbench({ problemCode }) {
             }
         } else if (parseResistorKey(type) !== null) {
             const max = getResistorMaxCount(palette);
-            if (used >= max && !ignoreId) {
+            const resistorUsed = usesResistorTotalCap(palette)
+                ? placed.filter((p) => isResistorType(p.type)).length
+                : used;
+            if (resistorUsed >= max && !ignoreId) {
                 setMessage(
                     lang === 'ka'
-                        ? 'ამ მნიშვნელობის რეზისტორის ლიმიტი ამოწურულია'
-                        : 'No more resistors of this value'
+                        ? usesResistorTotalCap(palette)
+                            ? 'რეზისტორის ლიმიტი ამოწურულია'
+                            : 'ამ მნიშვნელობის რეზისტორის ლიმიტი ამოწურულია'
+                        : usesResistorTotalCap(palette)
+                          ? 'No more resistors allowed'
+                          : 'No more resistors of this value'
                 );
                 return false;
             }
@@ -856,7 +1068,7 @@ export default function CircuitWorkbench({ problemCode }) {
         async (states, options = {}) => {
             const isLive = options.live ?? liveSimMode;
             const simPhase = options.simPhase ?? 'idle';
-            const circuitJson = buildCircuitJson(placed, states);
+            const circuitJson = buildCircuitJson(placed, states, problemCode);
 
             if (!circuitJson.components.length) {
                 setMessage(
@@ -886,7 +1098,30 @@ export default function CircuitWorkbench({ problemCode }) {
                 } else {
                     if (simPhase === 'idle') {
                         idleSimResultsRef.current = result;
-                        pressedLedCurrentMaxRef.current = null;
+                        if (problemCode !== 'CP.L2.14' && problemCode !== 'CP.L2.16') {
+                            pressedLedCurrentMaxRef.current = null;
+                        }
+                        if (problemCode === 'CP.L2.14' || problemCode === 'CP.L2.16') {
+                            const ledComp = placed.find((p) => isLedType(p.type));
+                            if (ledComp) {
+                                const lastIdx = isTransientResult(result)
+                                    ? Math.max(0, (result.time?.length ?? 1) - 1)
+                                    : undefined;
+                                const i = getComponentCurrent(
+                                    result,
+                                    toSpiceId(ledComp.id),
+                                    { signed: true },
+                                    lastIdx
+                                );
+                                if (typeof i === 'number' && i >= 0.00035) {
+                                    baselineLedCurrentRef.current = i;
+                                } else {
+                                    // Too little current to count as baseline (e.g. 100 kΩ).
+                                    baselineLedCurrentRef.current = null;
+                                    pressedLedCurrentMaxRef.current = null;
+                                }
+                            }
+                        }
                     }
                     if (
                         simPhase === 'pressed' &&
@@ -914,14 +1149,20 @@ export default function CircuitWorkbench({ problemCode }) {
                             usesParallelCapPolaritySimulation(problemCode);
                         startTranAnimation(result, animPhase, {
                             // Stretch settle so dip→reclaim (and L2.3 crossfade) is visible.
+                            // CP.L2.14 / L2.15: keep final frame; play full RC window.
                             keepLastFrame:
                                 crossfade ||
-                                (parallelDip && animPhase === 'charge'),
-                            // CP.L2.5 / CP.L2.6: series-cap pulse over full 4s window.
+                                (parallelDip && animPhase === 'charge') ||
+                                problemCode === 'CP.L2.14' ||
+                                problemCode === 'CP.L2.15' ||
+                                problemCode === 'CP.L2.16',
                             fullDuration:
-                                crossfade &&
-                                usesMasterSwitchSimulation(problemCode) &&
-                                !parallelPolarity,
+                                (crossfade &&
+                                    usesMasterSwitchSimulation(problemCode) &&
+                                    !parallelPolarity) ||
+                                problemCode === 'CP.L2.14' ||
+                                problemCode === 'CP.L2.15' ||
+                                problemCode === 'CP.L2.16',
                             // CP.L2.7: fade then rise in ~2–2.5 s (not instant, not 4 s).
                             readableCrossfade: parallelPolarity,
                         });
@@ -934,22 +1175,71 @@ export default function CircuitWorkbench({ problemCode }) {
 
                 if (!simulationHasError(result) && isLive) {
                     setMessage(
-                        usesMasterSwitchSimulation(problemCode) &&
-                            !isTransientResult(result)
+                        problemCode === 'CP.L2.14'
                             ? lang === 'ka'
-                                ? 'ჩართეთ ჩამრთველი ფირზე, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
-                                : 'Turn the switch ON on the board, then toggle the slide (A–B ↔ A–C)'
-                            : usesSwitchCrossfadeSimulation(problemCode)
+                                ? 'ჩართეთ ჩამრთველი, შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
+                                : 'Turn the switch ON, then press and hold the button on the board'
+                            : problemCode === 'SW.L1.1'
                               ? lang === 'ka'
-                                  ? usesMasterSwitchSimulation(problemCode)
-                                      ? 'ჩართეთ ჩამრთველი, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
-                                      : 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
-                                  : usesMasterSwitchSimulation(problemCode)
-                                    ? 'Turn the switch ON, then toggle the slide (A–B ↔ A–C)'
-                                    : 'Click the slide switch on the board to toggle'
-                              : lang === 'ka'
-                                ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
-                                : 'Press and hold the button on the board'
+                                  ? 'დააწკაპუნეთ გადამრთველზე — ანთდება მეორე შუქდიოდი'
+                                  : 'Click the slide switch — the other LED lights'
+                              : problemCode === 'SW.L1.2' ||
+                                  problemCode === 'SW.L1.13' ||
+                                  problemCode === 'SW.L2.3' ||
+                                  problemCode === 'SW.L2.4' ||
+                                  problemCode === 'SW.L2.5'
+                                ? lang === 'ka'
+                                    ? 'დააწკაპუნეთ გადამრთველზე — ნათება სუსტი ↔ ძლიერი'
+                                    : 'Click the slide switch — brightness dim ↔ bright'
+                                : problemCode === 'SW.L4.14'
+                                  ? lang === 'ka'
+                                      ? 'დააწკაპუნეთ გადამრთველზე — ნათურა და შუქდიოდი შებრუნებულად იცვლება'
+                                      : 'Click the slide switch — lamp and LED brightness swap inversely'
+                                  : problemCode === 'SW.L2.9'
+                                  ? lang === 'ka'
+                                      ? 'ჩართეთ ჩამრთველი, აირჩიეთ გადამრთველით სიძლიერე, დააჭირეთ და არ გაუშვათ ღილაკი'
+                                      : 'Turn the switch ON, pick boost strength on the slide, then press and hold the button'
+                                  : problemCode === 'SW.L2.10'
+                                    ? lang === 'ka'
+                                        ? 'ჩართეთ ჩამრთველი, გადაართეთ შუქდიოდი, დააჭირეთ და არ გაუშვათ ღილაკი — ნათება მოიმატებს'
+                                        : 'Turn the switch ON, pick an LED with the slide, then press and hold the button to brighten'
+                                    : problemCode === 'SW.L3.11'
+                                      ? lang === 'ka'
+                                          ? 'გადაართეთ მწვანე/ლურჯი; დააჭირეთ ღილაკს — წითელი ჩაანაცვლებს (Vf)'
+                                          : 'Toggle green/blue on the slide; press the button — red replaces it (Vf clamp)'
+                                      : problemCode === 'SW.L3.6'
+                                  ? lang === 'ka'
+                                      ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — ნათურა ჩაირთვება/გამოირთვება'
+                                      : 'Click either slide switch — the lamp toggles on/off'
+                                  : problemCode === 'SW.L3.7' ||
+                                      problemCode === 'SW.L3.8'
+                                    ? lang === 'ka'
+                                        ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — შუქდიოდები იცვლება'
+                                        : 'Click either slide switch — the LEDs swap'
+                                    : problemCode === 'CP.L2.16'
+                                ? lang === 'ka'
+                                    ? 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) — ნათება თანდათან იცვლება'
+                                    : 'Click the slide switch — brightness changes gradually'
+                                : problemCode === 'CP.L4.19'
+                                  ? lang === 'ka'
+                                      ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — ორივე ერთად გადაირთვება (გაორმაგება)'
+                                      : 'Click either slide — both toggle together (voltage doubler)'
+                                  : usesMasterSwitchSimulation(problemCode) &&
+                                      !isTransientResult(result)
+                                    ? lang === 'ka'
+                                        ? 'ჩართეთ ჩამრთველი ფირზე, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
+                                        : 'Turn the switch ON on the board, then toggle the slide (A–B ↔ A–C)'
+                                    : usesSwitchCrossfadeSimulation(problemCode)
+                                      ? lang === 'ka'
+                                          ? usesMasterSwitchSimulation(problemCode)
+                                              ? 'ჩართეთ ჩამრთველი, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
+                                              : 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
+                                          : usesMasterSwitchSimulation(problemCode)
+                                            ? 'Turn the switch ON, then toggle the slide (A–B ↔ A–C)'
+                                            : 'Click the slide switch on the board to toggle'
+                                      : lang === 'ka'
+                                        ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
+                                        : 'Press and hold the button on the board'
                     );
                 } else if (!simulationHasError(result)) {
                     setMessage(
@@ -1037,6 +1327,9 @@ export default function CircuitWorkbench({ problemCode }) {
                     simPhase = next === 'closed' ? 'idle' : 'discharge';
                 } else if (usesSwitchCrossfadeSimulation(problemCode)) {
                     simPhase = 'idle';
+                } else if (usesMasterSwitchSimulation(problemCode)) {
+                    // CP.L2.14: toggling master only powers the dim baseline (DC).
+                    simPhase = 'idle';
                 } else {
                     simPhase = next === 'closed' ? 'pressed' : 'discharge';
                 }
@@ -1046,6 +1339,17 @@ export default function CircuitWorkbench({ problemCode }) {
                 ...switchStatesRef.current,
                 [comp.id]: next,
             };
+            // CP.L4.19: both SPDTs must move together for the voltage doubler.
+            if (
+                problemCode === 'CP.L4.19' &&
+                isSlideSwitchType(comp.type)
+            ) {
+                for (const part of placed) {
+                    if (isSlideSwitchType(part.type)) {
+                        nextStates[part.id] = next;
+                    }
+                }
+            }
             commitSwitchStates(nextStates);
 
             if (usesSwitchCrossfadeSimulation(problemCode)) {
@@ -1120,7 +1424,7 @@ export default function CircuitWorkbench({ problemCode }) {
             return;
         }
 
-        const circuitJson = buildCircuitJson(placed);
+        const circuitJson = buildCircuitJson(placed, {}, problemCode);
         setSubmitting(true);
         setSubmitStatus(null);
         setMessage('');
@@ -1723,11 +2027,79 @@ export default function CircuitWorkbench({ problemCode }) {
                             usesSwitchCrossfadeSimulation(problemCode) &&
                             isLedType(comp.type) &&
                             isTransientResult(simResults);
+                        const dualLedRcFade =
+                            problemCode === 'CP.L2.15' &&
+                            isLedType(comp.type) &&
+                            isTransientResult(simResults);
+                        const gradualBrighten =
+                            problemCode === 'CP.L2.14' || problemCode === 'CP.L2.16';
+                        const dcLedBrightness =
+                            (problemCode === 'SW.L1.1' ||
+                                problemCode === 'SW.L1.2' ||
+                                problemCode === 'SW.L1.13' ||
+                                problemCode === 'SW.L4.14' ||
+                                problemCode === 'SW.L2.3' ||
+                                problemCode === 'SW.L2.9' ||
+                                problemCode === 'SW.L2.10' ||
+                                problemCode === 'SW.L3.7' ||
+                                problemCode === 'SW.L3.8' ||
+                                problemCode === 'SW.L3.11') &&
+                            isLedType(comp.type) &&
+                            simOk &&
+                            !isTransientResult(simResults);
+                        const dcLampBrightness =
+                            (problemCode === 'SW.L1.13' ||
+                                problemCode === 'SW.L4.14' ||
+                                problemCode === 'SW.L2.4' ||
+                                problemCode === 'SW.L2.5') &&
+                            comp.type === COMPONENT_TYPES.LAMP &&
+                            simOk &&
+                            !isTransientResult(simResults);
                         let isLedTranFade = false;
                         let ledBrightnessDirection = 'discharge';
                         let ledBrightnessRatio;
 
-                        if (switchCrossfade) {
+                        if (gradualBrighten && isLedType(comp.type) && simOk) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            ledBrightnessRatio =
+                                getBaselineRelativeLedBrightness(
+                                    i,
+                                    baselineLedCurrentRef.current,
+                                    pressedLedCurrentMaxRef.current
+                                );
+                            isLedTranFade = ledBrightnessRatio > 0;
+                        } else if (dcLedBrightness) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            ledBrightnessRatio = getAbsoluteLedBrightness(i, {
+                                fineContrast: problemCode === 'SW.L2.9',
+                                seriesBypass: problemCode === 'SW.L2.10',
+                            });
+                            isLedTranFade = ledBrightnessRatio > 0;
+                        } else if (dcLampBrightness) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    {},
+                                    frameIndex
+                                ) ?? 0;
+                            ledBrightnessRatio = getAbsoluteLampBrightness(i, {
+                                fineContrast: problemCode === 'SW.L2.5',
+                            });
+                            isLedTranFade = ledBrightnessRatio > 0;
+                        } else if (switchCrossfade || dualLedRcFade) {
                             const i0 =
                                 getComponentCurrent(
                                     simResults,
@@ -1759,8 +2131,7 @@ export default function CircuitWorkbench({ problemCode }) {
                                     'current',
                                     { forwardOnly: true }
                                 );
-                            // Discharge must scale from the start current so fade
-                            // begins fully lit; charge scales from the series peak.
+                            // Per-LED peak so green/red timing differences stay visible.
                             const peak = Math.max(
                                 seriesPeak ?? 0,
                                 i0,
@@ -1836,8 +2207,42 @@ export default function CircuitWorkbench({ problemCode }) {
                                   dischargeFading: true,
                                   spiceId: spiceComponentId,
                                   tranFrameIndex: frameIndex,
+                                  simResults,
+                                  voltage:
+                                      getComponentVoltage(
+                                          simResults,
+                                          spiceComponentId,
+                                          frameIndex
+                                      ) ?? 1,
                               })
                             : null;
+
+                        const motorPeak =
+                            simOk &&
+                            comp.type === COMPONENT_TYPES.MOTOR &&
+                            isTransientResult(simResults)
+                                ? getTransientSeriesMax(
+                                      simResults,
+                                      spiceComponentId,
+                                      'current'
+                                  )
+                                : undefined;
+                        const motorSpin =
+                            simOk && comp.type === COMPONENT_TYPES.MOTOR
+                                ? getMotorSpinState(
+                                      simResults,
+                                      spiceComponentId,
+                                      frameIndex,
+                                      motorPeak
+                                  )
+                                : null;
+                        if (comp.type === COMPONENT_TYPES.MOTOR) {
+                            motorSpeedsRef.current[comp.id] = motorSpin?.spinning
+                                ? (360 / motorSpin.periodSec) *
+                                  motorSpin.direction
+                                : 0;
+                        }
+                        const motorAngle = motorAnglesRef.current[comp.id] ?? 0;
 
                         return (
                             <div
@@ -1907,8 +2312,8 @@ export default function CircuitWorkbench({ problemCode }) {
                             >
                                 <div
                                     className={
-                                        isLedTranFade
-                                            ? `${styles.partInner} ${styles.partInnerLedFade}`
+                                        isLedTranFade || motorSpin
+                                            ? `${styles.partInner} ${styles.partInnerOverlay}`
                                             : styles.partInner
                                     }
                                 >
@@ -1947,6 +2352,47 @@ export default function CircuitWorkbench({ problemCode }) {
                                             {getLabel(comp.type)}
                                         </span>
                                     )}
+                                    {motorSpin ? (
+                                        <>
+                                            <img
+                                                src="/components/motor-fan.svg"
+                                                alt=""
+                                                aria-hidden
+                                                className={styles.motorFanOverlay}
+                                                style={{
+                                                    transform: `translate(-50%, -50%) rotate(${motorAngle}deg)`,
+                                                }}
+                                                draggable={false}
+                                            />
+                                            {motorSpin.spinning ? (
+                                                <span
+                                                    className={`${styles.motorDirBadge} ${
+                                                        motorSpin.direction >= 0
+                                                            ? styles.motorDirCw
+                                                            : styles.motorDirCcw
+                                                    }`}
+                                                    title={
+                                                        motorSpin.direction >= 0
+                                                            ? lang === 'ka'
+                                                                ? 'ბრუნვა საათის ისრის მიმართულებით'
+                                                                : 'Clockwise'
+                                                            : lang === 'ka'
+                                                              ? 'ბრუნვა საათის ისრის საწინააღმდეგოდ'
+                                                              : 'Counter-clockwise'
+                                                    }
+                                                    aria-label={
+                                                        motorSpin.direction >= 0
+                                                            ? 'CW'
+                                                            : 'CCW'
+                                                    }
+                                                >
+                                                    {motorSpin.direction >= 0
+                                                        ? '↻'
+                                                        : '↺'}
+                                                </span>
+                                            ) : null}
+                                        </>
+                                    ) : null}
                                 </div>
                             </div>
                         );

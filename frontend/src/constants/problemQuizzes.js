@@ -850,6 +850,105 @@ const CP_L212_QUIZ = {
     ],
 };
 
+const VR_L110_QUIZ = {
+    problemCode: 'VR.L1.10',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa:
+                'რა მოხდება თუ ცოციას დავაყენებთ შუა წერტილში და ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn:
+                'What happens if you set the wiper to mid-point and turn the switch on?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ნათურა აინთება ძლიერად',
+                    textEn: 'The lamp lights brightly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ნათურა აინთება სუსტად',
+                    textEn: 'The lamp lights dimly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ნათურა არ აინთება',
+                    textEn: 'The lamp does not light',
+                },
+            ],
+            correctKey: 'გ',
+            explanationKa:
+                'ნათურაში გაივლის ძალიან სუსტი დენი (ცვლადი რეზისტორის ნახევარი ≈ 5 kΩ), '
+                + 'რაც საკმარისი არ იქნება მის ასანთებად.',
+            explanationEn:
+                'Only a very small current flows through the lamp (about half of the 10 kΩ pot), '
+                + 'which is not enough to light it.',
+        },
+        {
+            id: 'q2',
+            promptKa:
+                'რა მოხდება თუ ცოციას გადავაადგილებთ კვებასთან ჩართული პოლუსისკენ?',
+            promptEn:
+                'What happens if you move the wiper toward the end connected to the supply?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ნათურა არ აინთება',
+                    textEn: 'The lamp does not light',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ნათურა აინთება ძლიერად',
+                    textEn: 'The lamp lights brightly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ნათურა აინთება სუსტად',
+                    textEn: 'The lamp lights dimly',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ცვლად რეზისტორს გააჩნია დაახლოებით 50 Ω დამცავი (ბოლო) წინაღობა, '
+                + 'შესაბამისად მასში არ გაივლის ნათურის ასანთებად საკმარისი დენი.',
+            explanationEn:
+                'The kit potentiometer has about 50 Ω of end-stop / protective resistance, '
+                + 'so even at minimum the current is still too low to light the lamp.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'რა მოხდება თუ ნათურას ჩავანაცვლებთ ძრავით?',
+            promptEn: 'What happens if you replace the lamp with a motor?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ძრავი არ დატრიალდება',
+                    textEn: 'The motor will not spin',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ძრავი დატრიალდება ნელა',
+                    textEn: 'The motor will spin slowly',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ძრავი დატრიალდება ჩქარა',
+                    textEn: 'The motor will spin quickly',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ცვლად რეზისტორს გააჩნია დაახლოებით 50 Ω დამცავი წინაღობა, '
+                + 'შესაბამისად მასში არ გაივლის ძრავის დასატრიალებლად საკმარისი დენი.',
+            explanationEn:
+                'With the pot’s ~50 Ω protective floor, the current is still too small '
+                + 'to spin the motor.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
@@ -858,6 +957,7 @@ const QUIZZES_BY_CODE = {
     'LR.L2.14': LR_L214_QUIZ,
     'LR.L2.15': LR_L215_QUIZ,
     'CP.L2.12': CP_L212_QUIZ,
+    'VR.L1.10': VR_L110_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

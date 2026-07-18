@@ -72,12 +72,17 @@ import {
 } from '../../utils/componentDisplay';
 import {
     buildCircuitJson,
+    clampPotPosition,
     createInitialSwitchStates,
+    DEFAULT_POT_POSITION,
+    formatPotResistanceLabel,
     isBoardComplete,
     isInteractivePart,
     isMomentaryInteractive,
     isToggleInteractive,
     isSlideSwitchType,
+    isVarResistorType,
+    supportsMotorStallToggle,
     toSpiceId,
 } from '../../utils/circuitNetlist';
 import {
@@ -130,6 +135,36 @@ function incompleteBoardMessage(problemCode, lang) {
         }
         if (problemCode === 'ST.L1.8') {
             return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.3') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი და მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L2.6') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი (B და C შეაერთეთ)';
+        }
+        if (problemCode === 'VR.L2.7') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი (B და C შეაერთეთ; პოტი LED-ის პარალელურად)';
+        }
+        if (problemCode === 'VR.L2.8') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, 2 რეზისტორი (B და C შეაერთეთ; დამატებითი R პოტის მიმდევრობით)';
+        }
+        if (problemCode === 'VR.L2.9') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.10') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, ნათურა (სურათის მიხედვით)';
         }
         if (problemCode === 'ST.L2.9') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, რეზისტორი';
@@ -293,6 +328,36 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'SW.L3.8') {
             return 'განათავსეთ: 2 კვების წყარო, 2 გადამრთველი, 2 მწვანე LED, რეზისტორები (ძაბვის გამყოფი)';
         }
+        if (problemCode === 'DM.L1.1') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, ღილაკი, ძრავი';
+        }
+        if (problemCode === 'DM.L2.2') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი';
+        }
+        if (problemCode === 'DM.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი, რეზისტორი ან ნათურა';
+        }
+        if (problemCode === 'DM.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, ძრავი, რეზისტორი ან ნათურა';
+        }
+        if (problemCode === 'DM.L2.6') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი';
+        }
+        if (problemCode === 'DM.L2.7') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი, 2 რეზისტორი (დაბალი R, მაგ. 20 Ω)';
+        }
+        if (problemCode === 'DM.L2.8') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 გადამრთველი, ძრავი';
+        }
+        if (problemCode === 'DM.L3.9') {
+            return 'განათავსეთ: 2 კვების წყარო, გადამრთველი, ძრავი, წითელი და მწვანე LED, რეზისტორი (მაგ. 1 kΩ)';
+        }
+        if (problemCode === 'DM.L2.10') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ძრავი, წითელი LED, რეზისტორი (1 kΩ) და 20 Ω ან ნათურა';
+        }
+        if (problemCode === 'DM.L4.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ძრავი (და საზომი დეტალები სურვილისამებრ)';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -303,6 +368,36 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'ST.L1.8') {
         return 'Place: power supply, switch, button, red LED, resistor';
+    }
+    if (problemCode === 'VR.L1.1') {
+        return 'Place: 2 power supplies, switch, variable resistor, red LED, resistor';
+    }
+    if (problemCode === 'VR.L1.2') {
+        return 'Place: 2 power supplies, switch, variable resistor, red LED, 2 resistors';
+    }
+    if (problemCode === 'VR.L1.3') {
+        return 'Place: 2 power supplies, switch, variable resistor, red and green LED, resistor';
+    }
+    if (problemCode === 'VR.L1.4') {
+        return 'Place: 2 power supplies, switch, button, variable resistor, red LED, resistor';
+    }
+    if (problemCode === 'VR.L1.5') {
+        return 'Place: 2 power supplies, switch, button, variable resistor, red LED, resistor';
+    }
+    if (problemCode === 'VR.L2.6') {
+        return 'Place: 2 power supplies, switch, variable resistor, red LED, resistor (short B to C)';
+    }
+    if (problemCode === 'VR.L2.7') {
+        return 'Place: 2 power supplies, switch, variable resistor, red LED, resistor (short B–C; pot || LED)';
+    }
+    if (problemCode === 'VR.L2.8') {
+        return 'Place: 2 power supplies, switch, variable resistor, red LED, 2 resistors (short B–C; series R in shunt)';
+    }
+    if (problemCode === 'VR.L2.9') {
+        return 'Place: 2 power supplies, switch, slide switch, variable resistor, red LED, resistor';
+    }
+    if (problemCode === 'VR.L1.10') {
+        return 'Place: 2 power supplies, switch, variable resistor, lamp (follow the figure)';
     }
     if (problemCode === 'ST.L2.9') {
         return 'Place: 2 power supplies, switch, button, red and green LED, resistor';
@@ -466,6 +561,36 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'SW.L3.8') {
         return 'Place: 2 power supplies, 2 slide switches, 2 green LEDs, resistors (voltage divider)';
     }
+    if (problemCode === 'DM.L1.1') {
+        return 'Place: power supply, switch, button, motor';
+    }
+    if (problemCode === 'DM.L2.2') {
+        return 'Place: 2 power supplies, slide switch, motor';
+    }
+    if (problemCode === 'DM.L2.3') {
+        return 'Place: 2 power supplies, slide switch, motor, resistor or lamp';
+    }
+    if (problemCode === 'DM.L2.5') {
+        return 'Place: 2 power supplies, switch, button, motor, resistor or lamp';
+    }
+    if (problemCode === 'DM.L2.6') {
+        return 'Place: 2 power supplies, slide switch, motor';
+    }
+    if (problemCode === 'DM.L2.7') {
+        return 'Place: 2 power supplies, slide switch, motor, 2 resistors (low R, e.g. 20 Ω)';
+    }
+    if (problemCode === 'DM.L2.8') {
+        return 'Place: 2 power supplies, 2 slide switches, motor';
+    }
+    if (problemCode === 'DM.L3.9') {
+        return 'Place: 2 power supplies, slide switch, motor, red and green LED, resistor (e.g. 1 kΩ)';
+    }
+    if (problemCode === 'DM.L2.10') {
+        return 'Place: 2 power supplies, switch, motor, red LED, resistor (1 kΩ) and 20 Ω or lamp';
+    }
+    if (problemCode === 'DM.L4.4') {
+        return 'Place: 2 power supplies, motor (plus measurement parts as needed)';
+    }
     return 'Place: power supply, button, lamp';
 }
 
@@ -475,6 +600,8 @@ export default function CircuitWorkbench({ problemCode }) {
     const gridRef = useRef(null);
     const heldButtonIdRef = useRef(null);
     const switchStatesRef = useRef({});
+    const potPositionsRef = useRef({});
+    const potSimTimerRef = useRef(null);
     const moveSessionRef = useRef(null);
     const boardHostRef = useRef(null);
 
@@ -490,6 +617,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const [simulating, setSimulating] = useState(false);
     const [liveSimMode, setLiveSimMode] = useState(false);
     const [switchStates, setSwitchStates] = useState({});
+    const [potPositions, setPotPositions] = useState({});
     const [simResults, setSimResults] = useState(null);
     const [tranFrameIndex, setTranFrameIndex] = useState(0);
     /** Sync frame for LED sampling — avoids one-frame flash of the prior last index on new .tran. */
@@ -518,6 +646,23 @@ export default function CircuitWorkbench({ problemCode }) {
     useEffect(() => {
         switchStatesRef.current = switchStates;
     }, [switchStates]);
+
+    useEffect(() => {
+        potPositionsRef.current = potPositions;
+    }, [potPositions]);
+
+    const liveSimModeRef = useRef(false);
+    useEffect(() => {
+        liveSimModeRef.current = liveSimMode;
+    }, [liveSimMode]);
+
+    useEffect(() => {
+        return () => {
+            if (potSimTimerRef.current) {
+                clearTimeout(potSimTimerRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (!liveSimMode) {
@@ -566,6 +711,19 @@ export default function CircuitWorkbench({ problemCode }) {
         if (problemCode === 'CP.L2.5') {
             setResistorKey('5ko1');
         } else if (
+            problemCode === 'VR.L1.1' ||
+            problemCode === 'VR.L1.2' ||
+            problemCode === 'VR.L1.3' ||
+            problemCode === 'VR.L1.4' ||
+            problemCode === 'VR.L1.5' ||
+            problemCode === 'VR.L2.6' ||
+            problemCode === 'VR.L2.7' ||
+            problemCode === 'VR.L2.8' ||
+            problemCode === 'VR.L2.9' ||
+            problemCode === 'VR.L1.10'
+        ) {
+            setResistorKey('1ko');
+        } else if (
             problemCode === 'CP.L2.6' ||
             problemCode === 'CP.L2.7' ||
             problemCode === 'CP.L2.12' ||
@@ -613,6 +771,17 @@ export default function CircuitWorkbench({ problemCode }) {
         switchStatesRef.current = nextStates;
         setSwitchStates(nextStates);
     }, []);
+
+    const commitPotPosition = useCallback((id, position) => {
+        const clamped = clampPotPosition(position);
+        const next = {
+            ...potPositionsRef.current,
+            [id]: clamped,
+        };
+        potPositionsRef.current = next;
+        setPotPositions(next);
+    }, []);
+
     const [submitting, setSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
     const [activeDrag, setActiveDrag] = useState(null);
@@ -878,13 +1047,18 @@ export default function CircuitWorkbench({ problemCode }) {
     const handleBoardPointerDownCapture = (e) => {
         if (e.button !== 0) return;
 
+        // On-part pot slider — never start a board drag from the control.
+        if (e.target.closest?.('[data-pot-slider]')) {
+            return;
+        }
+
         const partId = findPlacedPartIdAt(e.clientX, e.clientY);
         if (!partId) return;
 
         const comp = placed.find((p) => p.id === partId);
         if (!comp) return;
 
-        if (liveSimMode && isInteractivePart(comp.type)) {
+        if (liveSimMode && isInteractivePart(comp.type, problemCode)) {
             return;
         }
 
@@ -1186,7 +1360,12 @@ export default function CircuitWorkbench({ problemCode }) {
         async (states, options = {}) => {
             const isLive = options.live ?? liveSimMode;
             const simPhase = options.simPhase ?? 'idle';
-            const circuitJson = buildCircuitJson(placed, states, problemCode);
+            const circuitJson = buildCircuitJson(
+                placed,
+                states,
+                problemCode,
+                potPositionsRef.current
+            );
 
             if (!circuitJson.components.length) {
                 setMessage(
@@ -1309,10 +1488,36 @@ export default function CircuitWorkbench({ problemCode }) {
                                   problemCode === 'SW.L1.13' ||
                                   problemCode === 'SW.L2.3' ||
                                   problemCode === 'SW.L2.4' ||
-                                  problemCode === 'SW.L2.5'
+                                  problemCode === 'SW.L2.5' ||
+                                  problemCode === 'DM.L2.2' ||
+                                  problemCode === 'DM.L2.3' ||
+                                  problemCode === 'DM.L2.6' ||
+                                  problemCode === 'DM.L2.7' ||
+                                  problemCode === 'DM.L2.8' ||
+                                  problemCode === 'DM.L3.9'
                                 ? lang === 'ka'
-                                    ? 'დააწკაპუნეთ გადამრთველზე — ნათება სუსტი ↔ ძლიერი'
-                                    : 'Click the slide switch — brightness dim ↔ bright'
+                                    ? problemCode === 'DM.L3.9'
+                                        ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვის მიმართულება და წითელი/მწვანე LED იცვლება'
+                                        : problemCode === 'DM.L2.8'
+                                          ? 'დააწკაპუნეთ გადამრთველებზე — ერთნაირი პოზიცია ტრიალებს, განსხვავებული აჩერებს; ორივეს გადართვა ცვლის მიმართულებას'
+                                          : problemCode === 'DM.L2.6' ||
+                                              problemCode === 'DM.L2.7'
+                                            ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვის მიმართულება იცვლება'
+                                            : problemCode === 'DM.L2.2' ||
+                                                problemCode === 'DM.L2.3'
+                                              ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვა ნელი ↔ ჩქარი'
+                                              : 'დააწკაპუნეთ გადამრთველზე — ნათება სუსტი ↔ ძლიერი'
+                                    : problemCode === 'DM.L3.9'
+                                      ? 'Click the slide — spin direction and red/green LEDs swap'
+                                      : problemCode === 'DM.L2.8'
+                                        ? 'Click the slides — same position spins, different stops; flip both to reverse'
+                                        : problemCode === 'DM.L2.6' ||
+                                            problemCode === 'DM.L2.7'
+                                          ? 'Click the slide switch — spin direction reverses'
+                                          : problemCode === 'DM.L2.2' ||
+                                              problemCode === 'DM.L2.3'
+                                            ? 'Click the slide switch — spin slow ↔ fast'
+                                            : 'Click the slide switch — brightness dim ↔ bright'
                                 : problemCode === 'SW.L4.14'
                                   ? lang === 'ka'
                                       ? 'დააწკაპუნეთ გადამრთველზე — ნათურა და შუქდიოდი შებრუნებულად იცვლება'
@@ -1402,19 +1607,62 @@ export default function CircuitWorkbench({ problemCode }) {
     );
 
     const handleSimulate = async () => {
-        const initial = createInitialSwitchStates(placed);
+        const initial = createInitialSwitchStates(placed, problemCode);
         commitSwitchStates(initial);
         setLiveSimMode(true);
         setMessage('');
         await runLiveSimulation(initial, { live: true, simPhase: 'idle' });
     };
 
+    /** Potentiometer dial: update A–B share (0…1) and re-sim while live. */
+    const handlePotPositionChange = useCallback(
+        (compId, rawValue, { flush = false } = {}) => {
+            commitPotPosition(compId, Number(rawValue) / 100);
+            if (!liveSimModeRef.current) return;
+
+            if (potSimTimerRef.current) {
+                clearTimeout(potSimTimerRef.current);
+                potSimTimerRef.current = null;
+            }
+
+            const run = () => {
+                potSimTimerRef.current = null;
+                if (!liveSimModeRef.current) return;
+                runLiveSimulation(switchStatesRef.current);
+            };
+
+            if (flush) {
+                run();
+            } else {
+                potSimTimerRef.current = setTimeout(run, 120);
+            }
+        },
+        [commitPotPosition, runLiveSimulation]
+    );
+
     /** Momentary button: closed only while pointer is held down. */
     const handleInteractivePointerDown = async (comp, e) => {
-        if (!liveSimMode || !isInteractivePart(comp.type)) return;
+        if (!liveSimMode || !isInteractivePart(comp.type, problemCode)) return;
         if (e.button !== 0) return;
+        // Potentiometer uses the on-part slider — ignore body clicks.
+        if (isVarResistorType(comp.type)) return;
         e.stopPropagation();
         e.preventDefault();
+
+        if (
+            supportsMotorStallToggle(problemCode) &&
+            comp.type === COMPONENT_TYPES.MOTOR
+        ) {
+            const current = switchStatesRef.current[comp.id] ?? 'running';
+            const next = current === 'stalled' ? 'running' : 'stalled';
+            const nextStates = {
+                ...switchStatesRef.current,
+                [comp.id]: next,
+            };
+            commitSwitchStates(nextStates);
+            await runLiveSimulation(nextStates);
+            return;
+        }
 
         if (isToggleInteractive(comp.type)) {
             const current = switchStatesRef.current[comp.id];
@@ -1534,9 +1782,13 @@ export default function CircuitWorkbench({ problemCode }) {
         if (!usesCircuitValidation(problemCode)) {
             setSubmitStatus(null);
             setMessage(
-                lang === 'ka'
-                    ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და გამოიყენეთ სიმულაცია.'
-                    : 'No circuit check for this task — rebuild from the picture and use Simulate.'
+                problemCode === 'DM.L4.4'
+                    ? lang === 'ka'
+                        ? 'ამ ამოცანაში ავტომატური შემოწმება არ არის — ააწყვეთ საზომი წრედი და გამოიყენეთ სიმულაცია ძაბვების/ნათების შესადარებლად.'
+                        : 'No automated check for this task — build a measurement circuit and use Simulate to compare voltages/brightness.'
+                    : lang === 'ka'
+                      ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და გამოიყენეთ სიმულაცია.'
+                      : 'No circuit check for this task — rebuild from the picture and use Simulate.'
             );
             return;
         }
@@ -1547,7 +1799,12 @@ export default function CircuitWorkbench({ problemCode }) {
             return;
         }
 
-        const circuitJson = buildCircuitJson(placed, {}, problemCode);
+        const circuitJson = buildCircuitJson(
+            placed,
+            {},
+            problemCode,
+            potPositionsRef.current
+        );
         setSubmitting(true);
         setSubmitStatus(null);
         setMessage('');
@@ -2048,7 +2305,56 @@ export default function CircuitWorkbench({ problemCode }) {
                     </h2>
                     <p className={styles.paletteHint}>
                     {liveSimMode
-                        ? problemCode === 'ST.L2.4' || problemCode === 'ST.L2.10'
+                        ? problemCode === 'VR.L1.1' ||
+                          problemCode === 'VR.L1.2' ||
+                          problemCode === 'VR.L1.3' ||
+                          problemCode === 'VR.L1.4' ||
+                          problemCode === 'VR.L1.5' ||
+                          problemCode === 'VR.L2.6' ||
+                          problemCode === 'VR.L2.7' ||
+                          problemCode === 'VR.L2.8' ||
+                          problemCode === 'VR.L2.9' ||
+                          problemCode === 'VR.L1.10'
+                            ? lang === 'ka'
+                                ? problemCode === 'VR.L1.10'
+                                    ? 'სიმულაციის რეჟიმი: ააწყვეთ სურათის წრედი; ცოცია შუაში და ბოლოში — ნათურა არ უნდა აინთოს (დამცავი ~50 Ω). შემდეგ უპასუხეთ ტესტს.'
+                                    : problemCode === 'VR.L2.9'
+                                    ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ცვლის ნათებას; გადაართეთ გადამრთველი — იგივე მოძრაობის მიმართულება შებრუნდება.'
+                                    : problemCode === 'VR.L2.8'
+                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მაქსიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ამცირებს ნათებას, მაგრამ LED არ ქრება (დამატებითი R პოტის მიმდევრობით).'
+                                    : problemCode === 'VR.L2.7'
+                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მაქსიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ამცირებს ნათებას და ჩაქრობს LED-ს (პოტი || LED, B–C შეერთებული).'
+                                    : problemCode === 'VR.L2.6'
+                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მინიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ზრდის ნათებას (B–C შეერთებული).'
+                                    : problemCode === 'VR.L1.5'
+                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ცვლის ნათებას; დააჭირეთ ღილაკს — LED მაქსიმუმზეა, ცოცია აღარ მოქმედებს.'
+                                      : problemCode === 'VR.L1.4'
+                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ნათებას არ ცვლის; დააჭირეთ ღილაკს — მაშინ ცოცია ცვლის ნათებას.'
+                                      : problemCode === 'VR.L1.3'
+                                        ? 'სიმულაციის რეჟიმი: ცოცია შუაში — ორივე LED; გადაადგილეთ — ერთი ძლიერდება, მეორე სუსტდება.'
+                                        : problemCode === 'VR.L1.2'
+                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), გადაადგილეთ ცოცია — LED უნდა აინთოს და ერთ ნაპირზე ბოლომდე ჩაქრეს.'
+                                          : 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ გადაადგილეთ ცვლადი რეზისტორის ცოცია — LED-ის ნათება უნდა შეიცვალოს.'
+                                : problemCode === 'VR.L1.10'
+                                  ? 'Simulation mode: build the figure; mid and end-stop — lamp stays dark (~50 Ω floor). Then answer the quiz.'
+                                  : problemCode === 'VR.L2.9'
+                                  ? 'Simulation mode: switch ON — pot changes brightness; flip the slide switch to reverse that direction.'
+                                  : problemCode === 'VR.L2.8'
+                                  ? 'Simulation mode: pot mid = brightest; move either way to dim but stay lit (series R in shunt branch).'
+                                  : problemCode === 'VR.L2.7'
+                                  ? 'Simulation mode: pot mid = brightest; move either way to dim and extinguish (pot || LED, B–C shorted).'
+                                  : problemCode === 'VR.L2.6'
+                                  ? 'Simulation mode: pot mid = dimmest; move either way to brighten (B–C shorted).'
+                                  : problemCode === 'VR.L1.5'
+                                    ? 'Simulation mode: switch ON — pot changes brightness; hold button — LED max, pot ignored.'
+                                    : problemCode === 'VR.L1.4'
+                                      ? 'Simulation mode: switch ON — pot ignored until you hold the button; then pot changes brightness.'
+                                    : problemCode === 'VR.L1.3'
+                                      ? 'Simulation mode: pot mid — both LEDs; move it — one brightens, the other dims.'
+                                      : problemCode === 'VR.L1.2'
+                                        ? 'Simulation mode: turn the switch ON, move the pot — LED should light and fully extinguish at one end.'
+                                        : 'Simulation mode: turn the switch ON, then move the pot slider — LED brightness should change.'
+                        : problemCode === 'ST.L2.4' || problemCode === 'ST.L2.10'
                             ? lang === 'ka'
                                 ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ ერთდროულად დააჭირეთ ორივე ღილაკს.'
                                 : 'Simulation mode: turn the switch ON, then press and hold both buttons together.'
@@ -2069,18 +2375,33 @@ export default function CircuitWorkbench({ problemCode }) {
                                         ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ღილაკზე დაჭერისას ერთი LED ძლიერდება, მეორე სუსტდება.'
                                         : 'Simulation mode: turn the switch ON; pressing the button brightens one LED and dims the other.'
                                     : problemCode === 'LR.L1.11' ||
-                                        problemCode === 'LR.L2.12'
+                                        problemCode === 'LR.L2.12' ||
+                                        problemCode === 'DM.L4.4'
                                       ? lang === 'ka'
-                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON) და შეადარეთ ორივე LED-ის ნათება.'
-                                          : 'Simulation mode: turn the switch ON and compare both LED brightness levels.'
+                                          ? problemCode === 'DM.L4.4'
+                                              ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შეადარეთ LED-ების ნათება; ზუსტი შედარებისთვის დააჭირეთ ღილაკს.'
+                                              : 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON) და შეადარეთ ორივე LED-ის ნათება.'
+                                          : problemCode === 'DM.L4.4'
+                                            ? 'Simulation mode: turn the switch ON, compare LED brightness; press the button for a precise comparison.'
+                                            : 'Simulation mode: turn the switch ON and compare both LED brightness levels.'
                                   : problemCode === 'LR.L2.5'
                                   ? lang === 'ka'
                                       ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ერთი ღილაკი — ნათურა, მეორე — LED.'
                                       : 'Simulation mode: turn the switch ON; one button lights the lamp, the other the LED.'
-                                  : problemCode === 'LR.L3.6'
+                                  : problemCode === 'LR.L3.6' ||
+                                      problemCode === 'DM.L2.5' ||
+                                      problemCode === 'DM.L2.10'
                                     ? lang === 'ka'
-                                        ? 'სიმულაციის რეჟიმი: LED თავიდან ანთებულია; დააჭირეთ ღილაკს მის ჩასაქრობად.'
-                                        : 'Simulation mode: the LED starts on; press and hold the button to turn it off.'
+                                        ? problemCode === 'DM.L2.10'
+                                            ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); დააწკაპუნეთ ძრავზე — გაჩერება/გაშვება (თითით შეჩერება).'
+                                            : problemCode === 'DM.L2.5'
+                                              ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); დააჭირეთ ღილაკს ძრავის გასაჩერებლად.'
+                                              : 'სიმულაციის რეჟიმი: LED თავიდან ანთებულია; დააჭირეთ ღილაკს მის ჩასაქრობად.'
+                                        : problemCode === 'DM.L2.10'
+                                          ? 'Simulation mode: turn the switch ON; click the motor to stall/release (finger stop).'
+                                          : problemCode === 'DM.L2.5'
+                                            ? 'Simulation mode: turn the switch ON; press and hold the button to stop the motor.'
+                                            : 'Simulation mode: the LED starts on; press and hold the button to turn it off.'
                                     : problemCode === 'LR.L2.7'
                                       ? lang === 'ka'
                                           ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ღილაკს ნათების მოსამატებლად.'
@@ -2095,7 +2416,8 @@ export default function CircuitWorkbench({ problemCode }) {
                                       problemCode === 'LR.L1.1' ||
                                       problemCode === 'LR.L1.2' ||
                                       problemCode === 'LR.L1.3' ||
-                                      problemCode === 'LR.L2.4'
+                                      problemCode === 'LR.L2.4' ||
+                                      problemCode === 'DM.L1.1'
                                     ? lang === 'ka'
                                         ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი.'
                                         : 'Simulation mode: turn the switch ON, then press and hold the button.'
@@ -2365,7 +2687,7 @@ export default function CircuitWorkbench({ problemCode }) {
                         if (!partStyle) return null;
 
                         const interactive =
-                            liveSimMode && isInteractivePart(comp.type);
+                            liveSimMode && isInteractivePart(comp.type, problemCode);
 
                         const boxStyle = {
                             ...partStyleToCss(partStyle),
@@ -2408,7 +2730,7 @@ export default function CircuitWorkbench({ problemCode }) {
                                       'current'
                                   )
                                 : undefined;
-                        const motorSpin =
+                        const motorSpinRaw =
                             simOk && comp.type === COMPONENT_TYPES.MOTOR
                                 ? getMotorSpinState(
                                       simResults,
@@ -2417,6 +2739,17 @@ export default function CircuitWorkbench({ problemCode }) {
                                       motorPeak
                                   )
                                 : null;
+                        const motorStalled =
+                            supportsMotorStallToggle(problemCode) &&
+                            switchStatesRef.current[comp.id] === 'stalled';
+                        const motorSpin =
+                            motorSpinRaw && motorStalled
+                                ? {
+                                      ...motorSpinRaw,
+                                      spinning: false,
+                                      speedRatio: 0,
+                                  }
+                                : motorSpinRaw;
                         if (comp.type === COMPONENT_TYPES.MOTOR) {
                             motorSpeedsRef.current[comp.id] = motorSpin?.spinning
                                 ? (360 / motorSpin.periodSec) *
@@ -2459,16 +2792,31 @@ export default function CircuitWorkbench({ problemCode }) {
                                     removeComponent(comp.id, e);
                                 }}
                                 role={
-                                    interactive
-                                        ? isToggleInteractive(comp.type)
+                                    interactive &&
+                                    !isVarResistorType(comp.type)
+                                        ? isToggleInteractive(comp.type) ||
+                                          (supportsMotorStallToggle(problemCode) &&
+                                              comp.type === COMPONENT_TYPES.MOTOR)
                                             ? 'switch'
                                             : 'button'
                                         : undefined
                                 }
-                                tabIndex={interactive ? 0 : undefined}
+                                tabIndex={
+                                    interactive &&
+                                    !isVarResistorType(comp.type)
+                                        ? 0
+                                        : undefined
+                                }
                                 aria-checked={
-                                    interactive && isToggleInteractive(comp.type)
-                                        ? switchClosed
+                                    interactive &&
+                                    (isToggleInteractive(comp.type) ||
+                                        (supportsMotorStallToggle(problemCode) &&
+                                            comp.type === COMPONENT_TYPES.MOTOR))
+                                        ? supportsMotorStallToggle(problemCode) &&
+                                          comp.type === COMPONENT_TYPES.MOTOR
+                                            ? switchStatesRef.current[comp.id] ===
+                                              'stalled'
+                                            : switchClosed
                                         : undefined
                                 }
                                 aria-pressed={
@@ -2485,9 +2833,30 @@ export default function CircuitWorkbench({ problemCode }) {
                                                       ? 'A–C'
                                                       : 'A–B'
                                               }`
-                                            : isToggleInteractive(comp.type)
-                                              ? `${getLabel(comp.type)} — ${switchClosed ? (lang === 'ka' ? 'ჩართული' : 'on') : lang === 'ka' ? 'გამორთული' : 'off'}`
-                                              : getLabel(comp.type)
+                                            : isVarResistorType(comp.type)
+                                              ? `${getLabel(comp.type)} — ${formatPotResistanceLabel(
+                                                    potPositions[comp.id] ??
+                                                        DEFAULT_POT_POSITION
+                                                )}`
+                                            : supportsMotorStallToggle(
+                                                    problemCode
+                                                ) &&
+                                                comp.type ===
+                                                    COMPONENT_TYPES.MOTOR
+                                              ? `${getLabel(comp.type)} — ${
+                                                    switchStatesRef.current[
+                                                        comp.id
+                                                    ] === 'stalled'
+                                                        ? lang === 'ka'
+                                                            ? 'გაჩერებული'
+                                                            : 'stalled'
+                                                        : lang === 'ka'
+                                                          ? 'ტრიალებს'
+                                                          : 'running'
+                                                }`
+                                              : isToggleInteractive(comp.type)
+                                                ? `${getLabel(comp.type)} — ${switchClosed ? (lang === 'ka' ? 'ჩართული' : 'on') : lang === 'ka' ? 'გამორთული' : 'off'}`
+                                                : getLabel(comp.type)
                                         : undefined
                                 }
                             >
@@ -2577,6 +2946,55 @@ export default function CircuitWorkbench({ problemCode }) {
                                         </>
                                     ) : null}
                                 </div>
+                                {isVarResistorType(comp.type) ? (
+                                    <div
+                                        className={styles.potSliderWrap}
+                                        data-pot-slider
+                                        onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                        }}
+                                    >
+                                        <label className={styles.potSliderLabel}>
+                                            <input
+                                                type="range"
+                                                className={styles.potSlider}
+                                                min={0}
+                                                max={100}
+                                                step={1}
+                                                value={Math.round(
+                                                    clampPotPosition(
+                                                        potPositions[comp.id] ??
+                                                            DEFAULT_POT_POSITION
+                                                    ) * 100
+                                                )}
+                                                aria-label={
+                                                    lang === 'ka'
+                                                        ? 'ცვლადი რეზისტორი A–B'
+                                                        : 'Potentiometer A–B'
+                                                }
+                                                onChange={(e) => {
+                                                    handlePotPositionChange(
+                                                        comp.id,
+                                                        e.target.value
+                                                    );
+                                                }}
+                                                onPointerUp={(e) => {
+                                                    handlePotPositionChange(
+                                                        comp.id,
+                                                        e.target.value,
+                                                        { flush: true }
+                                                    );
+                                                }}
+                                            />
+                                            <span className={styles.potSliderValue}>
+                                                {formatPotResistanceLabel(
+                                                    potPositions[comp.id] ??
+                                                        DEFAULT_POT_POSITION
+                                                )}
+                                            </span>
+                                        </label>
+                                    </div>
+                                ) : null}
                             </div>
                         );
                     })}

@@ -86,6 +86,12 @@ export function toSpiceId(id) {
     return String(id).replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
+/** Max track resistance for the 10k potentiometer part. */
+export const VAR_RESISTOR_MAX_OHMS = 10000;
+
+/** Default wiper position (mid-track). */
+export const DEFAULT_POT_POSITION = 0.5;
+
 const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.POWER_SUPPLY]: 'power_supply',
     [COMPONENT_TYPES.BUTTON]: 'button',
@@ -94,6 +100,7 @@ const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.LAMP]: 'lamp',
     [COMPONENT_TYPES.RESISTOR]: 'resistor',
     [COMPONENT_TYPES.MOTOR]: 'motor',
+    [COMPONENT_TYPES.VAR_RESISTOR]: 'variable_resistor',
 };
 
 function boardTypeToRole(boardType) {
@@ -120,21 +127,73 @@ export function isToggleInteractive(type) {
     );
 }
 
+/** DM.L2.10: click motor to stall / release (finger-stop). */
+export function supportsMotorStallToggle(problemCode) {
+    return problemCode === 'DM.L2.10';
+}
+
 /** Parts the student can operate during live simulation. */
-export function isInteractivePart(type) {
-    return isMomentaryInteractive(type) || isToggleInteractive(type);
+export function isInteractivePart(type, problemCode = null) {
+    if (isMomentaryInteractive(type) || isToggleInteractive(type)) {
+        return true;
+    }
+    if (isVarResistorType(type)) {
+        return true;
+    }
+    return (
+        type === COMPONENT_TYPES.MOTOR && supportsMotorStallToggle(problemCode)
+    );
 }
 
 export function isSlideSwitchType(type) {
     return type === COMPONENT_TYPES.SLIDE_SWITCH;
 }
 
+export function isVarResistorType(type) {
+    return type === COMPONENT_TYPES.VAR_RESISTOR;
+}
+
+/** Clamp potentiometer wiper position to [0, 1]. */
+export function clampPotPosition(position) {
+    const n = Number(position);
+    if (!Number.isFinite(n)) return DEFAULT_POT_POSITION;
+    return Math.min(1, Math.max(0, n));
+}
+
+function formatOhms(ohms) {
+    const n = Math.max(0, Math.round(ohms));
+    if (n >= 1000) {
+        const k = n / 1000;
+        return Number.isInteger(k) ? `${k} kΩ` : `${k.toFixed(1)} kΩ`;
+    }
+    return `${n} Ω`;
+}
+
+/**
+ * Pot track split: position 0 → A–B ≈ 0 / A–C ≈ max; position 1 → opposite.
+ * Compact label for the on-body dial.
+ */
+export function formatPotResistanceLabel(
+    position,
+    maxOhms = VAR_RESISTOR_MAX_OHMS
+) {
+    const pos = clampPotPosition(position);
+    const ab = pos * maxOhms;
+    const ac = (1 - pos) * maxOhms;
+    return `B ${formatOhms(ab)} · C ${formatOhms(ac)}`;
+}
+
 /** Default interactive states for live simulation. */
-export function createInitialSwitchStates(placed) {
+export function createInitialSwitchStates(placed, problemCode = null) {
     const states = {};
     for (const comp of placed) {
-        if (!isInteractivePart(comp.type)) continue;
-        states[comp.id] = isSlideSwitchType(comp.type) ? 'left' : 'open';
+        if (!isInteractivePart(comp.type, problemCode)) continue;
+        if (isVarResistorType(comp.type)) continue;
+        if (comp.type === COMPONENT_TYPES.MOTOR) {
+            states[comp.id] = 'running';
+        } else {
+            states[comp.id] = isSlideSwitchType(comp.type) ? 'left' : 'open';
+        }
     }
     return states;
 }
@@ -145,12 +204,19 @@ export function createInitialSwitchStates(placed) {
  * @param {Record<string, string>} [switchStatesById] — per placed component id
  *   (open/closed for SPST; left/right for slide switch)
  * @param {string|null} [problemCode] — optional; some tasks use non-default supply V
+ * @param {Record<string, number>} [potPositionsById] — pot wiper 0..1 (A–B share)
  */
-export function buildCircuitJson(placed, switchStatesById = {}, problemCode = null) {
+export function buildCircuitJson(
+    placed,
+    switchStatesById = {},
+    problemCode = null,
+    potPositionsById = {}
+) {
     const uf = new UnionFind();
     const supplyVolts =
         problemCode === 'CP.L4.19' ||
-        (typeof problemCode === 'string' && problemCode.startsWith('LR.'))
+        (typeof problemCode === 'string' &&
+            (problemCode.startsWith('LR.') || problemCode.startsWith('VR.')))
             ? '3'
             : '6';
 
@@ -294,12 +360,31 @@ export function buildCircuitJson(placed, switchStatesById = {}, problemCode = nu
                 });
                 break;
 
-            case COMPONENT_TYPES.MOTOR:
-                components.push({
+            case COMPONENT_TYPES.MOTOR: {
+                const motor = {
                     id,
                     role,
                     type: 'motor',
                     nodes,
+                };
+                // Only when live-sim / validation sets running|stalled (default SPICE R=50).
+                if (switchStatesById[comp.id]) {
+                    motor.state = switchStatesById[comp.id];
+                }
+                components.push(motor);
+                break;
+            }
+
+            case COMPONENT_TYPES.VAR_RESISTOR:
+                components.push({
+                    id,
+                    role,
+                    type: 'variable_resistor',
+                    nodes,
+                    value: String(VAR_RESISTOR_MAX_OHMS),
+                    position: clampPotPosition(
+                        potPositionsById[comp.id] ?? DEFAULT_POT_POSITION
+                    ),
                 });
                 break;
 
@@ -356,6 +441,16 @@ export function isBoardComplete(placed, problemCode) {
     const required = getRequiredPartsForProblem(problemCode);
     if (!required) return false;
     for (const item of required) {
+        if (Array.isArray(item.anyOf)) {
+            const total = item.anyOf.reduce(
+                (sum, type) => sum + countPlacedByType(placed, type),
+                0
+            );
+            if (total < (item.maxCount ?? 1)) {
+                return false;
+            }
+            continue;
+        }
         if (countPlacedByType(placed, item.type) < item.maxCount) {
             return false;
         }

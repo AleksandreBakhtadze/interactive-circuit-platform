@@ -115,10 +115,16 @@ export function getComponentCurrent(
 
 /** Below this |I|/peak fraction the motor fan is considered stopped. */
 const MOTOR_OFF_RATIO = 0.08;
-/** Typical full-speed reference when no series peak is available (~6 V / 50 Ω). */
-const MOTOR_REF_CURRENT = 0.12;
+/**
+ * Absolute DC full-speed reference (~12 V / 50 Ω motor model).
+ * One 6 V pack ≈ 0.12 A → half speed; two packs in series ≈ 0.24 A → full.
+ * Do not fold live |I| into the peak — that made every current look 100%.
+ */
+const MOTOR_REF_CURRENT = 0.24;
 const MOTOR_PERIOD_SLOW_SEC = 1.15;
 const MOTOR_PERIOD_FAST_SEC = 0.16;
+/** Period floor when |I| exceeds the absolute reference (e.g. >12 V). */
+const MOTOR_PERIOD_MAX_FAST_SEC = 0.08;
 
 /**
  * Map signed motor current to fan spin visuals.
@@ -134,11 +140,12 @@ export function getMotorSpinState(
         getComponentCurrent(results, spiceComponentId, { signed: true }, frameIndex) ??
         0;
     const abs = Math.abs(current);
-    const peak = Math.max(
-        typeof peakCurrent === 'number' ? peakCurrent : 0,
-        abs,
-        MOTOR_REF_CURRENT * 0.25
-    );
+    // Transient callers pass peakCurrent so pulses scale to that run's max.
+    // DC uses a fixed absolute reference so 6 V vs 12 V look different.
+    const peak =
+        typeof peakCurrent === 'number' && peakCurrent > 0
+            ? Math.max(peakCurrent, MOTOR_REF_CURRENT * 0.25)
+            : MOTOR_REF_CURRENT;
     const speedRatio = peak > 0 ? abs / peak : 0;
     if (speedRatio < MOTOR_OFF_RATIO) {
         return {
@@ -151,8 +158,12 @@ export function getMotorSpinState(
     const t =
         (speedRatio - MOTOR_OFF_RATIO) / Math.max(1e-9, 1 - MOTOR_OFF_RATIO);
     const periodSec =
-        MOTOR_PERIOD_SLOW_SEC -
-        t * (MOTOR_PERIOD_SLOW_SEC - MOTOR_PERIOD_FAST_SEC);
+        t <= 1
+            ? MOTOR_PERIOD_SLOW_SEC -
+              t * (MOTOR_PERIOD_SLOW_SEC - MOTOR_PERIOD_FAST_SEC)
+            : MOTOR_PERIOD_FAST_SEC -
+              Math.min(1, t - 1) *
+                  (MOTOR_PERIOD_FAST_SEC - MOTOR_PERIOD_MAX_FAST_SEC);
     return {
         spinning: true,
         direction: current >= 0 ? 1 : -1,
@@ -490,7 +501,8 @@ export function getLampDcBrightnessRatio(results, spiceComponentId, frameIndex =
  * @param {{ fineContrast?: boolean }} [opts] — stretch upper range for small R-bypass steps
  */
 export function getAbsoluteLampBrightness(current, opts = {}) {
-    const litMin = 0.02;
+    // ~45 mA: pot end-stop (~50 Ω) + 100 Ω lamp @ 6 V stays dark; bare lamp (~60 mA) still lit.
+    const litMin = 0.045;
     const fullCurrent = 0.12;
     if (typeof current !== 'number' || current < litMin) {
         return 0;

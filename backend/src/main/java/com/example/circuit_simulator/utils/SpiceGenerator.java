@@ -89,7 +89,8 @@ public class SpiceGenerator {
                 case "motor":
                     sb.append("R_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" 50\n");
+                            .append(nodes.get(1)).append(" ")
+                            .append(motorResistanceOhms(comp)).append("\n");
                     break;
                 case "slide_switch":
 
@@ -130,9 +131,9 @@ public class SpiceGenerator {
                     double r1 = maxR * pos;           // wiper to left end
                     double r2 = maxR * (1.0 - pos);   // wiper to right end
 
-                    // Minimum 1 ohm to avoid zero resistance
-                    if (r1 < 1) r1 = 1;
-                    if (r2 < 1) r2 = 1;
+                    // Kit pot end-stop / protective floor (~50 Ω) — avoids a dead short.
+                    if (r1 < 50) r1 = 50;
+                    if (r2 < 50) r2 = 50;
 
                     String common_vr = nodes.get(0); // wiper
                     String left_vr   = nodes.get(1);
@@ -259,7 +260,8 @@ public class SpiceGenerator {
                 case "motor" -> {
                     sb.append("R_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" 50\n");
+                            .append(nodes.get(1)).append(" ")
+                            .append(motorResistanceOhms(comp)).append("\n");
                     probes.add(new TranProbe(id, "current",
                             "@r_" + id.toLowerCase() + "[i]"));
                 }
@@ -600,8 +602,9 @@ public class SpiceGenerator {
         Object posObj = comp.get("position");
         double pos = posObj != null ? Double.parseDouble(posObj.toString()) : 0.5;
 
-        double r1 = Math.max(maxR * pos, 1);
-        double r2 = Math.max(maxR * (1.0 - pos), 1);
+        // Kit pot end-stop / protective floor (~50 Ω).
+        double r1 = Math.max(maxR * pos, 50);
+        double r2 = Math.max(maxR * (1.0 - pos), 50);
 
         String wiper = nodes.get(0);
         String left = nodes.get(1);
@@ -688,11 +691,57 @@ public class SpiceGenerator {
                 continue;
             }
             String type = (String) comp.get("type");
-            if ("switch".equals(type) || "slide_switch".equals(type)) {
+            if ("switch".equals(type) || "slide_switch".equals(type) || "motor".equals(type)) {
                 comp.put("state", statesByRole.get(role));
             }
         }
 
         return mapper.writeValueAsString(data);
+    }
+
+    /** Set potentiometer wiper position (0..1) per logical role. */
+    public static String applyPotPositions(String json, Map<String, Double> positionsByRole)
+            throws Exception {
+        if (positionsByRole == null || positionsByRole.isEmpty()) {
+            return json;
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        for (Map<String, Object> comp : components) {
+            if (!"variable_resistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String role = (String) comp.get("role");
+            if (role == null || !positionsByRole.containsKey(role)) {
+                continue;
+            }
+            double pos = positionsByRole.get(role);
+            if (pos < 0) {
+                pos = 0;
+            } else if (pos > 1) {
+                pos = 1;
+            }
+            comp.put("position", pos);
+        }
+
+        return mapper.writeValueAsString(data);
+    }
+
+    /**
+     * Effective motor resistance. Default 50 Ω keeps existing DM tasks unchanged.
+     * {@code running}/{@code stalled} model back-EMF vs winding R (DM.L2.10 stall LED).
+     */
+    private static String motorResistanceOhms(Map<String, Object> comp) {
+        Object state = comp.get("state");
+        if ("stalled".equals(state)) {
+            return "12";
+        }
+        if ("running".equals(state)) {
+            return "700";
+        }
+        return "50";
     }
 }

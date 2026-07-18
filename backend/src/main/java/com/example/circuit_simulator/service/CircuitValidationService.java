@@ -20,6 +20,12 @@ public class CircuitValidationService {
     /** Signed motor current extremum from the previous validation case (CP.L2.8). */
     private final ThreadLocal<Double> lastMotorSignedExtremum = new ThreadLocal<>();
 
+    /** DC motor |I| from the previous case (DM.L2.3 either-throw speed ratio). */
+    private final ThreadLocal<Double> lastMotorCurrent = new ThreadLocal<>();
+
+    /** DC motor signed I from the previous case (DM.L2.6 polarity reverse). */
+    private final ThreadLocal<Double> lastMotorSignedCurrent = new ThreadLocal<>();
+
     /** Bitmask of lit LED roles from the previous case (SW.L1.1 exclusive toggle). */
     private final ThreadLocal<Integer> lastLitLedMask = new ThreadLocal<>();
 
@@ -37,6 +43,8 @@ public class CircuitValidationService {
 
     public ValidationResultDTO validate(String problemCode, String circuitJson) throws Exception {
         lastMotorSignedExtremum.set(null);
+        lastMotorCurrent.set(null);
+        lastMotorSignedCurrent.set(null);
         lastLitLedMask.set(null);
         lastLedForwardCurrent.set(null);
         lastLampCurrent.set(null);
@@ -46,6 +54,8 @@ public class CircuitValidationService {
             return validateInner(problemCode, circuitJson);
         } finally {
             lastMotorSignedExtremum.remove();
+            lastMotorCurrent.remove();
+            lastMotorSignedCurrent.remove();
             lastLitLedMask.remove();
             lastLedForwardCurrent.remove();
             lastLampCurrent.remove();
@@ -85,13 +95,31 @@ public class CircuitValidationService {
         }
 
         // Pedagogical "first/second button" is not placement order — try both mappings.
-        CaseEvaluation first = evaluateCases(spec, circuitJson, problemCode, roleToId, components, false);
+        CaseEvaluation first = evaluateCases(
+                spec, circuitJson, problemCode, roleToId, components, false, false);
         CaseEvaluation chosen = first;
         if (!first.allPassed() && specUsesTwoButtons(spec)) {
             CaseEvaluation swapped =
-                    evaluateCases(spec, circuitJson, problemCode, roleToId, components, true);
+                    evaluateCases(
+                            spec, circuitJson, problemCode, roleToId, components, true, false);
             if (swapped.allPassed()) {
                 chosen = swapped;
+            }
+        }
+        // Pot B↔C / wiper orientation — try inverted positions if needed (VR.L1.2).
+        if (!chosen.allPassed() && specUsesPotPositions(spec)) {
+            CaseEvaluation inverted =
+                    evaluateCases(
+                            spec, circuitJson, problemCode, roleToId, components, false, true);
+            if (inverted.allPassed()) {
+                chosen = inverted;
+            } else if (specUsesTwoButtons(spec)) {
+                CaseEvaluation invertedSwapped =
+                        evaluateCases(
+                                spec, circuitJson, problemCode, roleToId, components, true, true);
+                if (invertedSwapped.allPassed()) {
+                    chosen = invertedSwapped;
+                }
             }
         }
 
@@ -128,6 +156,29 @@ public class CircuitValidationService {
         return has1 && has2;
     }
 
+    private boolean specUsesPotPositions(ProblemValidationSpec spec) {
+        for (ValidationCase c : spec.cases()) {
+            if (c.potPositions() != null && !c.potPositions().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Invert pot wiper positions (0↔1) so either track orientation can match the spec. */
+    private Map<String, Double> maybeInvertPotPositions(
+            Map<String, Double> positions, boolean invertPots) {
+        if (!invertPots || positions == null || positions.isEmpty()) {
+            return positions == null ? Map.of() : positions;
+        }
+        Map<String, Double> out = new LinkedHashMap<>();
+        for (Map.Entry<String, Double> e : positions.entrySet()) {
+            double p = e.getValue() == null ? 0.5 : e.getValue();
+            out.put(e.getKey(), 1.0 - p);
+        }
+        return out;
+    }
+
     /** Swap button_1 ↔ button_2 keys so either physical placement can match "first/second". */
     private Map<String, String> maybeSwapButtonStates(
             Map<String, String> states, boolean swapButtons) {
@@ -157,7 +208,8 @@ public class CircuitValidationService {
             String problemCode,
             Map<String, String> roleToId,
             List<Map<String, Object>> components,
-            boolean swapButtons)
+            boolean swapButtons,
+            boolean invertPots)
             throws Exception {
         List<CaseResultDTO> caseResults = new ArrayList<>();
         Map<String, Double> observedMetrics = new HashMap<>();
@@ -167,6 +219,9 @@ public class CircuitValidationService {
             Map<String, String> states =
                     maybeSwapButtonStates(validationCase.switchStates(), swapButtons);
             String caseJson = SpiceGenerator.applySwitchStates(circuitJson, states);
+            caseJson = SpiceGenerator.applyPotPositions(
+                    caseJson,
+                    maybeInvertPotPositions(validationCase.potPositions(), invertPots));
             Map<String, Object> simResult = validationCase.simPhase() != null
                     ? simulationService.simulateToMap(
                             caseJson, problemCode, validationCase.simPhase())
@@ -252,6 +307,11 @@ public class CircuitValidationService {
                 lastLedForwardCurrent.set(litLedI);
             } else if (lampId != null) {
                 lastLedForwardCurrent.set(lastLampCurrent.get());
+            }
+            String motorId = resolveSpiceId("motor_1", roleToId, components);
+            if (motorId != null) {
+                lastMotorCurrent.set(readCurrent(motorId, nodes, false));
+                lastMotorSignedCurrent.set(readCurrent(motorId, nodes, true));
             }
 
             caseResults.add(CaseResultDTO.builder()
@@ -508,6 +568,15 @@ public class CircuitValidationService {
             double b = prev / now;
             return Math.max(a, b);
         }
+        // DM.L2.6: 1 if signed motor current flipped vs previous case (both spinning).
+        if ("current_reversed_vs_prior".equals(metric)) {
+            double now = spiceId == null ? 0.0 : readCurrent(spiceId, nodes, true);
+            Double prev = lastMotorSignedCurrent.get();
+            if (prev == null || Math.abs(prev) < 0.02 || Math.abs(now) < 0.02) {
+                return 0.0;
+            }
+            return prev * now < 0 ? 1.0 : 0.0;
+        }
         // max(I_f)/min(I_f) among lit LEDs — used for unequal-brightness checks.
         if ("current_ratio".equals(metric)) {
             return litLedCurrentRatio(roleToId, nodes);
@@ -564,13 +633,16 @@ public class CircuitValidationService {
         return Integer.bitCount(litLedMask(roleToId, nodes));
     }
 
-    /** Previous-case current for lamp vs LED ratio metrics. */
+    /** Previous-case current for lamp vs LED / motor ratio metrics. */
     private Double priorLoadCurrent(String role) {
         if ("lamp".equals(role)) {
             Double lamp = lastLampCurrent.get();
             if (lamp != null) {
                 return lamp;
             }
+        }
+        if (role != null && role.startsWith("motor")) {
+            return lastMotorCurrent.get();
         }
         return lastLedForwardCurrent.get();
     }

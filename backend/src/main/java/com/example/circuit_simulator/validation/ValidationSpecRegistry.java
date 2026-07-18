@@ -70,11 +70,408 @@ public class ValidationSpecRegistry {
             Map.entry("SW.L3.6", swL36()),
             Map.entry("SW.L3.7", swL37()),
             Map.entry("SW.L3.8", swL38()),
-            Map.entry("SW.L3.11", swL311())
+            Map.entry("SW.L3.11", swL311()),
+            Map.entry("DM.L1.1", dmL11()),
+            Map.entry("DM.L2.2", dmL22()),
+            Map.entry("DM.L2.3", dmL23()),
+            Map.entry("DM.L2.5", dmL25()),
+            Map.entry("DM.L2.6", dmL26()),
+            Map.entry("DM.L2.7", dmL27()),
+            Map.entry("DM.L2.8", dmL28()),
+            Map.entry("DM.L3.9", dmL39()),
+            Map.entry("DM.L2.10", dmL210()),
+            Map.entry("VR.L1.1", vrL11()),
+            Map.entry("VR.L1.2", vrL12()),
+            Map.entry("VR.L1.3", vrL13()),
+            Map.entry("VR.L1.4", vrL14()),
+            Map.entry("VR.L1.5", vrL15()),
+            Map.entry("VR.L2.6", vrL26()),
+            Map.entry("VR.L2.7", vrL27()),
+            Map.entry("VR.L2.8", vrL28()),
+            Map.entry("VR.L2.9", vrL29())
     );
 
     public Optional<ProblemValidationSpec> findByProblemCode(String problemCode) {
         return Optional.ofNullable(SPECS.get(problemCode));
+    }
+
+    /**
+     * DM.L1.1 — series switch + button + motor (one supply).
+     * Switch alone must not spin the motor; button press (with switch on) spins it.
+     */
+    private static ProblemValidationSpec dmL11() {
+        return new ProblemValidationSpec(
+                "DM.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "switch_off_button_open",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_off_button_pressed",
+                                "ჩამრთველი გამორთული, ღილაკი დაჭერილი",
+                                Map.of("switch", "open", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.01)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.2 — SPDT selects supply mid-tap (slow) vs full rail (fast).
+     * Motor 50 Ω: ~0.12 A @ half V, ~0.24 A @ full V → ratio ≈ 2 (same topology as SW.L2.4).
+     */
+    private static ProblemValidationSpec dmL22() {
+        return new ProblemValidationSpec(
+                "DM.L2.2",
+                List.of(
+                        new ValidationCase(
+                                "slide_left_slow",
+                                "გადამრთველი A–B — ძრავი ტრიალებს ნელა",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.18)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_fast",
+                                "გადამრთველი A–C — ძრავი ტრიალებს ჩქარა",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.15),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current",
+                                                "gt_ref:slide_left_slow",
+                                                1.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.3 — SPDT series R/lamp vs direct bypass (no supply mid-tap).
+     * Motor 50 Ω @ 12 V: ~0.08 A with series 100 Ω/lamp, ~0.24 A direct (ratio ≈ 3).
+     * Either throw may be the series path (matches kit DM.3A/B wiring either way).
+     * Mid-tap half↔full is only ≈2× — rejected by the ratio floor.
+     */
+    private static ProblemValidationSpec dmL23() {
+        return new ProblemValidationSpec(
+                "DM.L2.3",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ძრავი ტრიალებს",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.30)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_different",
+                                "გადამრთველი A–C — ბრუნვის სიჩქარე შესამჩნევად განსხვავებულია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.30),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_vs_prior_ratio",
+                                                "gt",
+                                                2.2)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.5 — master SPST; motor runs; parallel button bypass stops the motor
+     * (series lamp/R required so the button does not short the supply). Same idea as LR.L3.6.
+     */
+    private static ProblemValidationSpec dmL25() {
+        return new ProblemValidationSpec(
+                "DM.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_running",
+                                "ჩამრთველი ჩართული — ძრავი ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.02)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_stops",
+                                "ჩამრთველი ჩართული, ღილაკი დაჭერილი — ძრავი გაჩერებულია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.6 — SPDT + dual-rail center tap reverses motor polarity.
+     * Both throws spin (|I|≈0.12 @ ±6 V / 50 Ω); signed currents must flip.
+     */
+    private static ProblemValidationSpec dmL26() {
+        return new ProblemValidationSpec(
+                "DM.L2.6",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ძრავი ტრიალებს",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_reversed",
+                                "გადამრთველი A–C — ბრუნვის მიმართულება შეცვლილია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.7 — same reverse-spin behavior as DM.L2.6, but mid-rail from equal-R divider
+     * (no battery center tap). Low-R pair (e.g. 2×20 Ω) needed so |I| stays above floor.
+     */
+    private static ProblemValidationSpec dmL27() {
+        return new ProblemValidationSpec(
+                "DM.L2.7",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ძრავი ტრიალებს",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_reversed",
+                                "გადამრთველი A–C — ბრუნვის მიმართულება შეცვლილია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.8 — two-SPDT H-bridge: same throws → spin; mismatched → stop;
+     * both flipped → reverse. Full rail ≈12 V / 50 Ω → |I|≈0.24 A.
+     */
+    private static ProblemValidationSpec dmL28() {
+        return new ProblemValidationSpec(
+                "DM.L2.8",
+                List.of(
+                        new ValidationCase(
+                                "both_left",
+                                "ორივე გადამრთველი A–B — ძრავი ტრიალებს",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.1)
+                                )
+                        ),
+                        new ValidationCase(
+                                "both_right_reversed",
+                                "ორივე გადამრთველი A–C — მიმართულება შეცვლილია",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.1),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                )
+                        ),
+                        new ValidationCase(
+                                "mismatched_stop",
+                                "გადამრთველები განსხვავებულ პოზიციაზე — ძრავი გაჩერებულია",
+                                Map.of(
+                                        "slide_switch_1", "right",
+                                        "slide_switch_2", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "mismatched_stop_other",
+                                "გადამრთველები განსხვავებულ პოზიციაზე (სხვა წყვილი) — გაჩერებულია",
+                                Map.of(
+                                        "slide_switch_1", "left",
+                                        "slide_switch_2", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L3.9 — center-tap reverse motor (like DM.L2.6) + anti-parallel red/green LEDs
+     * across the motor (with series R). Either LED orientation OK: lit_set_changed.
+     */
+    private static ProblemValidationSpec dmL39() {
+        return new ProblemValidationSpec(
+                "DM.L3.9",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ძრავი ტრიალებს, ერთი შუქდიოდი ანთია",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_reversed",
+                                "გადამრთველი A–C — მიმართულება შეცვლილია, მეორე შუქდიოდი ანთია",
+                                Map.of("slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5),
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_left_again",
+                                "გადამრთველი უკან A–B — პირველი მიმართულება და პირველი შუქდიოდი",
+                                Map.of("slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5),
+                                        new ValidationCheck("leds", "lit_count", "eq", 1.0),
+                                        new ValidationCheck(
+                                                "leds", "lit_set_changed", "gt", 0.0)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DM.L2.10 — series sense R (or lamp) ‖ (LED+R); motor running → LED off;
+     * motor stalled (low Rm) → sense voltage lights LED. Uses motor state running/stalled.
+     */
+    private static ProblemValidationSpec dmL210() {
+        return new ProblemValidationSpec(
+                "DM.L2.10",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "motor_1", "running"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "running_led_off",
+                                "ჩამრთველი ჩართული, ძრავი ტრიალებს — შუქდიოდი ჩამქრალი",
+                                Map.of("switch", "closed", "motor_1", "running"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.01),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "stalled_led_on",
+                                "ძრავი მექანიკურად გაჩერებული — შუქდიოდი ანთებული",
+                                Map.of("switch", "closed", "motor_1", "stalled"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.08),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "running_again_led_off",
+                                "ძრავი ისევ ტრიალებს — შუქდიოდი ჩამქრალი",
+                                Map.of("switch", "closed", "motor_1", "running"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.01),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.0005)
+                                )
+                        )
+                )
+        );
     }
 
     private static ProblemValidationSpec stL11() {
@@ -2990,4 +3387,547 @@ public class ValidationSpecRegistry {
                 )
         );
     }
+
+    /**
+     * VR.L1.1 — SPST + pot (rheostat) + series R + red LED, two 3 V packs.
+     * Either A–B or A–C rheostat wiring is valid: both pot extremes must light the LED,
+     * with a clear brightness change between them (ratio either way).
+     */
+    private static ProblemValidationSpec vrL11() {
+        return new ProblemValidationSpec(
+                "VR.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_min",
+                                "ჩამრთველი ჩართული, ცოცია ერთ ნაპირზე",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        // Dim end of A–C rheostat is ~0.35–0.5 mA with 1k + 6 V.
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_max",
+                                "ჩამრთველი ჩართული, ცოცია მეორე ნაპირზე — ნათება იცვლება, არ ქრება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+    /**
+     * VR.L1.2 — pot as voltage divider + series R + parallel load R so LED can go fully off.
+     * Pot orientation is tried both ways in CircuitValidationService.
+     */
+    private static ProblemValidationSpec vrL12() {
+        return new ProblemValidationSpec(
+                "VR.L1.2",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_bright",
+                                "ჩამრთველი ჩართული, ცოცია — შუქდიოდი ანთებულია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_extinguished",
+                                "ჩამრთველი ჩართული, ცოცია მეორე ნაპირზე — შუქდიოდი ჩაქრობილია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+    /**
+     * VR.L1.3 — series R into pot wiper; red on B, green on C (or swapped via pot invert).
+     * Mid → both lit; each end favors one color.
+     */
+    private static ProblemValidationSpec vrL13() {
+        return new ProblemValidationSpec(
+                "VR.L1.3",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 0)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_mid",
+                                "ჩამრთველი ჩართული, ცოცია შუაში — ორივე ანთებულია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("leds", "lit_count", "eq", 2),
+                                        // Red/green Vf differ — allow moderate mid imbalance.
+                                        new ValidationCheck("leds", "current_ratio", "lt", 4.0)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_red",
+                                "ცოცია ერთ ნაპირზე — წითელი ძლიერდება, მწვანე სუსტდება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.0015),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.0006)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_green",
+                                "ცოცია მეორე ნაპირზე — მწვანე ძლიერდება, წითელი სუსტდება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.0015),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.0006)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * VR.L1.4 — master switch; full pot track feeds LED when button open (wiper ignored);
+     * button closes wiper into circuit so pot position changes brightness.
+     */
+    private static ProblemValidationSpec vrL14() {
+        return new ProblemValidationSpec(
+                "VR.L1.4",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_a",
+                                "ჩამრთველი ჩართული, ღილაკი გაშვებული — LED ანთებულია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_b",
+                                "ღილაკი გაშვებული, ცოცია გადაადგილებული — ნათება არ იცვლება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "lt",
+                                                1.35)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_bright",
+                                "ღილაკი დაჭერილი — ცოციით ნათება იცვლება (ძლიერი)",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0015)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_dim",
+                                "ღილაკი დაჭერილი, ცოცია მეორე ნაპირზე — ნათება შეიცვალა",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * VR.L1.5 — pot as rheostat in series with LED; button parallels (bypasses) the pot.
+     * Button open → dial changes brightness; button pressed → bright, dial ignored.
+     */
+    private static ProblemValidationSpec vrL15() {
+        return new ProblemValidationSpec(
+                "VR.L1.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_a",
+                                "ჩამრთველი ჩართული, ღილაკი გაშვებული — LED ანთებულია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_b",
+                                "ღილაკი გაშვებული — ცოციით ნათება იცვლება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00015),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_a",
+                                "ღილაკი დაჭერილი — პოტი გადაილახება, LED ძლიერად ანათებს",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0015)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_b",
+                                "ღილაკი დაჭერილი, ცოცია გადაადგილებული — ნათება აღარ იცვლება",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0015),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "lt",
+                                                1.35)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+    /**
+     * VR.L2.6 — series R into pot wiper; B and C shorted. Parallel halves → max R at mid
+     * (dimmest LED); either end → brighter.
+     */
+    private static ProblemValidationSpec vrL26() {
+        return new ProblemValidationSpec(
+                "VR.L2.6",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_mid",
+                                "ჩამრთველი ჩართული, ცოცია შუაში — მინიმალური ნათება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0003),
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0022)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_a",
+                                "ცოცია ერთ ნაპირზე — ნათება მომატებულია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0025),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.5)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_b",
+                                "ცოცია მეორე ნაპირზე — ნათება ისევ მომატებულია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0025),
+                                        // Similar brightness to the other end (not mid).
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "lt",
+                                                1.5)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+    /**
+     * VR.L2.7 — series R, then LED || pot (B and C shorted to ground, wiper at LED anode).
+     * Mid → max shunt R → brightest LED; either end → near short → LED extinguishes.
+     */
+    private static ProblemValidationSpec vrL27() {
+        return new ProblemValidationSpec(
+                "VR.L2.7",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_mid",
+                                "ჩამრთველი ჩართული, ცოცია შუაში — მაქსიმალური ნათება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_a",
+                                "ცოცია ერთ ნაპირზე — ნათება მოიკლო და ჩაქრა",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_b",
+                                "ცოცია მეორე ნაპირზე — ნათება ისევ ჩაქრობილია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * VR.L2.8 — like VR.L2.7 (LED || pot with B–C shorted) but series R in the shunt branch
+     * so ends dim without extinguishing. Mid = brightest; either end = dimmer, still lit.
+     */
+    private static ProblemValidationSpec vrL28() {
+        return new ProblemValidationSpec(
+                "VR.L2.8",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_mid",
+                                "ჩამრთველი ჩართული, ცოცია შუაში — მაქსიმალური ნათება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.002)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_a",
+                                "ცოცია ერთ ნაპირზე — ნათება შემცირებულია, არ ქრება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior",
+                                                "lt",
+                                                0.85)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_end_b",
+                                "ცოცია მეორე ნაპირზე — ნათება ისევ შემცირებულია, არ ქრება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "lt",
+                                                1.5)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * VR.L2.9 — SPST + SPDT selects which pot end is powered; wiper feeds LED (+ series R).
+     * Moving the pot changes brightness; flipping the SPDT reverses that direction
+     * (same pot position changes brightness when the throw flips).
+     */
+    private static ProblemValidationSpec vrL29() {
+        return new ProblemValidationSpec(
+                "VR.L2.9",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "left_pot_a",
+                                "ჩამრთველი ჩართული, გადამრთველი A–B — LED ანთებულია",
+                                Map.of("switch", "closed", "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "left_pot_b",
+                                "გადამრთველი A–B — ცოციით ნათება იცვლება",
+                                Map.of("switch", "closed", "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00015),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "right_pot_b",
+                                "გადამრთველი A–C — იმავე ცოციაზე ნათება შეიცვალა (მიმართულება შებრუნებულია)",
+                                Map.of("switch", "closed", "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00015),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "right_pot_a",
+                                "გადამრთველი A–C — ცოციით ნათება ისევ იცვლება",
+                                Map.of("switch", "closed", "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00015),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "forward_current_vs_prior_ratio",
+                                                "gt",
+                                                1.8)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        )
+                )
+        );
+    }
+
 }

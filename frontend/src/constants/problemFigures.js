@@ -115,6 +115,22 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'VR.L1.10': [
+        {
+            src: '/problems/VR.L1.10/board.png',
+            altKa: 'VR.L1.10 წრედი ფირზე',
+            altEn: 'VR.L1.10 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/VR.L1.10/schematic.png',
+            altKa: 'VR.L1.10 სქემა',
+            altEn: 'VR.L1.10 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

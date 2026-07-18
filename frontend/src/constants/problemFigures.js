@@ -51,6 +51,54 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'LR.L2.13': [
+        {
+            src: '/problems/LR.L2.13/board.png',
+            altKa: 'LR.L2.13 წრედი ფირზე',
+            altEn: 'LR.L2.13 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/LR.L2.13/schematic.png',
+            altKa: 'LR.L2.13 სქემა',
+            altEn: 'LR.L2.13 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
+    'LR.L2.14': [
+        {
+            src: '/problems/LR.L2.14/board.png',
+            altKa: 'LR.L2.14 წრედი ფირზე',
+            altEn: 'LR.L2.14 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/LR.L2.14/schematic.png',
+            altKa: 'LR.L2.14 სქემა',
+            altEn: 'LR.L2.14 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
+    'LR.L2.15': [
+        {
+            src: '/problems/LR.L2.15/board.png',
+            altKa: 'LR.L2.15 წრედი ფირზე',
+            altEn: 'LR.L2.15 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/LR.L2.15/schematic.png',
+            altKa: 'LR.L2.15 სქემა',
+            altEn: 'LR.L2.15 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

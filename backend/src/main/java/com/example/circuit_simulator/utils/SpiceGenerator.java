@@ -47,9 +47,10 @@ public class SpiceGenerator {
                     break;
 
                 case "lamp":
+                    // 6 V lamp ≈ 0.25 A → R = V/I ≈ 24 Ω. Series resistors then dim it strongly.
                     sb.append("R_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" 100\n");
+                            .append(nodes.get(1)).append(" 24\n");
                     break;
 
                 case "switch":
@@ -231,7 +232,7 @@ public class SpiceGenerator {
                 case "lamp" -> {
                     sb.append("R_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" 100\n");
+                            .append(nodes.get(1)).append(" 24\n");
                     probes.add(new TranProbe(id, "current",
                             "@r_" + id.toLowerCase() + "[i]"));
                     probes.add(new TranProbe(id, "voltage", voltageExpression(nodes)));

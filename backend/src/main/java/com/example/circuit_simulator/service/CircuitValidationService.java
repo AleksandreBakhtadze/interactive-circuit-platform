@@ -46,12 +46,89 @@ public class CircuitValidationService {
                     .build();
         }
 
+        // Pedagogical "first/second button" is not placement order — try both mappings.
+        CaseEvaluation first = evaluateCases(spec, circuitJson, problemCode, roleToId, components, false);
+        CaseEvaluation chosen = first;
+        if (!first.allPassed() && specUsesTwoButtons(spec)) {
+            CaseEvaluation swapped =
+                    evaluateCases(spec, circuitJson, problemCode, roleToId, components, true);
+            if (swapped.allPassed()) {
+                chosen = swapped;
+            }
+        }
+
+        String failDetailEn = summarizeFailedCases(chosen.caseResults(), false);
+        String failDetailKa = summarizeFailedCases(chosen.caseResults(), true);
+
+        return ValidationResultDTO.builder()
+                .passed(chosen.allPassed())
+                .message(chosen.allPassed()
+                        ? "Correct! Your circuit behaves as required."
+                        : "Not quite — check wiring and try again."
+                                + (failDetailEn.isEmpty() ? "" : "\n" + failDetailEn))
+                .messageKa(chosen.allPassed()
+                        ? "სწორია! თქვენი წრედი სწორად მუშაობს."
+                        : "ჯერ არაა სწორი — შეამოწმეთ შეერთებები და სცადეთ კვლავ."
+                                + (failDetailKa.isEmpty() ? "" : "\n" + failDetailKa))
+                .cases(chosen.caseResults())
+                .build();
+    }
+
+    private record CaseEvaluation(boolean allPassed, List<CaseResultDTO> caseResults) {}
+
+    private boolean specUsesTwoButtons(ProblemValidationSpec spec) {
+        boolean has1 = false;
+        boolean has2 = false;
+        for (ValidationCase c : spec.cases()) {
+            if (c.switchStates().containsKey("button_1")) {
+                has1 = true;
+            }
+            if (c.switchStates().containsKey("button_2")) {
+                has2 = true;
+            }
+        }
+        return has1 && has2;
+    }
+
+    /** Swap button_1 ↔ button_2 keys so either physical placement can match "first/second". */
+    private Map<String, String> maybeSwapButtonStates(
+            Map<String, String> states, boolean swapButtons) {
+        if (!swapButtons) {
+            return states;
+        }
+        Map<String, String> out = new LinkedHashMap<>(states);
+        boolean has1 = out.containsKey("button_1");
+        boolean has2 = out.containsKey("button_2");
+        if (!has1 && !has2) {
+            return states;
+        }
+        String s1 = out.remove("button_1");
+        String s2 = out.remove("button_2");
+        if (s2 != null) {
+            out.put("button_1", s2);
+        }
+        if (s1 != null) {
+            out.put("button_2", s1);
+        }
+        return out;
+    }
+
+    private CaseEvaluation evaluateCases(
+            ProblemValidationSpec spec,
+            String circuitJson,
+            String problemCode,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components,
+            boolean swapButtons)
+            throws Exception {
         List<CaseResultDTO> caseResults = new ArrayList<>();
+        Map<String, Double> observedMetrics = new HashMap<>();
         boolean allPassed = true;
 
         for (ValidationCase validationCase : spec.cases()) {
-            String caseJson = SpiceGenerator.applySwitchStates(
-                    circuitJson, validationCase.switchStates());
+            Map<String, String> states =
+                    maybeSwapButtonStates(validationCase.switchStates(), swapButtons);
+            String caseJson = SpiceGenerator.applySwitchStates(circuitJson, states);
             Map<String, Object> simResult = validationCase.simPhase() != null
                     ? simulationService.simulateToMap(
                             caseJson, problemCode, validationCase.simPhase())
@@ -89,7 +166,17 @@ public class CircuitValidationService {
                         componentVoltages,
                         nodes,
                         simResult);
-                boolean checkPassed = compare(check.op(), actual, check.value());
+                boolean checkPassed = compare(
+                        check.op(),
+                        actual,
+                        check.value(),
+                        observedMetrics,
+                        check.role(),
+                        check.metric());
+
+                observedMetrics.put(
+                        observationKey(validationCase.label(), check.role(), check.metric()),
+                        actual);
 
                 if (!checkPassed) {
                     casePassed = false;
@@ -118,21 +205,7 @@ public class CircuitValidationService {
                     .build());
         }
 
-        String failDetailEn = summarizeFailedCases(caseResults, false);
-        String failDetailKa = summarizeFailedCases(caseResults, true);
-
-        return ValidationResultDTO.builder()
-                .passed(allPassed)
-                .message(allPassed
-                        ? "Correct! Your circuit behaves as required."
-                        : "Not quite — check wiring and try again."
-                                + (failDetailEn.isEmpty() ? "" : "\n" + failDetailEn))
-                .messageKa(allPassed
-                        ? "სწორია! თქვენი წრედი სწორად მუშაობს."
-                        : "ჯერ არაა სწორი — შეამოწმეთ შეერთებები და სცადეთ კვლავ."
-                                + (failDetailKa.isEmpty() ? "" : "\n" + failDetailKa))
-                .cases(caseResults)
-                .build();
+        return new CaseEvaluation(allPassed, caseResults);
     }
 
     private String summarizeFailedCases(List<CaseResultDTO> caseResults, boolean ka) {
@@ -289,6 +362,12 @@ public class CircuitValidationService {
         if ("current_ratio".equals(metric)) {
             return litLedCurrentRatio(roleToId, nodes);
         }
+        if ("led_min_forward_current".equals(metric)) {
+            return ledForwardCurrentExtreme(roleToId, nodes, false);
+        }
+        if ("led_max_forward_current".equals(metric)) {
+            return ledForwardCurrentExtreme(roleToId, nodes, true);
+        }
 
         if (spiceId == null) {
             return 0.0;
@@ -317,7 +396,7 @@ public class CircuitValidationService {
                 continue;
             }
             double forward = readCurrent(entry.getValue(), nodes, true);
-            if (forward > 0.0005) {
+            if (forward > 0.0001) {
                 lit += 1;
             }
         }
@@ -334,7 +413,7 @@ public class CircuitValidationService {
                 continue;
             }
             double forward = readCurrent(entry.getValue(), nodes, true);
-            if (forward <= 0.0005) {
+            if (forward <= 0.0001) {
                 continue;
             }
             lit += 1;
@@ -345,6 +424,25 @@ public class CircuitValidationService {
             return 1.0;
         }
         return max / min;
+    }
+
+    private double ledForwardCurrentExtreme(
+            Map<String, String> roleToId,
+            Map<String, Double> nodes,
+            boolean maximum) {
+        double extreme = maximum ? 0.0 : Double.POSITIVE_INFINITY;
+        boolean found = false;
+        for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+            if (!entry.getKey().startsWith("led_")) {
+                continue;
+            }
+            double forward = Math.max(0.0, readCurrent(entry.getValue(), nodes, true));
+            extreme = maximum
+                    ? Math.max(extreme, forward)
+                    : Math.min(extreme, forward);
+            found = true;
+        }
+        return found ? extreme : 0.0;
     }
 
     @SuppressWarnings("unchecked")
@@ -453,7 +551,23 @@ public class CircuitValidationService {
         return 0.0;
     }
 
-    private boolean compare(String op, double actual, double expected) {
+    private boolean compare(
+            String op,
+            double actual,
+            double expected,
+            Map<String, Double> observedMetrics,
+            String role,
+            String metric) {
+        if (op.startsWith("gt_ref:") || op.startsWith("lt_ref:")) {
+            String referenceCase = op.substring(op.indexOf(':') + 1);
+            Double reference = observedMetrics.get(
+                    observationKey(referenceCase, role, metric));
+            if (reference == null) {
+                return false;
+            }
+            double target = reference * expected;
+            return op.startsWith("gt_ref:") ? actual > target : actual < target;
+        }
         return switch (op) {
             case "gt" -> actual > expected;
             case "gte" -> actual >= expected;
@@ -462,5 +576,9 @@ public class CircuitValidationService {
             case "eq" -> Math.abs(actual - expected) < 0.01;
             default -> false;
         };
+    }
+
+    private String observationKey(String caseLabel, String role, String metric) {
+        return caseLabel + "\u0000" + role + "\u0000" + metric;
     }
 }

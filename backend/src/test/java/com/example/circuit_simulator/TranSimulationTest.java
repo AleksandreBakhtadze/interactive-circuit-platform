@@ -20,8 +20,8 @@ class TranSimulationTest {
     private static final String CP_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"3"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["E3","C5"],"value":"10u"},
                 {"id":"btn1","role":"button_1","type":"switch","nodes":["C5","A7"],"state":"open"},
                 {"id":"r1","role":"resistor_1","type":"resistor","nodes":["C5","C3"],"value":"1000"},
@@ -127,8 +127,8 @@ class TranSimulationTest {
     private static final String CP_L12_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"3"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["E3","C5"],"value":"10u"},
                 {"id":"r_chg","role":"resistor_1","type":"resistor","nodes":["A7","C4"],"value":"10000"},
                 {"id":"btn1","role":"button_1","type":"switch","nodes":["C4","C5"],"state":"open"},
@@ -322,8 +322,8 @@ class TranSimulationTest {
     private static final String CP_L25_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A8","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","F7"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A8","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","F7"],"value":"3"},
                 {"id":"led_g","role":"led_1","type":"led","nodes":["A4","C4"],"color":"green"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["D5","F7"],"value":"470u"},
                 {"id":"led_r","role":"led_2","type":"led","nodes":["E4","G4"],"color":"red"},
@@ -417,8 +417,8 @@ class TranSimulationTest {
         String circuitRight = """
                 {
                   "components": [
-                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A2","0"],"value":"6"},
-                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E2"],"value":"6"},
+                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A2","0"],"value":"3"},
+                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E2"],"value":"3"},
                     {"id":"slide1","role":"slide_switch","type":"slide_switch","nodes":["D3","A2","E2"],"state":"right"},
                     {"id":"r1","role":"resistor_1","type":"resistor","nodes":["D3","C5"],"value":"1000"},
                     {"id":"r2","role":"resistor_2","type":"resistor","nodes":["C5","F5"],"value":"1000"},

@@ -226,7 +226,8 @@ export function buildCircuitJson(placed, switchStatesById = {}) {
                     role,
                     type: 'voltage',
                     nodes,
-                    value: '6',
+                    // Each pack holds 2× AA (1.5 V) → 3 V. Two packs in series → 6 V for the lamp.
+                    value: '3',
                 });
                 break;
 

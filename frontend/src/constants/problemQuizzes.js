@@ -403,10 +403,332 @@ const CP_L27_QUIZ = {
     ],
 };
 
+const LR_L213_QUIZ = {
+    problemCode: 'LR.L2.13',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa: 'რა მოხდება თუ ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn: 'What happens when you turn the circuit on with the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდი აინთება',
+                    textEn: 'The LED lights up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდი არ აინთება',
+                    textEn: 'The LED does not light up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'შუქდიოდი იციმციმებს',
+                    textEn: 'The LED blinks',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ჩამრთველის ჩართვის შემდეგ ზედა რეზისტორის გავლით შუქდიოდში გაივლის დენი.',
+            explanationEn:
+                'After the switch is closed, current flows through the upper resistor and the LED.',
+        },
+        {
+            id: 'q2',
+            promptKa: 'როგორ შეიცვლება შუქდიოდის ნათება თუ დავაწვებით ღილაკს?',
+            promptEn: 'How does the LED brightness change when the button is pressed?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'მოიმატებს',
+                    textEn: 'It increases',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მოიკლებს',
+                    textEn: 'It decreases',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'არ შეიცვლება',
+                    textEn: 'It does not change',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'კვებების შეერთების წერტილში არის 3 ვ, ხოლო შუქდიოდზე მოდებულია დაახლოებით 1.8 ვ. '
+                + 'ღილაკზე დაჭერისას დენი მაღალი ძაბვიდან დაბლისკენ გაივლის და ეს ნაკადი '
+                + 'შუქდიოდში უკვე გამავალ დენს დაემატება.',
+            explanationEn:
+                'The supply midpoint is at 3 V while the LED is at about 1.8 V. '
+                + 'Pressing the button adds current flowing from the higher-voltage point '
+                + 'to the LED branch, increasing its brightness.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'რა მოხდება თუ ჩამრთველის ჩართვის გარეშე დავაწვებით ღილაკს?',
+            promptEn: 'What happens if the button is pressed without turning on the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდი არ აინთება',
+                    textEn: 'The LED does not light up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდი აინთება',
+                    textEn: 'The LED lights up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მოხდება მოკლე ჩართვა',
+                    textEn: 'A short circuit occurs',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'ქვედა კვების წყაროდან ღილაკისა და რეზისტორის გავლით დენი შუქდიოდში გაივლის.',
+            explanationEn:
+                'Current from the lower power supply flows through the button and resistor into the LED.',
+        },
+    ],
+};
+
+const LR_L214_QUIZ = {
+    problemCode: 'LR.L2.14',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa: 'რა მოხდება თუ ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn: 'What happens when you turn the circuit on with the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდები აინთება',
+                    textEn: 'The LEDs light up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდები არ აინთება',
+                    textEn: 'The LEDs do not light up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ერთი შუქდიოდი აინთება, მეორე არა',
+                    textEn: 'One LED lights up, the other does not',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ჩამრთველის ჩართვის შემდეგ რეზისტორის გავლით შუქდიოდებში გაივლის დენი.',
+            explanationEn:
+                'After the switch is closed, current flows through the resistor and both LEDs.',
+        },
+        {
+            id: 'q2',
+            promptKa: 'როგორ შეიცვლება შუქდიოდების ნათება თუ დავაწვებით ღილაკს?',
+            promptEn: 'How does the LED brightness change when the button is pressed?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ორივე შუქდიოდის ნათება მოიკლებს',
+                    textEn: 'Both LEDs get dimmer',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ორივე შუქდიოდის ნათება მოიმატებს',
+                    textEn: 'Both LEDs get brighter',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ერთი შუქდიოდის ნათება მოიკლებს, მეორის მოიმატებს',
+                    textEn: 'One LED dims while the other brightens',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'კვებების შეერთების წერტილში არის 3 ვ, ხოლო ორ მიმდევრობით ჩართულ შუქდიოდზე მოდებულია '
+                + 'დაახლოებით 3.6 ვ. ღილაკზე დაჭერისას დენი მაღალი ძაბვიდან დაბლისკენ გაივლის და ეს '
+                + 'ნაკადი გამოაკლდება შუქდიოდებში გამავალ დენს.',
+            explanationEn:
+                'The supply midpoint is at 3 V while the two series LEDs need about 3.6 V. '
+                + 'Pressing the button diverts current from high to low potential, subtracting '
+                + 'from the current through the LEDs.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'რა მოხდება თუ ჩამრთველის ჩართვის გარეშე დავაწვებით ღილაკს?',
+            promptEn: 'What happens if the button is pressed without turning on the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდები აინთება',
+                    textEn: 'The LEDs light up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდები არ აინთება',
+                    textEn: 'The LEDs do not light up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ერთი შუქდიოდი აინთება, მეორე არა',
+                    textEn: 'One LED lights up, the other does not',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'ქვედა კვების წყაროდან ღილაკისა და რეზისტორის გავლით დენი ვერ გაივლის შუქდიოდებში, '
+                + 'რადგან ორ მიმდევრობით ჩართულ წითელ შუქდიოდს ასანთებად სჭირდება მინიმუმ 3.4 ვ.',
+            explanationEn:
+                'Current from the lower supply through the button and resistor cannot light the LEDs, '
+                + 'because two series red LEDs need at least about 3.4 V to turn on.',
+        },
+    ],
+};
+
+const LR_L215_QUIZ = {
+    problemCode: 'LR.L2.15',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa: 'რა მოხდება თუ ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn: 'What happens when you turn the circuit on with the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ორივე შუქდიოდი აინთება',
+                    textEn: 'Both LEDs light up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდები არ აინთება',
+                    textEn: 'The LEDs do not light up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ერთი შუქდიოდი აინთება, მეორე არა',
+                    textEn: 'One LED lights up, the other does not',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ჩამრთველის ჩართვის შემდეგ რეზისტორის გავლით შუქდიოდებში გაივლის დენი.',
+            explanationEn:
+                'After the switch is closed, current flows through the resistor and both LEDs.',
+        },
+        {
+            id: 'q2',
+            promptKa: 'როგორ შეიცვლება შუქდიოდების ნათება თუ დავაწვებით ღილაკს?',
+            promptEn: 'How does the LED brightness change when the button is pressed?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ორივე შუქდიოდის ნათება მოიკლებს',
+                    textEn: 'Both LEDs get dimmer',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ორივე შუქდიოდის ნათება მოიმატებს',
+                    textEn: 'Both LEDs get brighter',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'არ შეიცვლება',
+                    textEn: 'It does not change',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'ზედა შუქდიოდის ნათება მოიკლებს, ქვედასი მოიმატებს',
+                    textEn: 'The top LED dims while the bottom LED brightens',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'ზედა შუქდიოდის ნათება მოიმატებს, ქვედასი მოიკლებს',
+                    textEn: 'The top LED brightens while the bottom LED dims',
+                },
+            ],
+            correctKey: 'დ',
+            explanationKa:
+                'კვებების შეერთების წერტილში არის 3 ვ, ხოლო შუქდიოდების შეერთების წერტილში დაახლოებით 1.8 ვ. '
+                + 'ღილაკზე დაჭერისას დენი მაღალი ძაბვიდან დაბლისკენ გაივლის — ეს ნაკადი დაემატება ქვედა '
+                + 'შუქდიოდის დენს და გამოაკლდება ზედა შუქდიოდის დენს.',
+            explanationEn:
+                'The supply midpoint is at 3 V while the node between the LEDs is about 1.8 V. '
+                + 'Pressing the button sends current from high to low potential — it adds to the bottom '
+                + 'LED current and subtracts from the top LED current.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'რა მოხდება თუ ჩამრთველის ჩართვის გარეშე დავაწვებით ღილაკს?',
+            promptEn: 'What happens if the button is pressed without turning on the switch?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდები აინთება',
+                    textEn: 'The LEDs light up',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'შუქდიოდები არ აინთება',
+                    textEn: 'The LEDs do not light up',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ქვედა შუქდიოდი აინთება, ზედა არა',
+                    textEn: 'The bottom LED lights up, the top does not',
+                },
+            ],
+            correctKey: 'გ',
+            explanationKa:
+                'ქვედა კვების წყაროდან ღილაკისა და რეზისტორის გავლით დენი გაივლის მხოლოდ ქვედა შუქდიოდში.',
+            explanationEn:
+                'Current from the lower supply through the button and resistor flows only through the bottom LED.',
+        },
+        {
+            id: 'q4',
+            promptKa:
+                'შეიცვლება თუ არა წრედის მუშაობის პრინციპი ღილაკზე დაჭერისას, '
+                + 'თუ ქვედა წითელ შუქდიოდს ჩავანაცვლებთ მწვანით?',
+            promptEn:
+                'Does the circuit behavior on button press change if the bottom red LED '
+                + 'is replaced with a green one?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შეიცვლება',
+                    textEn: 'Yes, it changes',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'არ შეიცვლება',
+                    textEn: 'No, it does not change',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'მწვანე შუქდიოდის სამუშაო ძაბვა იმდენად არ განსხვავდება წითელი შუქდიოდის ძაბვისგან, '
+                + 'რომ 3 ვ კვების წყაროებზე დენმა სხვა მიმართულებით დაიწყოს მოძრაობა.',
+            explanationEn:
+                'A green LED’s forward voltage does not differ from a red one enough to reverse '
+                + 'the direction of current flow on the 3 V supplies.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
     'CP.L2.7': CP_L27_QUIZ,
+    'LR.L2.13': LR_L213_QUIZ,
+    'LR.L2.14': LR_L214_QUIZ,
+    'LR.L2.15': LR_L215_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

@@ -18,8 +18,8 @@ class CapacitorValidationTest {
     private static final String CP_L11_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"3"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["E3","C5"],"value":"10u"},
                 {"id":"btn1","role":"button_1","type":"switch","nodes":["C5","A7"],"state":"open"},
                 {"id":"r1","role":"resistor_1","type":"resistor","nodes":["C5","C3"],"value":"1000"},
@@ -32,8 +32,8 @@ class CapacitorValidationTest {
     private static final String CP_L12_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A7","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","E3"],"value":"3"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["E3","C5"],"value":"10u"},
                 {"id":"r_chg","role":"resistor_1","type":"resistor","nodes":["A7","C4"],"value":"10000"},
                 {"id":"btn1","role":"button_1","type":"switch","nodes":["C4","C5"],"state":"open"},
@@ -50,8 +50,8 @@ class CapacitorValidationTest {
     private static final String CP_L23_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["B8","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","G3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["B8","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","G3"],"value":"3"},
                 {"id":"cap_r","role":"capacitor_1","type":"capacitor","nodes":["G3","C5"],"value":"10u"},
                 {"id":"cap_g","role":"capacitor_2","type":"capacitor","nodes":["G3","C3"],"value":"10u"},
                 {"id":"led_r","role":"led_1","type":"led","nodes":["E5","G3"],"color":"red"},
@@ -156,8 +156,8 @@ class CapacitorValidationTest {
     private static final String CP_L24_TWELVE_VOLT_CIRCUIT = """
             {
               "components": [
-                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A6","0"],"value":"6"},
-                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","G3"],"value":"6"},
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["A6","0"],"value":"3"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["0","G3"],"value":"3"},
                 {"id":"r_dis","role":"resistor_1","type":"resistor","nodes":["D4","G3"],"value":"10000"},
                 {"id":"cap1","role":"capacitor_1","type":"capacitor","nodes":["G3","D4"],"value":"470u"},
                 {"id":"led1","role":"led_1","type":"led","nodes":["C6","G3"],"color":"red"},

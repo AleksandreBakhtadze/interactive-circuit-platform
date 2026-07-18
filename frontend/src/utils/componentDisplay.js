@@ -27,8 +27,21 @@ const LED_ON_IMAGES = {
 
 const LIT_CURRENT_THRESHOLD = 0.01;
 
-/** LEDs can conduct visibly below 10 mA (e.g. ~8 mA with series resistor). */
-const LED_LIT_CURRENT_THRESHOLD = 0.001;
+/** LEDs can conduct visibly below 10 mA (e.g. ~1 mA with a larger series resistor). */
+const LED_LIT_CURRENT_THRESHOLD = 0.00015;
+
+/**
+ * Current that maps to full LED glow opacity.
+ * ~5 mA is “bright”; ~1 mA (e.g. 1k at 3 V) must still show a clear glow.
+ */
+export const LED_FULL_BRIGHT_CURRENT = 0.005;
+
+/**
+ * Rated 6 V lamp ≈ 0.25 A → ~24 Ω (used in spice). Visual dimming uses
+ * voltage across the lamp so a small series R (which steals voltage) dims a lot,
+ * while a single 3 V pack still looks clearly lit.
+ */
+export const LAMP_RATED_VOLTAGE = 6;
 
 function isLitVoltage(voltage) {
     return typeof voltage === 'number' && voltage > LIT_VOLTAGE_THRESHOLD;
@@ -71,13 +84,16 @@ export function getComponentCurrent(
     const nodes = results?.nodes;
     if (!nodes) return undefined;
 
-    const rKey = `@r_${spiceComponentId}[i]`;
+    // ngspice / backend normalize device ids to lowercase in @r_/@d_ keys.
+    const id = String(spiceComponentId ?? '').toLowerCase();
+
+    const rKey = `@r_${id}[i]`;
     const rVal = nodes[rKey];
     if (typeof rVal === 'number') {
         return opts.signed ? rVal : Math.abs(rVal);
     }
 
-    const dKey = `@d_${spiceComponentId}[id]`;
+    const dKey = `@d_${id}[id]`;
     const dVal = nodes[dKey];
     if (typeof dVal === 'number') {
         return opts.signed ? dVal : Math.abs(dVal);
@@ -225,7 +241,6 @@ export function getPlacedComponentImage(type, opts = {}) {
         simResults,
         spiceId,
         tranFrameIndex = 0,
-        ledBrightnessRatio,
         dischargeFading = false,
     } = opts;
 
@@ -247,6 +262,10 @@ export function getPlacedComponentImage(type, opts = {}) {
     }
 
     if (type === COMPONENT_TYPES.LAMP) {
+        // Overlay path forces the lit artwork; otherwise binary on/off for non-overlay callers.
+        if (dischargeFading) {
+            return ON_IMAGES[type] ?? base;
+        }
         if (liveSimMode && simOk && isLampLit(simResults, spiceId, voltage)) {
             return ON_IMAGES[type] ?? base;
         }
@@ -305,14 +324,39 @@ export function getComponentVoltage(results, spiceComponentId, frameIndex) {
     return undefined;
 }
 
+/** Below this fraction of the reference current, treat glow as fully off. */
+const BRIGHTNESS_OFF_RATIO_FLOOR = 0.12;
+
+/**
+ * Map a device current to glow opacity (0–1).
+ * @param {number} current
+ * @param {number} fullCurrent — current that should look fully bright
+ * @param {{ gamma?: number, floor?: number }} [opts]
+ */
+export function getCurrentBrightnessRatio(
+    current,
+    fullCurrent,
+    { gamma = 0.7, floor = BRIGHTNESS_OFF_RATIO_FLOOR } = {}
+) {
+    if (!fullCurrent || fullCurrent <= 0) {
+        return 0;
+    }
+    if (typeof current !== 'number' || current <= 0) {
+        return 0;
+    }
+    const linear = Math.min(1, current / fullCurrent);
+    if (linear <= floor) {
+        return 0;
+    }
+    const remapped = (linear - floor) / (1 - floor);
+    return Math.max(0, Math.min(1, Math.pow(remapped, gamma)));
+}
+
 /**
  * LED brightness ratio for transient charge/discharge (0–1).
  * @param {number} maxCurrent — reference current (peak of charge or pressed DC).
  * @param {'charge'|'discharge'} [direction]
  */
-/** Below this fraction of peak current, treat the LED as fully off (no residual glow). */
-const LED_OFF_RATIO_FLOOR = 0.12;
-
 export function getLedBrightnessRatio(
     results,
     spiceComponentId,
@@ -320,9 +364,6 @@ export function getLedBrightnessRatio(
     maxCurrent,
     direction = 'discharge'
 ) {
-    if (!maxCurrent || maxCurrent <= 0) {
-        return 0;
-    }
     const current = getComponentCurrent(
         results,
         spiceComponentId,
@@ -331,19 +372,57 @@ export function getLedBrightnessRatio(
     );
     // Scale relative to the known peak — do not apply the absolute lit threshold here,
     // or LEDs near ~1 mA (e.g. CP.L2.5 red branch with 5k1) never glow.
-    if (typeof current !== 'number' || current <= 0) {
-        return 0;
-    }
-    const linear = current / maxCurrent;
-    // Cap still conducts a little at the end of a 4 s run; remapping to zero
-    // past the floor makes the board look fully dark after the pulse.
-    if (linear <= LED_OFF_RATIO_FLOOR) {
-        return 0;
-    }
-    const remapped = (linear - LED_OFF_RATIO_FLOOR) / (1 - LED_OFF_RATIO_FLOOR);
     const gamma = direction === 'charge' ? 2.2 : 0.55;
-    const perceptual = Math.pow(remapped, gamma);
-    return Math.max(0, Math.min(1, perceptual));
+    return getCurrentBrightnessRatio(current, maxCurrent, { gamma });
+}
+
+/**
+ * Steady-state LED glow from absolute forward current (different resistors → different brightness).
+ */
+export function getLedDcBrightnessRatio(results, spiceComponentId, frameIndex = 0) {
+    const current = getComponentCurrent(
+        results,
+        spiceComponentId,
+        { signed: true },
+        frameIndex
+    );
+    if (!isLedLitCurrent(current)) {
+        return 0;
+    }
+    // Boost the low end so ~1 mA (≈1k at 3 V) still glows; keep headroom so
+    // 100 Ω vs 1k (or 1k vs 5.1k) stay visibly different.
+    const ratio = getCurrentBrightnessRatio(current, LED_FULL_BRIGHT_CURRENT, {
+        gamma: 0.5,
+        floor: 0.008,
+    });
+    // Never show a “lit” LED as fully dark.
+    return Math.max(0.28, ratio);
+}
+
+/**
+ * Steady-state lamp glow from voltage across the bulb.
+ * Two 3 V packs (≈6 V) → full glow; one pack (≈3 V) → clearly lit but dimmer.
+ * Extra series R drops V_lamp further and dims more.
+ */
+export function getLampDcBrightnessRatio(results, spiceComponentId, frameIndex = 0) {
+    const current = getComponentCurrent(results, spiceComponentId, {}, frameIndex);
+    const voltage = Math.abs(
+        getComponentVoltage(results, spiceComponentId, frameIndex) ?? 0
+    );
+    const conducting =
+        (typeof current === 'number' && current > 0.005) || voltage > 0.8;
+    if (!conducting) {
+        return 0;
+    }
+    // Soft curve: 6 V → 1.0, 3 V → ~0.6 (visible, still less than two packs).
+    const ratio = getCurrentBrightnessRatio(voltage, LAMP_RATED_VOLTAGE, {
+        gamma: 0.7,
+        floor: 0.05,
+    });
+    if (voltage >= 2.4) {
+        return Math.max(0.55, Math.min(1, ratio));
+    }
+    return ratio;
 }
 
 /** Last forward-current sample from a transient run (for LEDs). */

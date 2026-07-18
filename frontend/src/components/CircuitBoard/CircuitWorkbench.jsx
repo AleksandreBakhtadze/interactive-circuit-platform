@@ -55,6 +55,8 @@ import {
     getComponentCurrent,
     getComponentVoltage,
     getLedBrightnessRatio,
+    getLedDcBrightnessRatio,
+    getLampDcBrightnessRatio,
     getTransientSeriesMax,
     getTransientSettleTime,
     getPlacedComponentImage,
@@ -141,6 +143,51 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'LR.L2.5') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, ნათურა, წითელი LED, რეზისტორი';
         }
+        if (problemCode === 'LR.L3.6') {
+            return 'განათავსეთ: კვების წყარო, ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.7' || problemCode === 'LR.L3.8') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L3.9') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, წითელი LED, მინიმუმ 2 რეზისტორი';
+        }
+        if (problemCode === 'LR.L3.10') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2 წითელი LED, მინიმუმ 2 რეზისტორი';
+        }
+        if (problemCode === 'LR.L1.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, წითელი და მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.12') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, წითელი და მწვანე LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.13') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი LED, 2×1 kΩ რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.14' || problemCode === 'LR.L2.15') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2 წითელი LED, 2×1 kΩ რეზისტორი';
+        }
+        if (problemCode === 'LR.L2.16' || problemCode === 'LR.L2.17') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 ღილაკი, 2 წითელი LED, რეზისტორ(ებ)ი';
+        }
+        if (problemCode === 'LR.L2.18') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, რეზისტორ(ებ)ი';
+        }
+        if (problemCode === 'LR.L4.19') {
+            return 'განათავსეთ: კვების წყარო, ჩამრთველი, 2 ღილაკი, 2 წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'LR.L4.20') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 ღილაკი, 2 წითელი LED, რეზისტორ(ებ)ი';
+        }
+        if (problemCode === 'LR.L4.21') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'LR.L4.22') {
+            return 'განათავსეთ: კვების წყარო, 2 ღილაკი, 2 წითელი და მწვანე LED, რეზისტორ(ებ)ი';
+        }
+        if (problemCode === 'LR.L4.23') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 ღილაკი, 2 წითელი, 2 მწვანე, 2 ლურჯი LED, რეზისტორ(ებ)ი';
+        }
         if (problemCode === 'ST.L2.10') {
             return 'განათავსეთ: კვების წყარო, ჩამრთველი, 2 ღილაკი, წითელი LED, რეზისტორი';
         }
@@ -205,6 +252,51 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'LR.L2.5') {
         return 'Place: 2 power supplies, switch, 2 buttons, lamp, red LED, resistor';
+    }
+    if (problemCode === 'LR.L3.6') {
+        return 'Place: power supply, button, red LED, resistor';
+    }
+    if (problemCode === 'LR.L2.7' || problemCode === 'LR.L3.8') {
+        return 'Place: 2 power supplies, switch, button, red LED, resistor';
+    }
+    if (problemCode === 'LR.L3.9') {
+        return 'Place: 2 power supplies, switch, 2 buttons, red LED, at least 2 resistors';
+    }
+    if (problemCode === 'LR.L3.10') {
+        return 'Place: 2 power supplies, switch, button, 2 red LEDs, at least 2 resistors';
+    }
+    if (problemCode === 'LR.L1.11') {
+        return 'Place: 2 power supplies, switch, red and green LEDs, resistor';
+    }
+    if (problemCode === 'LR.L2.12') {
+        return 'Place: power supply, switch, red and green LEDs, 2 resistors';
+    }
+    if (problemCode === 'LR.L2.13') {
+        return 'Place: 2 power supplies, switch, button, red LED, 2×1 kΩ resistors';
+    }
+    if (problemCode === 'LR.L2.14' || problemCode === 'LR.L2.15') {
+        return 'Place: 2 power supplies, switch, button, 2 red LEDs, 2×1 kΩ resistors';
+    }
+    if (problemCode === 'LR.L2.16' || problemCode === 'LR.L2.17') {
+        return 'Place: 2 power supplies, 2 buttons, 2 red LEDs, resistor(s)';
+    }
+    if (problemCode === 'LR.L2.18') {
+        return 'Place: 2 power supplies, switch, button, red and green LED, resistor(s)';
+    }
+    if (problemCode === 'LR.L4.19') {
+        return 'Place: power supply, switch, 2 buttons, 2 red LEDs, resistor';
+    }
+    if (problemCode === 'LR.L4.20') {
+        return 'Place: 2 power supplies, 2 buttons, 2 red LEDs, resistor(s)';
+    }
+    if (problemCode === 'LR.L4.21') {
+        return 'Place: 2 power supplies, switch, button, red and green LED, 2 resistors';
+    }
+    if (problemCode === 'LR.L4.22') {
+        return 'Place: power supply, 2 buttons, 2 red and green LED, resistor(s)';
+    }
+    if (problemCode === 'LR.L4.23') {
+        return 'Place: 2 power supplies, 2 buttons, 2 red, 2 green, 2 blue LED, resistor(s)';
     }
     if (problemCode === 'ST.L2.10') {
         return 'Place: power supply, switch, 2 buttons, red LED, resistor';
@@ -290,7 +382,13 @@ export default function CircuitWorkbench({ problemCode }) {
         }
         if (problemCode === 'CP.L2.5') {
             setResistorKey('5ko1');
-        } else if (problemCode === 'CP.L2.6' || problemCode === 'CP.L2.7') {
+        } else if (
+            problemCode === 'CP.L2.6'
+            || problemCode === 'CP.L2.7'
+            || problemCode === 'LR.L2.13'
+            || problemCode === 'LR.L2.14'
+            || problemCode === 'LR.L2.15'
+        ) {
             setResistorKey('1ko');
         } else {
             setResistorKey('100o');
@@ -1436,6 +1534,10 @@ export default function CircuitWorkbench({ problemCode }) {
             green: styles.ledOptionGreenActive,
             blue: styles.ledOptionBlueActive,
         };
+        const selectedLedSpec = LED_SPECS.find((s) => s.key === ledColor);
+        const selectedVf = selectedLedSpec
+            ? (lang === 'ka' ? selectedLedSpec.vfKa : selectedLedSpec.vfEn)
+            : '';
 
         return (
             <div className={`${styles.paletteCard} ${styles.ledCard}`}>
@@ -1464,6 +1566,7 @@ export default function CircuitWorkbench({ problemCode }) {
                                 <button
                                     key={spec.key}
                                     type="button"
+                                    title={`${lang === 'ka' ? spec.labelKa : spec.labelEn} · ${lang === 'ka' ? spec.vfKa : spec.vfEn}`}
                                     className={`${styles.lengthOption} ${ledColor === spec.key ? ledActiveClass[spec.key] : ''}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -1474,6 +1577,9 @@ export default function CircuitWorkbench({ problemCode }) {
                                 </button>
                             ))}
                         </div>
+                        <span className={styles.connectorLengthLabel}>
+                            {lang === 'ka' ? 'ასანთები ძაბვა' : 'Turn-on voltage'}: {selectedVf}
+                        </span>
                     </div>
 
                     <div
@@ -1625,10 +1731,35 @@ export default function CircuitWorkbench({ problemCode }) {
                                 ? lang === 'ka'
                                     ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); თითოეული ღილაკი თავის შუქდიოდ(ებ)ს ანთებს.'
                                     : 'Simulation mode: turn the switch ON; each button lights its own LED(s).'
-                                : problemCode === 'LR.L2.5'
+                                : problemCode === 'LR.L3.9'
+                                  ? lang === 'ka'
+                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); პირველი ღილაკი ზრდის, მეორე ამცირებს LED-ის ნათებას.'
+                                      : 'Simulation mode: turn the switch ON; the first button brightens and the second dims the LED.'
+                                  : problemCode === 'LR.L3.10'
+                                    ? lang === 'ka'
+                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ღილაკზე დაჭერისას ერთი LED ძლიერდება, მეორე სუსტდება.'
+                                        : 'Simulation mode: turn the switch ON; pressing the button brightens one LED and dims the other.'
+                                    : problemCode === 'LR.L1.11' ||
+                                        problemCode === 'LR.L2.12'
+                                      ? lang === 'ka'
+                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON) და შეადარეთ ორივე LED-ის ნათება.'
+                                          : 'Simulation mode: turn the switch ON and compare both LED brightness levels.'
+                                  : problemCode === 'LR.L2.5'
                                   ? lang === 'ka'
                                       ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ერთი ღილაკი — ნათურა, მეორე — LED.'
                                       : 'Simulation mode: turn the switch ON; one button lights the lamp, the other the LED.'
+                                  : problemCode === 'LR.L3.6'
+                                    ? lang === 'ka'
+                                        ? 'სიმულაციის რეჟიმი: LED თავიდან ანთებულია; დააჭირეთ ღილაკს მის ჩასაქრობად.'
+                                        : 'Simulation mode: the LED starts on; press and hold the button to turn it off.'
+                                    : problemCode === 'LR.L2.7'
+                                      ? lang === 'ka'
+                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ღილაკს ნათების მოსამატებლად.'
+                                          : 'Simulation mode: turn the switch ON, then press the button to brighten the LED.'
+                                      : problemCode === 'LR.L3.8'
+                                        ? lang === 'ka'
+                                            ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ღილაკს ნათების შესამცირებლად.'
+                                            : 'Simulation mode: turn the switch ON, then press the button to dim the LED.'
                                   : problemCode === 'ST.L1.3' ||
                                       problemCode === 'ST.L1.8' ||
                                       problemCode === 'ST.L2.9' ||
@@ -1725,7 +1856,7 @@ export default function CircuitWorkbench({ problemCode }) {
                             isTransientResult(simResults);
                         let isLedTranFade = false;
                         let ledBrightnessDirection = 'discharge';
-                        let ledBrightnessRatio;
+                        let brightnessRatio;
 
                         if (switchCrossfade) {
                             const i0 =
@@ -1770,7 +1901,7 @@ export default function CircuitWorkbench({ problemCode }) {
                                 isLedTranFade = true;
                                 ledBrightnessDirection =
                                     iLast > i0 ? 'charge' : 'discharge';
-                                ledBrightnessRatio = getLedBrightnessRatio(
+                                brightnessRatio = getLedBrightnessRatio(
                                     simResults,
                                     spiceComponentId,
                                     frameIndex,
@@ -1778,29 +1909,44 @@ export default function CircuitWorkbench({ problemCode }) {
                                     ledBrightnessDirection
                                 );
                             }
-                        } else {
-                            isLedTranFade =
-                                isLedType(comp.type) &&
-                                isTransientResult(simResults) &&
-                                pressedLedCurrentMaxRef.current &&
-                                (ledTranAnimPhase === 'charge' ||
-                                    ledTranAnimPhase === 'discharge' ||
-                                    isChargeTranResult);
+                        } else if (
+                            isLedType(comp.type) &&
+                            isTransientResult(simResults) &&
+                            pressedLedCurrentMaxRef.current &&
+                            (ledTranAnimPhase === 'charge' ||
+                                ledTranAnimPhase === 'discharge' ||
+                                isChargeTranResult)
+                        ) {
+                            isLedTranFade = true;
                             ledBrightnessDirection =
                                 ledTranAnimPhase === 'charge' ||
                                 isChargeTranResult
                                     ? 'charge'
                                     : 'discharge';
-                            ledBrightnessRatio = isLedTranFade
-                                ? getLedBrightnessRatio(
-                                      simResults,
-                                      spiceComponentId,
-                                      frameIndex,
-                                      pressedLedCurrentMaxRef.current,
-                                      ledBrightnessDirection
-                                  )
-                                : undefined;
+                            brightnessRatio = getLedBrightnessRatio(
+                                simResults,
+                                spiceComponentId,
+                                frameIndex,
+                                pressedLedCurrentMaxRef.current,
+                                ledBrightnessDirection
+                            );
+                        } else if (simOk && isLedType(comp.type)) {
+                            // DC / steady: different series resistors → different glow.
+                            brightnessRatio = getLedDcBrightnessRatio(
+                                simResults,
+                                spiceComponentId,
+                                frameIndex
+                            );
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (simOk && comp.type === COMPONENT_TYPES.LAMP) {
+                            brightnessRatio = getLampDcBrightnessRatio(
+                                simResults,
+                                spiceComponentId,
+                                frameIndex
+                            );
+                            isLedTranFade = brightnessRatio > 0;
                         }
+
                         const img = getPlacedComponentImage(comp.type, {
                             liveSimMode,
                             switchClosed,
@@ -1809,7 +1955,7 @@ export default function CircuitWorkbench({ problemCode }) {
                             simResults,
                             spiceId: spiceComponentId,
                             tranFrameIndex: frameIndex,
-                            ledBrightnessRatio,
+                            ledBrightnessRatio: brightnessRatio,
                             voltage: getComponentVoltage(
                                 simResults,
                                 spiceComponentId,
@@ -1826,10 +1972,11 @@ export default function CircuitWorkbench({ problemCode }) {
                             zIndex: 10 + index,
                         };
 
-                        const baseLedImg = isLedTranFade
+                        const useGlowOverlay = isLedTranFade && brightnessRatio > 0;
+                        const baseGlowImg = useGlowOverlay
                             ? getComponentImage(comp.type)
                             : null;
-                        const glowLedImg = isLedTranFade
+                        const glowOnImg = useGlowOverlay
                             ? getPlacedComponentImage(comp.type, {
                                   liveSimMode: true,
                                   simOk: true,
@@ -1907,29 +2054,29 @@ export default function CircuitWorkbench({ problemCode }) {
                             >
                                 <div
                                     className={
-                                        isLedTranFade
+                                        useGlowOverlay
                                             ? `${styles.partInner} ${styles.partInnerLedFade}`
                                             : styles.partInner
                                     }
                                 >
-                                    {isLedTranFade &&
-                                    baseLedImg &&
-                                    glowLedImg ? (
+                                    {useGlowOverlay &&
+                                    baseGlowImg &&
+                                    glowOnImg ? (
                                         <>
                                             <img
-                                                src={baseLedImg}
+                                                src={baseGlowImg}
                                                 alt=""
                                                 aria-hidden
                                                 className={styles.partImgAligned}
                                                 draggable={false}
                                             />
                                             <img
-                                                src={glowLedImg}
+                                                src={glowOnImg}
                                                 alt=""
                                                 aria-hidden
                                                 className={styles.ledGlowOverlay}
                                                 style={{
-                                                    opacity: ledBrightnessRatio,
+                                                    opacity: brightnessRatio,
                                                 }}
                                                 draggable={false}
                                             />

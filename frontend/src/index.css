@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
-
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -19,8 +17,8 @@
   --text-muted: #4a6a8a;
   --border: #243a5e;
   --border-bright: #2e4d7a;
-  --font-display: 'Nunito', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --font-display: Calibri, 'Carlito', 'Liberation Sans', Candara, sans-serif;
+  --font-mono: Calibri, 'Carlito', 'Liberation Sans', Candara, sans-serif;
 }
 
 html { scroll-behavior: smooth; }

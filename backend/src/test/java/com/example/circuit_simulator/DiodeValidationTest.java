@@ -61,18 +61,22 @@ class DiodeValidationTest {
         assertFalse(result.isPassed());
     }
 
+    /**
+     * Pedagogical DI.L1.4 (one shared resistor): parallel LED vs LED+2×diodes,
+     * button bypasses the diodes. Weak LED is dim but lit; button equalizes.
+     */
     private static final String DI_L14_CIRCUIT = """
             {
               "components": [
                 {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["FULL","MID"],"value":"6"},
                 {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"6"},
                 {"id":"switch","role":"switch","type":"switch","nodes":["FULL","TOP"],"state":"open"},
-                {"id":"led1","role":"led_1","type":"led","nodes":["TOP","M1"],"color":"red"},
-                {"id":"r1","role":"resistor_1","type":"resistor","nodes":["M1","0"],"value":"1000"},
-                {"id":"led2","role":"led_2","type":"led","nodes":["TOP","B1"],"color":"red"},
-                {"id":"d1","role":"diode_1","type":"led","nodes":["B1","B2"],"color":"plain"},
-                {"id":"d2","role":"diode_2","type":"led","nodes":["B2","0"],"color":"plain"},
-                {"id":"button","role":"button_1","type":"switch","nodes":["B1","0"],"state":"open"}
+                {"id":"led1","role":"led_1","type":"led","nodes":["TOP","W1"],"color":"red"},
+                {"id":"d1","role":"diode_1","type":"led","nodes":["W1","W2"],"color":"plain"},
+                {"id":"d2","role":"diode_2","type":"led","nodes":["W2","JOIN"],"color":"plain"},
+                {"id":"button","role":"button_1","type":"switch","nodes":["W1","JOIN"],"state":"open"},
+                {"id":"led2","role":"led_2","type":"led","nodes":["TOP","JOIN"],"color":"red"},
+                {"id":"r1","role":"resistor_1","type":"resistor","nodes":["JOIN","0"],"value":"1000"}
               ]
             }
             """;
@@ -87,14 +91,14 @@ class DiodeValidationTest {
 
     @Test
     void diL14RejectsReversedDiode() throws Exception {
-        // A reversed series diode blocks the weak LED — it never lights.
+        // A reversed series diode blocks the weak branch when the button is open.
         String reversed = DI_L14_CIRCUIT.replace(
-                "\"nodes\":[\"B1\",\"B2\"],\"color\":\"plain\"",
-                "\"nodes\":[\"B2\",\"B1\"],\"color\":\"plain\"");
+                "\"nodes\":[\"W1\",\"W2\"],\"color\":\"plain\"",
+                "\"nodes\":[\"W2\",\"W1\"],\"color\":\"plain\"");
 
         ValidationResultDTO result = validationService.validate("DI.L1.4", reversed);
 
-        assertFalse(result.isPassed());
+        assertFalse(result.isPassed(), describeFailures(result));
     }
 
     @Test

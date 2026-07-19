@@ -491,7 +491,32 @@ export function buildCircuitJson(
         }
     }
 
+    // When two packs share a rail with the same polarity end on that rail
+    // (+/+ or −/−), ngspice sees opposing equal sources and reports ~0 A.
+    // Snap-kit series stacks always mean + of one to − of the other — normalize.
+    normalizeSeriesSupplyPolarity(components);
+
     return { components };
+}
+
+/** Flip the second pack when two voltage sources share a node on the same end. */
+export function normalizeSeriesSupplyPolarity(components) {
+    if (!Array.isArray(components)) return components;
+    const supplies = components.filter((comp) => comp.type === 'voltage');
+    if (supplies.length !== 2) return components;
+    const [first, second] = supplies;
+    if (!Array.isArray(first.nodes) || !Array.isArray(second.nodes)) {
+        return components;
+    }
+    const sharedNodes = first.nodes.filter((node) => second.nodes.includes(node));
+    if (sharedNodes.length !== 1) return components;
+    const [shared] = sharedNodes;
+    const firstSharedIndex = first.nodes.indexOf(shared);
+    const secondSharedIndex = second.nodes.indexOf(shared);
+    if (firstSharedIndex === secondSharedIndex && second.nodes.length >= 2) {
+        second.nodes = [second.nodes[1], second.nodes[0]];
+    }
+    return components;
 }
 
 /** Required task parts are on the board (for submit). */

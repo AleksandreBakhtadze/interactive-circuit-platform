@@ -470,9 +470,9 @@ export function getLedDcBrightnessRatio(results, spiceComponentId, frameIndex = 
 }
 
 /**
- * Steady-state lamp glow from voltage across the bulb.
- * Two 3 V packs (≈6 V) → full glow; one pack (≈3 V) → clearly lit but dimmer.
- * Extra series R drops V_lamp further and dims more.
+ * Steady-state lamp glow. Prefer current when available — voltage saturates
+ * above ~6 V so diode / small-R drops on a 12 V rail look identical.
+ * Falls back to voltage when current cannot be read.
  */
 export function getLampDcBrightnessRatio(results, spiceComponentId, frameIndex = 0) {
     const current = getComponentCurrent(results, spiceComponentId, {}, frameIndex);
@@ -483,6 +483,14 @@ export function getLampDcBrightnessRatio(results, spiceComponentId, frameIndex =
         (typeof current === 'number' && current > 0.005) || voltage > 0.8;
     if (!conducting) {
         return 0;
+    }
+    if (typeof current === 'number' && current > 0.005) {
+        // Near full-rail lamp current: stretch so ~105 mA (two Vf) vs 120 mA
+        // (bypass) and similar subtle drops stay visible.
+        if (current >= 0.085) {
+            return getAbsoluteLampBrightness(current, { fineContrast: true });
+        }
+        return getAbsoluteLampBrightness(current);
     }
     // Soft curve: 6 V → 1.0, 3 V → ~0.6 (visible, still less than two packs).
     const ratio = getCurrentBrightnessRatio(voltage, LAMP_RATED_VOLTAGE, {
@@ -498,7 +506,7 @@ export function getLampDcBrightnessRatio(results, spiceComponentId, frameIndex =
 /**
  * Absolute DC lamp glow from current (SW.L2.4 mid vs full; SW.L2.5 R-bypass).
  * 100 Ω model: ~60 mA @ 6 V, ~100 mA with 20 Ω series @ 12 V, ~120 mA @ 12 V.
- * @param {{ fineContrast?: boolean }} [opts] — stretch upper range for small R-bypass steps
+ * @param {{ fineContrast?: boolean }} [opts] — stretch upper range for small drops
  */
 export function getAbsoluteLampBrightness(current, opts = {}) {
     // ~45 mA: pot end-stop (~50 Ω) + 100 Ω lamp @ 6 V stays dark; bare lamp (~60 mA) still lit.
@@ -508,7 +516,7 @@ export function getAbsoluteLampBrightness(current, opts = {}) {
         return 0;
     }
     if (opts.fineContrast) {
-        // SW.L2.5: ~100 mA → ~0.7, ~120 mA → 1
+        // SW.L2.5 / diode bypass: ~100 mA → ~0.7, ~120 mA → 1
         const lo = 0.08;
         const hi = 0.12;
         const u = Math.max(0, Math.min(1, (current - lo) / (hi - lo)));

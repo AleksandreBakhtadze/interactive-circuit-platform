@@ -55,6 +55,53 @@ public class SpiceGenerator {
         }
     }
 
+    /**
+     * When two packs share a rail on the same polarity end (+/+ or −/−), flip the
+     * second so they add in series. Snap-kit series stacks always mean + to −.
+     */
+    @SuppressWarnings("unchecked")
+    public static String normalizeSeriesSupplyPolarity(String json) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return json;
+        }
+        List<Map<String, Object>> supplies = new ArrayList<>();
+        for (Map<String, Object> comp : components) {
+            if ("voltage".equals(comp.get("type"))) {
+                supplies.add(comp);
+            }
+        }
+        if (supplies.size() != 2) {
+            return json;
+        }
+        List<String> firstNodes = (List<String>) supplies.get(0).get("nodes");
+        List<String> secondNodes = (List<String>) supplies.get(1).get("nodes");
+        if (firstNodes == null || secondNodes == null
+                || firstNodes.size() < 2 || secondNodes.size() < 2) {
+            return json;
+        }
+        List<String> shared = new ArrayList<>();
+        for (String node : firstNodes) {
+            if (secondNodes.contains(node)) {
+                shared.add(node);
+            }
+        }
+        if (shared.size() != 1) {
+            return json;
+        }
+        String mid = shared.get(0);
+        if (firstNodes.indexOf(mid) == secondNodes.indexOf(mid)) {
+            List<String> flipped = new ArrayList<>(secondNodes);
+            Collections.swap(flipped, 0, 1);
+            supplies.get(1).put("nodes", flipped);
+            return mapper.writeValueAsString(data);
+        }
+        return json;
+    }
+
     public static String generateSpice(String json) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> data = mapper.readValue(json, Map.class);
@@ -696,9 +743,13 @@ public class SpiceGenerator {
     }
 
     private static void appendModels(StringBuilder sb) {
-        sb.append(".model DIODE_MODEL    D (IS=1e-10 N=1.0  RS=1  BV=100)\n");
-        // Realistic LED Vf (~1.8 / ~2.1 / ~3.0 V) so series pairs light on 12 V rails.
-        sb.append(".model LEDMODEL_RED   D (IS=9e-21 N=1.9  RS=2  BV=20)\n");
+        // Slightly soft Si diode (~0.25–0.35 V at mA) so a parallel LED+2×diode
+        // branch can still glow dimly when a bare LED clamps the shared node —
+        // matching the Snap-Circuits-style DI.L1.4 demo. Keep enough drop for
+        // DI.L1.1 / DI.L2.2 lamp dimming.
+        sb.append(".model DIODE_MODEL    D (IS=3e-7 N=1.12 RS=2  BV=100)\n");
+        // Extra RS softens the Vf clamp so parallel unequal-LED demos share current.
+        sb.append(".model LEDMODEL_RED   D (IS=9e-21 N=1.9  RS=55 BV=20)\n");
         sb.append(".model LEDMODEL_GREEN D (IS=2e-21 N=2.0  RS=3  BV=20)\n");
         sb.append(".model LEDMODEL_BLUE  D (IS=5e-22 N=2.2  RS=4  BV=20)\n");
         sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");

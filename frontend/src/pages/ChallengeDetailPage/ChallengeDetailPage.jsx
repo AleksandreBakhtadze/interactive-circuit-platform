@@ -6,6 +6,7 @@ import ProblemQuiz from '../../components/ProblemQuiz/ProblemQuiz';
 import { supportsSimulator } from '../../constants/componentCatalog';
 import { getFiguresForProblem } from '../../constants/problemFigures';
 import { getQuizForProblem } from '../../constants/problemQuizzes';
+import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
 import { API_BASE } from '../../api';
 import styles from './ChallengeDetailPage.module.css';
@@ -17,6 +18,7 @@ function hasText(value) {
 export default function ChallengeDetailPage() {
     const { chapterCode, problemSlug } = useParams();
     const { lang } = useLang();
+    const { user } = useAuth();
     const [problem, setProblem] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -158,7 +160,10 @@ export default function ChallengeDetailPage() {
 
                     <div className={styles.boardColumn}>
                         {usesSim ? (
-                            <CircuitWorkbench problemCode={problem.code} />
+                            <CircuitWorkbench
+                                key={`${user?.id ?? 'guest'}-${problem.code}`}
+                                problemCode={problem.code}
+                            />
                         ) : (
                             <CircuitBoard label={problem.code} />
                         )}

@@ -77,6 +77,7 @@ public class SimulationService {
             String simPhaseName,
             Map<String, Double> priorPotPositions) throws Exception {
         try {
+            circuitJson = SpiceGenerator.normalizeSeriesSupplyPolarity(circuitJson);
             SpiceGenerator.assertSimulatableSupplies(circuitJson);
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);

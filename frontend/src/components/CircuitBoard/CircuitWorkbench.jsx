@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { simulateCircuit, validateCircuit } from '../../api';
 import { useLang } from '../../context/LangContext';
 import { useAuth } from '../../context/AuthContext';
@@ -71,6 +71,11 @@ import {
     normalizeSimulationResults,
     simulationHasError,
 } from '../../utils/componentDisplay';
+import {
+    clearCircuitDraft,
+    loadCircuitDraft,
+    saveCircuitDraft,
+} from '../../utils/circuitDraftStorage';
 import {
     buildCircuitJson,
     clampPotPosition,
@@ -632,19 +637,41 @@ function incompleteBoardMessage(problemCode, lang) {
 export default function CircuitWorkbench({ problemCode }) {
     const { lang } = useLang();
     const { user } = useAuth();
+    const userId = user?.id ?? null;
     const palette = getPaletteForProblem(problemCode);
+    const initialDraftRef = useRef(null);
+    if (initialDraftRef.current === null) {
+        initialDraftRef.current =
+            loadCircuitDraft(userId, problemCode) ?? {
+                placed: [],
+                potPositions: {},
+                switchStates: {},
+            };
+    }
+    const initialDraft = initialDraftRef.current;
     const gridRef = useRef(null);
     const heldButtonIdRef = useRef(null);
-    const switchStatesRef = useRef({});
-    const potPositionsRef = useRef({});
+    const switchStatesRef = useRef({ ...initialDraft.switchStates });
+    const potPositionsRef = useRef({ ...initialDraft.potPositions });
     const potSimTimerRef = useRef(null);
+    const boardSimTimerRef = useRef(null);
+    const pendingClickInteractRef = useRef(null);
+    const lastButtonClickAtRef = useRef({});
+    const lockedButtonIdsRef = useRef(new Set());
+    const interactFnsRef = useRef({
+        pressMomentary: async () => {},
+        releaseMomentary: async () => {},
+        unlockMomentary: async () => {},
+        clickInteract: async () => {},
+        runLiveSim: async () => {},
+    });
     /** DI.L3.6: last pot position that kicked off a live sim (for prior-IC discharge steps). */
     const di36LastSimPotRef = useRef({});
     const moveSessionRef = useRef(null);
     const palettePointerSessionRef = useRef(null);
     const boardHostRef = useRef(null);
 
-    const [placed, setPlaced] = useState([]);
+    const [placed, setPlaced] = useState(() => initialDraft.placed);
     const [paletteRotations, setPaletteRotations] = useState({});
     const [connectorLength, setConnectorLength] = useState(3);
     const [resistorKey, setResistorKey] = useState('100o');
@@ -654,10 +681,18 @@ export default function CircuitWorkbench({ problemCode }) {
     const [message, setMessage] = useState('');
     const messageRef = useRef(null);
     const [simulating, setSimulating] = useState(false);
-    const [liveSimMode, setLiveSimMode] = useState(false);
-    const [switchStates, setSwitchStates] = useState({});
-    const [potPositions, setPotPositions] = useState({});
+    /** Live simulation is always on — interact anytime; drag still moves parts. */
+    const liveSimMode = true;
+    const [switchStates, setSwitchStates] = useState(
+        () => initialDraft.switchStates
+    );
+    const [, setLockedButtonsVersion] = useState(0);
+    const [potPositions, setPotPositions] = useState(
+        () => initialDraft.potPositions
+    );
     const [simResults, setSimResults] = useState(null);
+    /** Bumps after mount so restored parts can measure the grid (ref is null on first paint). */
+    const [boardLayoutTick, setBoardLayoutTick] = useState(0);
     const [tranFrameIndex, setTranFrameIndex] = useState(0);
     /** Sync frame for LED sampling — avoids one-frame flash of the prior last index on new .tran. */
     const tranFrameRef = useRef(0);
@@ -690,7 +725,21 @@ export default function CircuitWorkbench({ problemCode }) {
         potPositionsRef.current = potPositions;
     }, [potPositions]);
 
-    const liveSimModeRef = useRef(false);
+    // After the board DOM mounts, re-render so restored (or any) parts get layout.
+    useLayoutEffect(() => {
+        setBoardLayoutTick((n) => n + 1);
+    }, []);
+
+    // Persist board layout so returning to this challenge restores the build.
+    useEffect(() => {
+        saveCircuitDraft(userId, problemCode, {
+            placed,
+            potPositions,
+            switchStates,
+        });
+    }, [placed, potPositions, switchStates, problemCode, userId]);
+
+    const liveSimModeRef = useRef(true);
     useEffect(() => {
         liveSimModeRef.current = liveSimMode;
     }, [liveSimMode]);
@@ -699,6 +748,9 @@ export default function CircuitWorkbench({ problemCode }) {
         return () => {
             if (potSimTimerRef.current) {
                 clearTimeout(potSimTimerRef.current);
+            }
+            if (boardSimTimerRef.current) {
+                clearTimeout(boardSimTimerRef.current);
             }
         };
     }, []);
@@ -830,17 +882,6 @@ export default function CircuitWorkbench({ problemCode }) {
     const [activeDrag, setActiveDrag] = useState(null);
     const [hoverPin, setHoverPin] = useState(null);
 
-    useEffect(() => {
-        setLiveSimMode(false);
-        switchStatesRef.current = {};
-        setSwitchStates({});
-        setSimResults(null);
-        tranFrameRef.current = 0;
-        setTranFrameIndex(0);
-        pressedLedCurrentMaxRef.current = null;
-        baselineLedCurrentRef.current = null;
-        di36LastSimPotRef.current = {};
-    }, [placed]);
     const connectorGroup = getConnectorGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
     const capacitorGroup = getCapacitorGroupItem(palette);
@@ -1107,13 +1148,32 @@ export default function CircuitWorkbench({ problemCode }) {
         const comp = placed.find((p) => p.id === partId);
         if (!comp) return;
 
-        if (liveSimMode && isInteractivePart(comp.type, problemCode)) {
-            return;
-        }
-
+        // Always allow drag (including switches/buttons). Clicks without a drag
+        // still toggle / press via the move-session finish path.
         e.preventDefault();
         e.stopPropagation();
         beginMoveSession(comp, e.clientX, e.clientY, e.pointerId);
+
+        if (!isInteractivePart(comp.type, problemCode)) return;
+        if (isVarResistorType(comp.type)) return;
+
+        if (
+            isToggleInteractive(comp.type) ||
+            (supportsMotorStallToggle(problemCode) &&
+                comp.type === COMPONENT_TYPES.MOTOR)
+        ) {
+            pendingClickInteractRef.current = comp.id;
+            return;
+        }
+
+        if (isMomentaryInteractive(comp.type)) {
+            if (lockedButtonIdsRef.current.has(comp.id)) {
+                pendingClickInteractRef.current = `unlock:${comp.id}`;
+                return;
+            }
+            // Fire-and-forget press; release on drag-start or pointer-up.
+            void interactFnsRef.current.pressMomentary(comp);
+        }
     };
 
     const handleBoardPointerMove = (e) => {
@@ -1131,6 +1191,19 @@ export default function CircuitWorkbench({ problemCode }) {
 
         if (!session.dragging) {
             session.dragging = true;
+            pendingClickInteractRef.current = null;
+            // Cancel a held momentary button if the user started dragging it.
+            if (heldButtonIdRef.current) {
+                const buttonId = heldButtonIdRef.current;
+                const buttonComp = placed.find((p) => p.id === buttonId);
+                if (buttonComp) {
+                    void interactFnsRef.current.releaseMomentary(buttonComp, {
+                        allowLock: false,
+                    });
+                } else {
+                    heldButtonIdRef.current = null;
+                }
+            }
             setActiveDrag({
                 id: session.id,
                 type: session.type,
@@ -1147,6 +1220,10 @@ export default function CircuitWorkbench({ problemCode }) {
     const finishMoveSession = (e) => {
         const session = moveSessionRef.current;
         if (!session) return;
+
+        const wasDragging = Boolean(session.dragging);
+        const sessionId = session.id;
+        const sessionType = session.type;
 
         try {
             boardHostRef.current?.releasePointerCapture(e.pointerId);
@@ -1169,6 +1246,33 @@ export default function CircuitWorkbench({ problemCode }) {
         }
 
         endMoveSession();
+
+        if (wasDragging) {
+            pendingClickInteractRef.current = null;
+            return;
+        }
+
+        const comp = placed.find((p) => p.id === sessionId);
+        if (!comp) return;
+
+        if (pendingClickInteractRef.current === sessionId) {
+            pendingClickInteractRef.current = null;
+            void interactFnsRef.current.clickInteract(comp);
+            return;
+        }
+
+        if (pendingClickInteractRef.current === `unlock:${sessionId}`) {
+            pendingClickInteractRef.current = null;
+            void interactFnsRef.current.unlockMomentary(comp);
+            return;
+        }
+
+        if (
+            isMomentaryInteractive(sessionType) &&
+            heldButtonIdRef.current === sessionId
+        ) {
+            void interactFnsRef.current.releaseMomentary(comp);
+        }
     };
 
     const handleBoardPointerUp = (e) => {
@@ -1345,8 +1449,11 @@ export default function CircuitWorkbench({ problemCode }) {
     const clearBoard = () => {
         if (placed.length === 0) return;
         potPositionsRef.current = {};
+        switchStatesRef.current = {};
         setPotPositions({});
+        setSwitchStates({});
         setPlaced([]);
+        clearCircuitDraft(userId, problemCode);
         setMessage('');
         setSubmitStatus(null);
         setHoverPin(null);
@@ -1771,14 +1878,69 @@ export default function CircuitWorkbench({ problemCode }) {
         ]
     );
 
-    const handleSimulate = async () => {
+    // Keep switch/pot state in sync with the board and re-simulate automatically.
+    useEffect(() => {
         const initial = createInitialSwitchStates(placed, problemCode);
-        commitSwitchStates(initial);
-        setLiveSimMode(true);
-        setMessage('');
-        di36LastSimPotRef.current = { ...potPositionsRef.current };
-        await runLiveSimulation(initial, { live: true, simPhase: 'idle' });
-    };
+        const placedIds = new Set(placed.map((comp) => comp.id));
+        const nextLocked = new Set(
+            [...lockedButtonIdsRef.current].filter((id) => placedIds.has(id))
+        );
+        if (nextLocked.size !== lockedButtonIdsRef.current.size) {
+            lockedButtonIdsRef.current = nextLocked;
+            setLockedButtonsVersion((n) => n + 1);
+        }
+        const merged = {};
+        for (const [id, state] of Object.entries(initial)) {
+            merged[id] = switchStatesRef.current[id] ?? state;
+        }
+        switchStatesRef.current = merged;
+        setSwitchStates(merged);
+
+        const keptPots = {};
+        for (const comp of placed) {
+            if (!isVarResistorType(comp.type)) continue;
+            keptPots[comp.id] =
+                potPositionsRef.current[comp.id] ?? DEFAULT_POT_POSITION;
+        }
+        potPositionsRef.current = keptPots;
+        setPotPositions(keptPots);
+
+        if (boardSimTimerRef.current) {
+            clearTimeout(boardSimTimerRef.current);
+            boardSimTimerRef.current = null;
+        }
+
+        if (placed.length === 0) {
+            lockedButtonIdsRef.current = new Set();
+            lastButtonClickAtRef.current = {};
+            setLockedButtonsVersion((n) => n + 1);
+            setSimResults(null);
+            tranFrameRef.current = 0;
+            setTranFrameIndex(0);
+            pressedLedCurrentMaxRef.current = null;
+            baselineLedCurrentRef.current = null;
+            di36LastSimPotRef.current = {};
+            pendingClickInteractRef.current = null;
+            heldButtonIdRef.current = null;
+            return undefined;
+        }
+
+        boardSimTimerRef.current = setTimeout(() => {
+            boardSimTimerRef.current = null;
+            di36LastSimPotRef.current = { ...potPositionsRef.current };
+            runLiveSimulation(switchStatesRef.current, {
+                live: true,
+                simPhase: 'idle',
+            });
+        }, 140);
+
+        return () => {
+            if (boardSimTimerRef.current) {
+                clearTimeout(boardSimTimerRef.current);
+                boardSimTimerRef.current = null;
+            }
+        };
+    }, [placed, problemCode, runLiveSimulation]);
 
     /** Potentiometer dial: update A–B share (0…1) and re-sim while live. */
     const handlePotPositionChange = useCallback(
@@ -1846,15 +2008,71 @@ export default function CircuitWorkbench({ problemCode }) {
         [commitPotPosition, problemCode, runLiveSimulation]
     );
 
-    /** Momentary button: closed only while pointer is held down. */
-    const handleInteractivePointerDown = async (comp, e) => {
-        if (!liveSimMode || !isInteractivePart(comp.type, problemCode)) return;
-        if (e.button !== 0) return;
-        // Potentiometer uses the on-part slider — ignore body clicks.
-        if (isVarResistorType(comp.type)) return;
-        e.stopPropagation();
-        e.preventDefault();
+    /** Momentary button: close while held (not while dragging). */
+    const pressMomentaryButton = async (comp) => {
+        if (!isMomentaryInteractive(comp.type)) return;
 
+        const wasDischarging = ledTranAnimPhase === 'discharge';
+        cancelTranAnimation();
+        setLedTranAnimPhase(null);
+        if (wasDischarging) {
+            finishTranAnimation();
+        } else {
+            setTranFrame(0);
+        }
+
+        heldButtonIdRef.current = comp.id;
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: 'closed',
+        };
+        commitSwitchStates(nextStates);
+        await runLiveSimulation(nextStates, { simPhase: 'pressed' });
+    };
+
+    const releaseMomentaryButton = async (comp, { allowLock = true } = {}) => {
+        if (!isMomentaryInteractive(comp.type)) return;
+        if (heldButtonIdRef.current !== comp.id) return;
+        heldButtonIdRef.current = null;
+
+        if (allowLock) {
+            const now = Date.now();
+            const previousClick = lastButtonClickAtRef.current[comp.id] ?? 0;
+            lastButtonClickAtRef.current[comp.id] = now;
+            if (now - previousClick <= 400) {
+                lockedButtonIdsRef.current.add(comp.id);
+                setLockedButtonsVersion((n) => n + 1);
+                return;
+            }
+        } else {
+            delete lastButtonClickAtRef.current[comp.id];
+        }
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: 'open',
+        };
+        commitSwitchStates(nextStates);
+        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
+    };
+
+    const unlockMomentaryButton = async (comp) => {
+        if (!lockedButtonIdsRef.current.has(comp.id)) return;
+        lockedButtonIdsRef.current.delete(comp.id);
+        delete lastButtonClickAtRef.current[comp.id];
+        setLockedButtonsVersion((n) => n + 1);
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: 'open',
+        };
+        commitSwitchStates(nextStates);
+        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
+    };
+
+    /** Click (no drag): toggle switches / motor stall. */
+    const handleInteractiveClick = async (comp) => {
         if (
             supportsMotorStallToggle(problemCode) &&
             comp.type === COMPONENT_TYPES.MOTOR
@@ -1870,118 +2088,73 @@ export default function CircuitWorkbench({ problemCode }) {
             return;
         }
 
-        if (isToggleInteractive(comp.type)) {
-            const current = switchStatesRef.current[comp.id];
-            let next;
-            let simPhase;
+        if (!isToggleInteractive(comp.type)) return;
 
-            if (isSlideSwitchType(comp.type)) {
-                const atLeft = (current ?? 'left') !== 'right';
-                next = atLeft ? 'right' : 'left';
-                // left = green resting side; right = red side (pressed / discharge phases)
-                simPhase = next === 'right' ? 'pressed' : 'discharge';
-                // Master-switch problems: ignore slide pulses while SPST is open.
-                if (usesMasterSwitchSimulation(problemCode)) {
-                    const masterOpen = Object.entries(switchStatesRef.current).some(
-                        ([id, state]) => {
-                            const part = placed.find((p) => p.id === id);
-                            return (
-                                part?.type === COMPONENT_TYPES.SWITCH &&
-                                state !== 'closed'
-                            );
-                        }
-                    );
-                    // Also check nextStates will keep master open (slide-only change).
-                    if (masterOpen) {
-                        simPhase = 'idle';
+        const current = switchStatesRef.current[comp.id];
+        let next;
+        let simPhase;
+
+        if (isSlideSwitchType(comp.type)) {
+            const atLeft = (current ?? 'left') !== 'right';
+            next = atLeft ? 'right' : 'left';
+            simPhase = next === 'right' ? 'pressed' : 'discharge';
+            if (usesMasterSwitchSimulation(problemCode)) {
+                const masterOpen = Object.entries(switchStatesRef.current).some(
+                    ([id, state]) => {
+                        const part = placed.find((p) => p.id === id);
+                        return (
+                            part?.type === COMPONENT_TYPES.SWITCH &&
+                            state !== 'closed'
+                        );
                     }
+                );
+                if (masterOpen) {
+                    simPhase = 'idle';
                 }
+            }
+        } else {
+            const isClosed = current === 'closed';
+            next = isClosed ? 'open' : 'closed';
+            if (usesMasterOffDischargeSimulation(problemCode)) {
+                simPhase = next === 'closed' ? 'idle' : 'discharge';
+            } else if (usesSwitchCrossfadeSimulation(problemCode)) {
+                simPhase = 'idle';
+            } else if (usesMasterSwitchSimulation(problemCode)) {
+                simPhase = 'idle';
             } else {
-                const isClosed = current === 'closed';
-                next = isClosed ? 'open' : 'closed';
-                // Master SPST: closing → idle charge/rise; L2.7 opening → discharge fade.
-                if (usesMasterOffDischargeSimulation(problemCode)) {
-                    simPhase = next === 'closed' ? 'idle' : 'discharge';
-                } else if (usesSwitchCrossfadeSimulation(problemCode)) {
-                    simPhase = 'idle';
-                } else if (usesMasterSwitchSimulation(problemCode)) {
-                    // CP.L2.14: toggling master only powers the dim baseline (DC).
-                    simPhase = 'idle';
-                } else {
-                    simPhase = next === 'closed' ? 'pressed' : 'discharge';
+                simPhase = next === 'closed' ? 'pressed' : 'discharge';
+            }
+        }
+
+        const nextStates = {
+            ...switchStatesRef.current,
+            [comp.id]: next,
+        };
+        if (problemCode === 'CP.L4.19' && isSlideSwitchType(comp.type)) {
+            for (const part of placed) {
+                if (isSlideSwitchType(part.type)) {
+                    nextStates[part.id] = next;
                 }
             }
+        }
+        commitSwitchStates(nextStates);
 
-            const nextStates = {
-                ...switchStatesRef.current,
-                [comp.id]: next,
-            };
-            // CP.L4.19: both SPDTs must move together for the voltage doubler.
-            if (
-                problemCode === 'CP.L4.19' &&
-                isSlideSwitchType(comp.type)
-            ) {
-                for (const part of placed) {
-                    if (isSlideSwitchType(part.type)) {
-                        nextStates[part.id] = next;
-                    }
-                }
-            }
-            commitSwitchStates(nextStates);
-
-            if (usesSwitchCrossfadeSimulation(problemCode)) {
-                // Keep the last lit frame until the new .tran arrives — resetting
-                // to frame 0 on the old series snaps the fading LED off instantly.
-                cancelTranAnimation();
-                setLedTranAnimPhase(null);
-                await runLiveSimulation(nextStates, { simPhase });
-                return;
-            }
-
-            await runLiveSimulation(nextStates);
+        if (usesSwitchCrossfadeSimulation(problemCode)) {
+            cancelTranAnimation();
+            setLedTranAnimPhase(null);
+            await runLiveSimulation(nextStates, { simPhase });
             return;
         }
 
-        if (!isMomentaryInteractive(comp.type)) return;
-
-        const wasDischarging = ledTranAnimPhase === 'discharge';
-        cancelTranAnimation();
-        setLedTranAnimPhase(null);
-        if (wasDischarging) {
-            finishTranAnimation();
-        } else {
-            setTranFrame(0);
-        }
-
-        e.currentTarget.setPointerCapture(e.pointerId);
-        heldButtonIdRef.current = comp.id;
-
-        const nextStates = {
-            ...switchStatesRef.current,
-            [comp.id]: 'closed',
-        };
-        commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, { simPhase: 'pressed' });
+        await runLiveSimulation(nextStates);
     };
 
-    const handleInteractivePointerUp = async (comp, e) => {
-        if (!liveSimMode || !isMomentaryInteractive(comp.type)) return;
-        if (heldButtonIdRef.current !== comp.id) return;
-        e.stopPropagation();
-        heldButtonIdRef.current = null;
-
-        try {
-            e.currentTarget.releasePointerCapture(e.pointerId);
-        } catch {
-            /* already released */
-        }
-
-        const nextStates = {
-            ...switchStatesRef.current,
-            [comp.id]: 'open',
-        };
-        commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
+    interactFnsRef.current = {
+        pressMomentary: pressMomentaryButton,
+        releaseMomentary: releaseMomentaryButton,
+        unlockMomentary: unlockMomentaryButton,
+        clickInteract: handleInteractiveClick,
+        runLiveSim: runLiveSimulation,
     };
 
     const handleSubmit = async () => {
@@ -1990,11 +2163,11 @@ export default function CircuitWorkbench({ problemCode }) {
             setMessage(
                 problemCode === 'DM.L4.4'
                     ? lang === 'ka'
-                        ? 'ამ ამოცანაში ავტომატური შემოწმება არ არის — ააწყვეთ საზომი წრედი და გამოიყენეთ სიმულაცია ძაბვების/ნათების შესადარებლად.'
-                        : 'No automated check for this task — build a measurement circuit and use Simulate to compare voltages/brightness.'
+                        ? 'ამ ამოცანაში ავტომატური შემოწმება არ არის — ააწყვეთ საზომი წრედი და შეადარეთ ძაბვები/ნათება.'
+                        : 'No automated check for this task — build a measurement circuit and compare voltages/brightness.'
                     : lang === 'ka'
-                      ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და გამოიყენეთ სიმულაცია.'
-                      : 'No circuit check for this task — rebuild from the picture and use Simulate.'
+                      ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და დააკვირდით სიმულაციას.'
+                      : 'No circuit check for this task — rebuild from the picture and watch the live simulation.'
             );
             return;
         }
@@ -2479,8 +2652,7 @@ export default function CircuitWorkbench({ problemCode }) {
                         {lang === 'ka' ? 'დეტალები' : 'Components'}
                     </h2>
                     <p className={styles.paletteHint}>
-                    {liveSimMode
-                        ? problemCode === 'DI.L3.6'
+                    {problemCode === 'DI.L3.6'
                             ? lang === 'ka'
                                 ? 'სიმულაციის რეჟიმი: ორი კვება სერიულად (შუა წერტილი!); ცოცია შუაში — ორივე LED; ერთი მიმართულებით — სინქრონული ნათება; მეორე მიმართულებით — ერთი სწრაფად ქრება, მეორე ნელა (დიოდი+კონდენსატორი).'
                                 : 'Simulation mode: series the two supplies (shared mid-rail!); pot mid — both LEDs; one way — sync brighten; the other way — one dims with the pot, the other fades slowly (diode+capacitor hold).'
@@ -2609,11 +2781,13 @@ export default function CircuitWorkbench({ problemCode }) {
                                         ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი.'
                                         : 'Simulation mode: turn the switch ON, then press and hold the button.'
                                     : lang === 'ka'
-                                    ? 'დააჭირეთ და არ გაუშვათ ღილაკი.'
-                                    : 'Press and hold the button.'
-                        : lang === 'ka'
-                          ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი დეტალზე — წაშლა'
-                          : '↻ rotate · drag to board · right-click a component to remove it'}
+                                    ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი დეტალზე — წაშლა'
+                                    : '↻ rotate · drag to board · right-click a component to remove it'}
+                    </p>
+                    <p className={styles.paletteHint}>
+                        {lang === 'ka'
+                            ? 'მარჯვენა ღილაკი — დეტალის წაშლა · ღილაკზე ორჯერ დაწკაპუნება — დაჭერილზე ჩაკეტვა; შემდეგი დაწკაპუნება — განბლოკვა'
+                            : 'Right-click — remove a component · Double-click a button — lock it pressed; click again — unlock'}
                     </p>
                     <button
                         type="button"
@@ -2666,6 +2840,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         </div>
                     )}
                     {placed.map((comp, index) => {
+                        // boardLayoutTick: wait for grid mount before measuring pins
+                        void boardLayoutTick;
                         const rotation = comp.rotation ?? 0;
                         const { w, h } = getRotatedFootprint(
                             comp.type,
@@ -2961,30 +3137,7 @@ export default function CircuitWorkbench({ problemCode }) {
                                 className={`${styles.placedPart} ${activeDrag?.id === comp.id ? styles.placedPartDragging : ''} ${interactive ? styles.placedPartInteractive : ''}`}
                                 style={boxStyle}
                                 draggable={false}
-                                onPointerDown={(e) => {
-                                    if (!interactive) return;
-                                    e.stopPropagation();
-                                    handleInteractivePointerDown(comp, e);
-                                }}
-                                onPointerUp={(e) => {
-                                    if (!interactive) return;
-                                    e.stopPropagation();
-                                    if (isMomentaryInteractive(comp.type)) {
-                                        handleInteractivePointerUp(comp, e);
-                                    }
-                                }}
-                                onPointerCancel={(e) => {
-                                    if (!interactive) return;
-                                    e.stopPropagation();
-                                    if (isMomentaryInteractive(comp.type)) {
-                                        handleInteractivePointerUp(comp, e);
-                                    }
-                                }}
                                 onContextMenu={(e) => {
-                                    if (interactive) {
-                                        e.preventDefault();
-                                        return;
-                                    }
                                     removeComponent(comp.id, e);
                                 }}
                                 role={
@@ -3199,20 +3352,6 @@ export default function CircuitWorkbench({ problemCode }) {
 
             <div className={styles.boardBar}>
                 <div className={styles.actionBtns}>
-                    <button
-                        type="button"
-                        className={styles.simulateBtn}
-                        onClick={handleSimulate}
-                        disabled={simulating || submitting || placed.length === 0}
-                    >
-                        {simulating
-                            ? lang === 'ka'
-                                ? 'ითვლება...'
-                                : 'Running...'
-                            : lang === 'ka'
-                              ? 'სიმულაცია'
-                              : 'Simulate'}
-                    </button>
                     {usesCircuitValidation(problemCode) && (
                         <button
                             type="button"

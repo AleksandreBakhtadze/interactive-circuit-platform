@@ -70,6 +70,8 @@ public class CircuitValidationService {
                 .orElseThrow(() -> new RuntimeException(
                         "No validation spec for problem: " + problemCode));
 
+        circuitJson = SpiceGenerator.normalizeSeriesSupplyPolarity(circuitJson);
+
         Map<String, Object> circuit = objectMapper.readValue(circuitJson, Map.class);
         List<Map<String, Object>> components =
                 (List<Map<String, Object>>) circuit.get("components");
@@ -104,6 +106,25 @@ public class CircuitValidationService {
                     .build();
         }
 
+        List<String> floatingSupplies = findFloatingVoltageSources(components);
+        if (!floatingSupplies.isEmpty()) {
+            return ValidationResultDTO.builder()
+                    .passed(false)
+                    .message(
+                            "A power supply is not connected to the rest of the circuit ("
+                                    + String.join(", ", floatingSupplies)
+                                    + "). Move it so its terminals share holes with the loop"
+                                    + " — adjacent rows are not connected unless a part joins them.")
+                    .messageKa(
+                            "კვების წყარო არ არის შეერთებული დანარჩენ წრედთან ("
+                                    + String.join(", ", floatingSupplies)
+                                    + "). გადაადგილეთ ისე, რომ მისი პოლუსები იმავე ხვრელებში"
+                                    + " მოხვდეს, რაშიც წრედის სხვა დეტალები — მეზობელი მწკრივები"
+                                    + " ერთმანეთს არ უკავშირდება.")
+                    .cases(List.of())
+                    .build();
+        }
+
         // Pedagogical "first/second button" is not placement order — try both mappings.
         CaseEvaluation first = evaluateCases(
                 spec, circuitJson, problemCode, roleToId, components, false, false);
@@ -133,6 +154,41 @@ public class CircuitValidationService {
             }
         }
 
+        // Two rotated packs can cancel the loop (~0 A) when node order opposes.
+        // Curriculum challenges mean series-aiding — retry with the second source
+        // reversed (covers switch-between-supplies layouts without a shared rail).
+        if (!chosen.allPassed() && countVoltageSources(components) == 2) {
+            String flippedSupplyJson = flipSecondVoltageSource(circuitJson);
+            CaseEvaluation flipped = evaluateCases(
+                    spec, flippedSupplyJson, problemCode, roleToId, components, false, false);
+            if (!flipped.allPassed() && specUsesTwoButtons(spec)) {
+                flipped = evaluateCases(
+                        spec, flippedSupplyJson, problemCode, roleToId, components, true, false);
+            }
+            if (!flipped.allPassed() && specUsesPotPositions(spec)) {
+                CaseEvaluation flippedPots = evaluateCases(
+                        spec, flippedSupplyJson, problemCode, roleToId, components, false, true);
+                if (flippedPots.allPassed()) {
+                    flipped = flippedPots;
+                } else if (specUsesTwoButtons(spec)) {
+                    CaseEvaluation flippedPotsSwapped = evaluateCases(
+                            spec,
+                            flippedSupplyJson,
+                            problemCode,
+                            roleToId,
+                            components,
+                            true,
+                            true);
+                    if (flippedPotsSwapped.allPassed()) {
+                        flipped = flippedPotsSwapped;
+                    }
+                }
+            }
+            if (flipped.allPassed()) {
+                chosen = flipped;
+            }
+        }
+
         String failDetailEn = summarizeFailedCases(chosen.caseResults(), false);
         String failDetailKa = summarizeFailedCases(chosen.caseResults(), true);
 
@@ -151,6 +207,43 @@ public class CircuitValidationService {
     }
 
     private record CaseEvaluation(boolean allPassed, List<CaseResultDTO> caseResults) {}
+
+    private int countVoltageSources(List<Map<String, Object>> components) {
+        int count = 0;
+        for (Map<String, Object> component : components) {
+            if ("voltage".equals(component.get("type"))) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String flipSecondVoltageSource(String circuitJson) throws Exception {
+        Map<String, Object> circuit = objectMapper.readValue(circuitJson, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) circuit.getOrDefault("components", List.of());
+        int voltageIndex = 0;
+        for (Map<String, Object> component : components) {
+            if (!"voltage".equals(component.get("type"))) {
+                continue;
+            }
+            voltageIndex++;
+            if (voltageIndex != 2) {
+                continue;
+            }
+            Object rawNodes = component.get("nodes");
+            if (rawNodes instanceof List<?> nodes && nodes.size() >= 2) {
+                List<Object> reversed = new ArrayList<>(nodes);
+                Object first = reversed.get(0);
+                reversed.set(0, reversed.get(1));
+                reversed.set(1, first);
+                component.put("nodes", reversed);
+            }
+            break;
+        }
+        return objectMapper.writeValueAsString(circuit);
+    }
 
     private boolean specUsesTwoButtons(ProblemValidationSpec spec) {
         boolean has1 = false;
@@ -442,6 +535,60 @@ public class CircuitValidationService {
             }
         }
         return missing;
+    }
+
+    /**
+     * Voltage sources whose terminals never appear on any other part — usually the pack
+     * was placed on an adjacent row that looks touching but does not share holes.
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> findFloatingVoltageSources(List<Map<String, Object>> components) {
+        Map<String, Integer> nodeUseCount = new HashMap<>();
+        for (Map<String, Object> comp : components) {
+            Object raw = comp.get("nodes");
+            if (!(raw instanceof List<?> nodes)) {
+                continue;
+            }
+            Set<String> seen = new HashSet<>();
+            for (Object nodeObj : nodes) {
+                if (nodeObj == null) {
+                    continue;
+                }
+                String node = String.valueOf(nodeObj);
+                if (!seen.add(node)) {
+                    continue;
+                }
+                nodeUseCount.merge(node, 1, Integer::sum);
+            }
+        }
+
+        List<String> floating = new ArrayList<>();
+        for (Map<String, Object> comp : components) {
+            if (!"voltage".equals(comp.get("type"))) {
+                continue;
+            }
+            Object raw = comp.get("nodes");
+            if (!(raw instanceof List<?> nodes) || nodes.size() < 2) {
+                continue;
+            }
+            boolean shared = false;
+            for (Object nodeObj : nodes) {
+                if (nodeObj == null) {
+                    continue;
+                }
+                String node = String.valueOf(nodeObj);
+                // Ground "0" is always part of the circuit reference.
+                if ("0".equals(node) || nodeUseCount.getOrDefault(node, 0) > 1) {
+                    shared = true;
+                    break;
+                }
+            }
+            if (!shared) {
+                String role = (String) comp.get("role");
+                floating.add(role != null ? role : String.valueOf(comp.get("id")));
+            }
+        }
+        return floating;
     }
 
     /**

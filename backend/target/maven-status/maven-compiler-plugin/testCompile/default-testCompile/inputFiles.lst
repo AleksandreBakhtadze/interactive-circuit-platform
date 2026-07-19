@@ -3,6 +3,7 @@
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/TransistorValidationTest.java
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/DiodeValidationTest.java
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/StarterValidationTest.java
+/home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/StL24LayoutTest.java
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/SlideSwitchValidationTest.java
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/DiL36SimReproTest.java
 /home/lela/interactive-circuit-platform/backend/src/test/java/com/example/circuit_simulator/TranSimulationTest.java

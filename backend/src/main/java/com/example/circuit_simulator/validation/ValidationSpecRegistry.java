@@ -177,10 +177,10 @@ public class ValidationSpecRegistry {
     }
 
     /**
-     * DI.L1.4 — two red LEDs, one resistor. The weaker LED sits behind two
-     * series diodes (extra Vf drop) so it glows dimmer; a button parallel to
-     * the diodes bypasses them, raising the weak LED to full brightness so both
-     * read as fully lit. No supply mid-tap is used.
+     * DI.L1.4 — two red LEDs. Extra series diodes drop voltage on one LED so it
+     * is dimmer; a button parallel to those diodes bypasses them and the two
+     * LEDs equalize. Placement order of the LEDs must not matter.
+     * No supply mid-tap is used as a load point.
      */
     private static ProblemValidationSpec diL14() {
         return new ProblemValidationSpec(
@@ -203,13 +203,14 @@ public class ValidationSpecRegistry {
                                 Map.of("switch", "closed", "button_1", "open"),
                                 List.of(
                                         new ValidationCheck(
-                                                "led_1", "forward_current", "gt", 0.0005),
+                                                "led_1", "forward_current", "gt", 0.0003),
                                         new ValidationCheck(
-                                                "led_2", "forward_current", "gt", 0.0005),
+                                                "led_2", "forward_current", "gt", 0.0003),
                                         new ValidationCheck(
-                                                "led_1", "current_ratio", "gt", 1.3),
+                                                "leds", "current_ratio", "gt", 1.3),
+                                        // Remember the weaker LED current for the pressed case.
                                         new ValidationCheck(
-                                                "led_1", "led_min_forward_current", "gt", 0.0002)
+                                                "leds", "led_min_forward_current", "gt", 0.0002)
                                 )
                         ),
                         new ValidationCase(
@@ -221,11 +222,15 @@ public class ValidationSpecRegistry {
                                                 "led_1", "forward_current", "gt", 0.003),
                                         new ValidationCheck(
                                                 "led_2", "forward_current", "gt", 0.003),
+                                        // Weak LED must brighten once diodes are bypassed.
                                         new ValidationCheck(
-                                                "led_2",
-                                                "forward_current",
+                                                "leds",
+                                                "led_min_forward_current",
                                                 "gt_ref:switch_on_button_open_unequal",
-                                                1.3)
+                                                1.3),
+                                        // Currents should be close (equalized), not still 5× apart.
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "lt", 1.5)
                                 )
                         )
                 )

@@ -377,6 +377,7 @@ function getPartStyleFromLayout(stageEl, row, col, w, h, type) {
 }
 
 export function getPartStyle(gridEl, row, col, w, h, type, rotation = 0) {
+    if (!gridEl) return null;
     const rot = normalizeRotation(rotation);
     const stage = getBoardStage(gridEl);
     if (stage) {

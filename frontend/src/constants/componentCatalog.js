@@ -479,7 +479,7 @@ export function isResistorGroupItem(item) {
 export function getResistorMaxCount(palette) {
     const group = palette?.find(isResistorGroupItem);
     if (!group) return 0;
-    // Prefer explicit total cap (e.g. SW.L2.3: only one resistor).
+    // Prefer explicit total cap (e.g. DI.L1.4 / SW.L2.3: only one resistor).
     if (group.maxCount != null) return group.maxCount;
     return group.maxCountPerValue ?? 10;
 }
@@ -3384,7 +3384,8 @@ export const DI_L1_4_PALETTE = [
     },
     {
         ...RESISTOR_GROUP_PALETTE_ITEM,
-        maxCountPerValue: 1,
+        // Challenge text: მხოლოდ ერთი რეზისტორი — one resistor total, any value.
+        maxCount: 1,
     },
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];

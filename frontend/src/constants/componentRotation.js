@@ -5,7 +5,6 @@ import {
     getSnapOffsets,
     getTriangleBodyOffsets,
     getTriangleBodyRotationFootprint,
-    isTransistorType,
     usesSnapOnlyCells,
 } from './componentCatalog';
 
@@ -76,22 +75,6 @@ export function getTriangleCollisionOffsets(type, rotation = 0) {
         if (!snapKeys.has(key)) {
             snapKeys.add(key);
             offsets.push(g);
-        }
-    }
-
-    if (isTransistorType(type)) {
-        const fp = getRotatedFootprint(type, rotation);
-        const interior = [];
-        for (let dr = 0; dr < fp.h; dr++) {
-            for (let dc = 0; dc < fp.w; dc++) {
-                const key = `${dr},${dc}`;
-                if (!snapKeys.has(key)) {
-                    interior.push({ dr, dc });
-                }
-            }
-        }
-        if (interior.length === 1) {
-            offsets.push(interior[0]);
         }
     }
 

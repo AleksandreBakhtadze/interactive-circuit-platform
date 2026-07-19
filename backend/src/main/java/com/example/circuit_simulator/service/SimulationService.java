@@ -37,9 +37,17 @@ public class SimulationService {
     }
 
     public String simulate(String circuitJson, String problemCode, String simPhase) {
+        return simulate(circuitJson, problemCode, simPhase, null);
+    }
+
+    public String simulate(
+            String circuitJson,
+            String problemCode,
+            String simPhase,
+            Map<String, Double> priorPotPositions) {
         try {
             return objectMapper.writeValueAsString(
-                    simulateToMap(circuitJson, problemCode, simPhase));
+                    simulateToMap(circuitJson, problemCode, simPhase, priorPotPositions));
         } catch (Exception e) {
             return "{ \"error\": \"" + escapeJson(e.getMessage()) + "\" }";
         }
@@ -47,19 +55,29 @@ public class SimulationService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(String circuitJson) throws Exception {
-        return simulateToMap(circuitJson, null, null);
+        return simulateToMap(circuitJson, null, null, null);
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(String circuitJson, String problemCode)
             throws Exception {
-        return simulateToMap(circuitJson, problemCode, null);
+        return simulateToMap(circuitJson, problemCode, null, null);
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(
             String circuitJson, String problemCode, String simPhaseName) throws Exception {
+        return simulateToMap(circuitJson, problemCode, simPhaseName, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> simulateToMap(
+            String circuitJson,
+            String problemCode,
+            String simPhaseName,
+            Map<String, Double> priorPotPositions) throws Exception {
         try {
+            SpiceGenerator.assertSimulatableSupplies(circuitJson);
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);
                 if (AnalysisModes.usesSwitchCrossfade(problemCode)) {
@@ -93,7 +111,9 @@ public class SimulationService {
                     case pressed -> AnalysisModes.usesSlowCharge(problemCode)
                             ? runChargeTranToMap(circuitJson)
                             : runDcToMap(circuitJson);
-                    case discharge -> runDischargeTranToMap(circuitJson);
+                    case discharge -> AnalysisModes.usesPotStepDischarge(problemCode)
+                            ? runPotStepDischargeTranToMap(circuitJson, priorPotPositions)
+                            : runDischargeTranToMap(circuitJson);
                 };
             }
 
@@ -132,6 +152,27 @@ public class SimulationService {
     private Map<String, Object> runDischargeTranToMap(String circuitJson) throws Exception {
         String chargedJson = SpiceGenerator.applySwitchStates(
                 circuitJson, Map.of("button_1", "closed"));
+        Map<String, Double> chargedNodes = runDcAndParse(chargedJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateDischargeTranSpice(
+                        circuitJson,
+                        chargedNodes,
+                        TranScenario.discharge()));
+    }
+
+    /**
+     * DI.L3.6: capacitor charged at a prior pot setting, then .tran at the current
+     * (usually dimmer) pot so one LED can hold while the other extinguishes.
+     * Live UI passes {@code priorPotPositions}; validation omits them and uses the
+     * inverted extreme (bright → dim).
+     */
+    private Map<String, Object> runPotStepDischargeTranToMap(
+            String circuitJson, Map<String, Double> priorPotPositions) throws Exception {
+        String chargedJson =
+                priorPotPositions != null && !priorPotPositions.isEmpty()
+                        ? SpiceGenerator.applyPotPositions(circuitJson, priorPotPositions)
+                        : SpiceGenerator.invertAllPotPositions(circuitJson);
         Map<String, Double> chargedNodes = runDcAndParse(chargedJson);
         return simulateTranToMap(
                 circuitJson,

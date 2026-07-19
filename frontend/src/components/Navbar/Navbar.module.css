@@ -63,6 +63,48 @@
   color: #60c5f1;
 }
 
+.btnGhost {
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btnGhost:hover {
+  color: #60c5f1;
+  border-color: rgba(96, 197, 241, 0.35);
+}
+
+.userChip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-bright);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.userChip:hover,
+.userChipActive {
+  border-color: #60c5f1;
+  color: #60c5f1;
+}
+
+.userName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .btnPrimary {
   font-size: 0.9rem;
   font-weight: 800;

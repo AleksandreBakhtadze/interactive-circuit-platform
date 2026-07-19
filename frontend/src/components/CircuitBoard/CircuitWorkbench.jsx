@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { simulateCircuit, validateCircuit } from '../../api';
 import { useLang } from '../../context/LangContext';
+import { useAuth } from '../../context/AuthContext';
 import { getComponentImage } from '../../constants/componentAssets';
 import {
     CAPACITOR_SPECS,
@@ -97,8 +98,6 @@ import {
     parseDragPayload,
     partStyleToCss,
     pointerToPin,
-    setDragPayload,
-    setTransparentDragGhost,
 } from './boardPlacement';
 import styles from './CircuitWorkbench.module.css';
 
@@ -358,6 +357,24 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'DM.L4.4') {
             return 'განათავსეთ: 2 კვების წყარო, ძრავი (და საზომი დეტალები სურვილისამებრ)';
         }
+        if (problemCode === 'DI.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, დიოდი, ნათურა';
+        }
+        if (problemCode === 'DI.L2.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2 დიოდი, ნათურა';
+        }
+        if (problemCode === 'DI.L1.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2 დიოდი, 2 წითელი LED, 1 რეზისტორი';
+        }
+        if (problemCode === 'DI.L3.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ღილაკი, დიოდი, ძრავი (და ნაცნობი დეტალები სურვილისამებრ)';
+        }
+        if (problemCode === 'DI.L3.6') {
+            return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, დიოდი, 2 წითელი LED, კონდენსატორი, 2 რეზისტორი';
+        }
+        if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN Q1, ძრავი, რეზისტორი';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -591,18 +608,40 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'DM.L4.4') {
         return 'Place: 2 power supplies, motor (plus measurement parts as needed)';
     }
+    if (problemCode === 'DI.L1.1') {
+        return 'Place: 2 power supplies, button, diode, lamp';
+    }
+    if (problemCode === 'DI.L2.2') {
+        return 'Place: 2 power supplies, switch, button, 2 diodes, lamp';
+    }
+    if (problemCode === 'DI.L1.4') {
+        return 'Place: 2 power supplies, switch, button, 2 diodes, 2 red LEDs, 1 resistor';
+    }
+    if (problemCode === 'DI.L3.5') {
+        return 'Place: 2 power supplies, button, diode, motor (plus familiar parts as needed)';
+    }
+    if (problemCode === 'DI.L3.6') {
+        return 'Place: 2 power supplies, variable resistor, diode, 2 red LEDs, capacitor, 2 resistors';
+    }
+    if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
+        return 'Place: 2 power supplies, switch, variable resistor, NPN Q1, motor, resistor';
+    }
     return 'Place: power supply, button, lamp';
 }
 
 export default function CircuitWorkbench({ problemCode }) {
     const { lang } = useLang();
+    const { user } = useAuth();
     const palette = getPaletteForProblem(problemCode);
     const gridRef = useRef(null);
     const heldButtonIdRef = useRef(null);
     const switchStatesRef = useRef({});
     const potPositionsRef = useRef({});
     const potSimTimerRef = useRef(null);
+    /** DI.L3.6: last pot position that kicked off a live sim (for prior-IC discharge steps). */
+    const di36LastSimPotRef = useRef({});
     const moveSessionRef = useRef(null);
+    const palettePointerSessionRef = useRef(null);
     const boardHostRef = useRef(null);
 
     const [placed, setPlaced] = useState([]);
@@ -702,7 +741,8 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'CP.L2.14' ||
             problemCode === 'CP.L2.15' ||
             problemCode === 'CP.L2.16' ||
-            problemCode === 'CP.L4.19'
+            problemCode === 'CP.L4.19' ||
+            problemCode === 'DI.L3.6'
         ) {
             setCapacitorKey('470uf');
         } else {
@@ -720,7 +760,10 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'VR.L2.7' ||
             problemCode === 'VR.L2.8' ||
             problemCode === 'VR.L2.9' ||
-            problemCode === 'VR.L1.10'
+            problemCode === 'VR.L1.10' ||
+            problemCode === 'DI.L3.6' ||
+            problemCode === 'TR.L2.10' ||
+            problemCode === 'TR.L2.11'
         ) {
             setResistorKey('1ko');
         } else if (
@@ -796,6 +839,7 @@ export default function CircuitWorkbench({ problemCode }) {
         setTranFrameIndex(0);
         pressedLedCurrentMaxRef.current = null;
         baselineLedCurrentRef.current = null;
+        di36LastSimPotRef.current = {};
     }, [placed]);
     const connectorGroup = getConnectorGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
@@ -872,7 +916,7 @@ export default function CircuitWorkbench({ problemCode }) {
         }
         const tKey = parseTransistorKey(type);
         if (tKey !== null) {
-            const max = getTransistorMaxCount(palette);
+            const max = getTransistorMaxCount(palette, type);
             return max - countPlacedByType(placed, type);
         }
         const def = palette?.find((p) => p.type === type);
@@ -938,7 +982,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 return false;
             }
         } else if (parseTransistorKey(type) !== null) {
-            const max = getTransistorMaxCount(palette);
+            const max = getTransistorMaxCount(palette, type);
             if (used >= max && !ignoreId) {
                 setMessage(
                     lang === 'ka'
@@ -968,17 +1012,6 @@ export default function CircuitWorkbench({ problemCode }) {
 
         setMessage('');
         return true;
-    };
-
-    const handlePaletteDragStart = (e, type) => {
-        if (remaining(type) <= 0) {
-            e.preventDefault();
-            return;
-        }
-        const rotation = getPaletteRotation(type);
-        setActiveDrag({ type, rotation, grabDr: 0, grabDc: 0 });
-        setDragPayload(e.dataTransfer, { source: 'palette', type, rotation });
-        setTransparentDragGhost(e.dataTransfer);
     };
 
     const commitPlacedMove = (id, type, rotation, rawPin, grabDr = 0, grabDc = 0) => {
@@ -1014,8 +1047,23 @@ export default function CircuitWorkbench({ problemCode }) {
         );
     };
 
-    const endMoveSession = () => {
+    /** Clear stuck pointer-drag without setState (safe during HTML5 dragstart). */
+    const clearMoveSessionRef = () => {
+        const session = moveSessionRef.current;
+        if (!session) return;
+        const host = boardHostRef.current;
+        if (host && session.pointerId != null) {
+            try {
+                host.releasePointerCapture(session.pointerId);
+            } catch {
+                /* already released */
+            }
+        }
         moveSessionRef.current = null;
+    };
+
+    const endMoveSession = () => {
+        clearMoveSessionRef();
         setActiveDrag(null);
         setHoverPin(null);
     };
@@ -1039,6 +1087,7 @@ export default function CircuitWorkbench({ problemCode }) {
             dragging: false,
             grabDr,
             grabDc,
+            pointerId,
         };
 
         boardHostRef.current?.setPointerCapture(pointerId);
@@ -1133,15 +1182,112 @@ export default function CircuitWorkbench({ problemCode }) {
         finishMoveSession(e);
     };
 
-    const handleDragEnd = () => {
-        setActiveDrag(null);
+    const handlePalettePointerDown = (e, type, left) => {
+        if (
+            left <= 0 ||
+            e.button !== 0 ||
+            e.target.closest?.('button, input, select')
+        ) {
+            return;
+        }
+
+        e.preventDefault();
+        clearMoveSessionRef();
+        const rotation = getPaletteRotation(type);
+        palettePointerSessionRef.current = {
+            pointerId: e.pointerId,
+            type,
+            rotation,
+            target: e.currentTarget,
+        };
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setActiveDrag({ type, rotation, grabDr: 0, grabDc: 0 });
         setHoverPin(null);
     };
 
+    const palettePointerToPin = (clientX, clientY) => {
+        const grid = gridRef.current;
+        if (!grid) return null;
+        const rect = grid.getBoundingClientRect();
+        if (
+            clientX < rect.left ||
+            clientX > rect.right ||
+            clientY < rect.top ||
+            clientY > rect.bottom
+        ) {
+            return null;
+        }
+        return pointerToPin(clientX, clientY, grid);
+    };
+
+    const handlePalettePointerMove = (e) => {
+        const session = palettePointerSessionRef.current;
+        if (!session || session.pointerId !== e.pointerId) return;
+        e.preventDefault();
+        setHoverPin(palettePointerToPin(e.clientX, e.clientY));
+    };
+
+    const finishPalettePointerDrag = (e, cancelled = false) => {
+        const session = palettePointerSessionRef.current;
+        if (!session || session.pointerId !== e.pointerId) return;
+
+        try {
+            session.target?.releasePointerCapture(e.pointerId);
+        } catch {
+            /* already released */
+        }
+        palettePointerSessionRef.current = null;
+        setHoverPin(null);
+        setActiveDrag(null);
+
+        if (cancelled) return;
+        const pin = palettePointerToPin(e.clientX, e.clientY);
+        if (!pin) return;
+
+        const anchor = alignPlacementAnchor(
+            session.type,
+            pin.row,
+            pin.col,
+            session.rotation
+        );
+        if (!anchor) return;
+        if (
+            !tryPlace(
+                session.type,
+                anchor.row,
+                anchor.col,
+                session.rotation
+            )
+        ) {
+            return;
+        }
+
+        setPlaced((prev) => [
+            ...prev,
+            {
+                id: createComponentId(),
+                type: session.type,
+                row: anchor.row,
+                col: anchor.col,
+                rotation: session.rotation,
+            },
+        ]);
+    };
+
+    const palettePointerHandlers = (type, left) => ({
+        onPointerDown: (e) => handlePalettePointerDown(e, type, left),
+        onPointerMove: handlePalettePointerMove,
+        onPointerUp: (e) => finishPalettePointerDrag(e),
+        onPointerCancel: (e) => finishPalettePointerDrag(e, true),
+    });
+
     const handleBoardDragOver = (e) => {
-        if (moveSessionRef.current) return;
+        // Must always preventDefault or the browser rejects the drop.
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        if (moveSessionRef.current) {
+            clearMoveSessionRef();
+        }
         setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
     };
 
@@ -1152,8 +1298,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const handleBoardDrop = (e) => {
         e.preventDefault();
         if (moveSessionRef.current) {
-            endMoveSession();
-            return;
+            clearMoveSessionRef();
         }
 
         const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
@@ -1195,6 +1340,17 @@ export default function CircuitWorkbench({ problemCode }) {
         e.stopPropagation();
         setPlaced((prev) => prev.filter((p) => p.id !== id));
         setMessage('');
+    };
+
+    const clearBoard = () => {
+        if (placed.length === 0) return;
+        potPositionsRef.current = {};
+        setPotPositions({});
+        setPlaced([]);
+        setMessage('');
+        setSubmitStatus(null);
+        setHoverPin(null);
+        setActiveDrag(null);
     };
 
     useEffect(() => {
@@ -1360,6 +1516,7 @@ export default function CircuitWorkbench({ problemCode }) {
         async (states, options = {}) => {
             const isLive = options.live ?? liveSimMode;
             const simPhase = options.simPhase ?? 'idle';
+            const priorPotPositions = options.priorPotPositions;
             const circuitJson = buildCircuitJson(
                 placed,
                 states,
@@ -1381,7 +1538,12 @@ export default function CircuitWorkbench({ problemCode }) {
             try {
                 const phase =
                     usesTransientSimulation(problemCode) ? simPhase : undefined;
-                const raw = await simulateCircuit(circuitJson, problemCode, phase);
+                const raw = await simulateCircuit(
+                    circuitJson,
+                    problemCode,
+                    phase,
+                    priorPotPositions
+                );
                 const result = normalizeSimulationResults(raw);
 
                 if (simulationHasError(result)) {
@@ -1456,7 +1618,8 @@ export default function CircuitWorkbench({ problemCode }) {
                                 (parallelDip && animPhase === 'charge') ||
                                 problemCode === 'CP.L2.14' ||
                                 problemCode === 'CP.L2.15' ||
-                                problemCode === 'CP.L2.16',
+                                problemCode === 'CP.L2.16' ||
+                                problemCode === 'DI.L3.6',
                             fullDuration:
                                 (crossfade &&
                                     usesMasterSwitchSimulation(problemCode) &&
@@ -1464,8 +1627,10 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'CP.L2.14' ||
                                 problemCode === 'CP.L2.15' ||
                                 problemCode === 'CP.L2.16',
-                            // CP.L2.7: fade then rise in ~2–2.5 s (not instant, not 4 s).
-                            readableCrossfade: parallelPolarity,
+                            // DI.L3.6: ~2–2.5 s fade so live pot-drag steps stay readable
+                            // when each move cancels/restarts the prior .tran.
+                            readableCrossfade:
+                                parallelPolarity || problemCode === 'DI.L3.6',
                         });
                     } else {
                         cancelTranAnimation();
@@ -1611,18 +1776,59 @@ export default function CircuitWorkbench({ problemCode }) {
         commitSwitchStates(initial);
         setLiveSimMode(true);
         setMessage('');
+        di36LastSimPotRef.current = { ...potPositionsRef.current };
         await runLiveSimulation(initial, { live: true, simPhase: 'idle' });
     };
 
     /** Potentiometer dial: update A–B share (0…1) and re-sim while live. */
     const handlePotPositionChange = useCallback(
         (compId, rawValue, { flush = false } = {}) => {
-            commitPotPosition(compId, Number(rawValue) / 100);
+            const next = Number(rawValue) / 100;
+            commitPotPosition(compId, next);
             if (!liveSimModeRef.current) return;
 
             if (potSimTimerRef.current) {
                 clearTimeout(potSimTimerRef.current);
                 potSimTimerRef.current = null;
+            }
+
+            // DI.L3.6: live updates while dragging (like VR). Dim → prior-pot
+            // .tran so the hold LED fades; brighten → sync DC.
+            if (problemCode === 'DI.L3.6') {
+                const run = () => {
+                    potSimTimerRef.current = null;
+                    if (!liveSimModeRef.current) return;
+                    const current =
+                        potPositionsRef.current[compId] ?? next;
+                    const prior =
+                        di36LastSimPotRef.current[compId] ??
+                        DEFAULT_POT_POSITION;
+                    const dimming = current > prior + 0.015;
+                    di36LastSimPotRef.current = {
+                        ...di36LastSimPotRef.current,
+                        [compId]: current,
+                    };
+                    if (dimming) {
+                        runLiveSimulation(switchStatesRef.current, {
+                            simPhase: 'discharge',
+                            priorPotPositions: {
+                                variable_resistor: prior,
+                            },
+                        });
+                    } else {
+                        runLiveSimulation(switchStatesRef.current, {
+                            simPhase: 'idle',
+                        });
+                    }
+                };
+
+                if (flush) {
+                    run();
+                } else {
+                    // Slightly slower than VR so each discharge .tran can start fading.
+                    potSimTimerRef.current = setTimeout(run, 140);
+                }
+                return;
             }
 
             const run = () => {
@@ -1637,7 +1843,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 potSimTimerRef.current = setTimeout(run, 120);
             }
         },
-        [commitPotPosition, runLiveSimulation]
+        [commitPotPosition, problemCode, runLiveSimulation]
     );
 
     /** Momentary button: closed only while pointer is held down. */
@@ -1810,14 +2016,25 @@ export default function CircuitWorkbench({ problemCode }) {
         setMessage('');
 
         try {
-            const result = await validateCircuit(problemCode, circuitJson);
+            const result = await validateCircuit(
+                problemCode,
+                circuitJson,
+                user?.id ?? null
+            );
 
             setSubmitStatus(result.passed ? 'pass' : 'fail');
-            setMessage(
+            let msg =
                 lang === 'ka'
                     ? result.messageKa ?? result.message
-                    : result.message
-            );
+                    : result.message;
+            if (result.passed && result.solved) {
+                msg =
+                    (msg ? `${msg}\n` : '') +
+                    (lang === 'ka'
+                        ? 'პროგრესი შენახულია — ამოცანა მონიშნულია როგორც ამოხსნილი.'
+                        : 'Progress saved — this challenge is marked as solved.');
+            }
+            setMessage(msg);
             queueMicrotask(() => {
                 messageRef.current?.scrollIntoView({
                     behavior: 'smooth',
@@ -1874,15 +2091,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div key={item.type} className={styles.paletteCard}>
                 <div
                     className={`${styles.paletteItem} ${styles.paletteItemStandard} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, item.type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(item.type, left)}
                 >
                     <span className={styles.paletteLabel}>
                         {lang === 'ka' ? item.labelKa : item.labelEn}
@@ -1920,15 +2130,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>
                 <div
                     className={`${styles.paletteItem} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(type, left)}
                 >
                     <span className={styles.paletteLabel}>{label}</span>
 
@@ -1987,15 +2190,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>
                 <div
                     className={`${styles.paletteItem} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(type, left)}
                 >
                     <span className={styles.paletteLabel}>{label}</span>
 
@@ -2054,15 +2250,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>
                 <div
                     className={`${styles.paletteItem} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(type, left)}
                 >
                     <span className={styles.paletteLabel}>{label}</span>
 
@@ -2129,15 +2318,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={`${styles.paletteCard} ${styles.ledCard}`}>
                 <div
                     className={`${styles.paletteItem} ${styles.paletteItemStandard} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(type, left)}
                 >
                     <span className={styles.paletteLabel}>{label}</span>
 
@@ -2202,15 +2384,8 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>
                 <div
                     className={`${styles.paletteItem} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    draggable={left > 0}
-                    onDragStart={(e) => {
-                        if (left <= 0) {
-                            e.preventDefault();
-                            return;
-                        }
-                        handlePaletteDragStart(e, type);
-                    }}
-                    onDragEnd={handleDragEnd}
+                    draggable={false}
+                    {...palettePointerHandlers(type, left)}
                 >
                     <span className={styles.paletteLabel}>{label}</span>
 
@@ -2305,7 +2480,19 @@ export default function CircuitWorkbench({ problemCode }) {
                     </h2>
                     <p className={styles.paletteHint}>
                     {liveSimMode
-                        ? problemCode === 'VR.L1.1' ||
+                        ? problemCode === 'DI.L3.6'
+                            ? lang === 'ka'
+                                ? 'სიმულაციის რეჟიმი: ორი კვება სერიულად (შუა წერტილი!); ცოცია შუაში — ორივე LED; ერთი მიმართულებით — სინქრონული ნათება; მეორე მიმართულებით — ერთი სწრაფად ქრება, მეორე ნელა (დიოდი+კონდენსატორი).'
+                                : 'Simulation mode: series the two supplies (shared mid-rail!); pot mid — both LEDs; one way — sync brighten; the other way — one dims with the pot, the other fades slowly (diode+capacitor hold).'
+                          : problemCode === 'TR.L2.10'
+                            ? lang === 'ka'
+                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია შორიდან მოძრაობით ძრავი ერთბაშად ირთვება (კოლექტორული ჩართვა).'
+                                : 'Simulation mode: switch ON — moving the pot turns the motor on abruptly (collector circuit).'
+                          : problemCode === 'TR.L2.11'
+                            ? lang === 'ka'
+                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოციას გადაადგილებით ძრავი თანდათანობით აჩქარდება (ემიტერული ჩართვა).'
+                                : 'Simulation mode: switch ON — moving the pot spins the motor gradually (emitter follower).'
+                          : problemCode === 'VR.L1.1' ||
                           problemCode === 'VR.L1.2' ||
                           problemCode === 'VR.L1.3' ||
                           problemCode === 'VR.L1.4' ||
@@ -2425,9 +2612,17 @@ export default function CircuitWorkbench({ problemCode }) {
                                     ? 'დააჭირეთ და არ გაუშვათ ღილაკი.'
                                     : 'Press and hold the button.'
                         : lang === 'ka'
-                          ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი — წაშლა'
-                          : '↻ rotate · drag to board · right-click to remove'}
+                          ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი დეტალზე — წაშლა'
+                          : '↻ rotate · drag to board · right-click a component to remove it'}
                     </p>
+                    <button
+                        type="button"
+                        className={styles.clearBtn}
+                        onClick={clearBoard}
+                        disabled={simulating || submitting || placed.length === 0}
+                    >
+                        {lang === 'ka' ? 'დაფის გასუფთავება' : 'Clear board'}
+                    </button>
                 </div>
                 <div className={styles.paletteItems}>
                     {standardPalette.map(renderPaletteCard)}
@@ -2510,7 +2705,8 @@ export default function CircuitWorkbench({ problemCode }) {
                             isLedType(comp.type) &&
                             isTransientResult(simResults);
                         const dualLedRcFade =
-                            problemCode === 'CP.L2.15' &&
+                            (problemCode === 'CP.L2.15' ||
+                                problemCode === 'DI.L3.6') &&
                             isLedType(comp.type) &&
                             isTransientResult(simResults);
                         const gradualBrighten =

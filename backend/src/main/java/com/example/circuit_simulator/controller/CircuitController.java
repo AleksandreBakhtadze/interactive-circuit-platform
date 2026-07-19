@@ -6,6 +6,7 @@ import com.example.circuit_simulator.dto.ValidationResultDTO;
 import com.example.circuit_simulator.model.Circuit;
 import com.example.circuit_simulator.service.CircuitService;
 import com.example.circuit_simulator.service.CircuitValidationService;
+import com.example.circuit_simulator.service.ProblemCompletionService;
 import com.example.circuit_simulator.service.SimulationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class CircuitController {
     private final CircuitService circuitService;
     private final SimulationService simulationService;
     private final CircuitValidationService validationService;
+    private final ProblemCompletionService completionService;
     private final ObjectMapper objectMapper;
 
     @GetMapping
@@ -36,7 +38,10 @@ public class CircuitController {
     public Circuit simulate(@RequestBody CircuitDTO dto) throws Exception {
         // Run simulation
         String result = simulationService.simulate(
-                dto.getCircuitData(), dto.getProblemCode(), dto.getSimPhase());
+                dto.getCircuitData(),
+                dto.getProblemCode(),
+                dto.getSimPhase(),
+                dto.getPriorPotPositions());
 
         // Create circuit entity
         Circuit circuit = Circuit.builder()
@@ -54,9 +59,17 @@ public class CircuitController {
     @PostMapping("/validate")
     public ValidationResultDTO validate(@RequestBody ValidateCircuitRequest request)
             throws Exception {
-        return validationService.validate(
+        ValidationResultDTO result = validationService.validate(
                 request.getProblemCode(),
                 request.getCircuitData());
+
+        if (result.isPassed() && request.getUserId() != null) {
+            boolean recorded = completionService.markSolved(
+                    request.getUserId(), request.getProblemCode());
+            result.setSolved(recorded);
+        }
+
+        return result;
     }
 
     @GetMapping("/{id}")

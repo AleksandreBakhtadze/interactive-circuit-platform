@@ -161,6 +161,7 @@ export function alignPlacementAnchor(type, hoverRow, hoverCol, rotation = 0) {
         }
     }
 
+    // Transistors / apex triangles: only place when the cursor is on a real pin.
     if (isThreePinTriangleType(type)) {
         return null;
     }

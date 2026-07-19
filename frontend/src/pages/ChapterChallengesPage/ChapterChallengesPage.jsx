@@ -1,12 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { problemToSlug } from '../../utils/problemSlug';
 import { useLang } from '../../context/LangContext';
+import { useAuth } from '../../context/AuthContext';
 import { API_BASE } from '../../api';
+import { ChapterIcon, getChapterMeta } from '../../constants/chapterMeta';
 import styles from './ChapterChallengesPage.module.css';
 
-async function fetchChapterDetail(chapterCode) {
-    const res = await fetch(`${API_BASE}/chapters/${encodeURIComponent(chapterCode)}/detail`);
+async function fetchChapterDetail(chapterCode, userId) {
+    const qs = userId != null ? `?userId=${encodeURIComponent(userId)}` : '';
+    const res = await fetch(
+        `${API_BASE}/chapters/${encodeURIComponent(chapterCode)}/detail${qs}`
+    );
     if (!res.ok) {
         const err = new Error('request_failed');
         err.status = res.status;
@@ -19,6 +24,7 @@ export default function ChapterChallengesPage() {
     const { chapterCode } = useParams();
     const navigate = useNavigate();
     const { lang } = useLang();
+    const { user } = useAuth();
     const [chapter, setChapter] = useState(null);
     const [problems, setProblems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,7 +36,7 @@ export default function ChapterChallengesPage() {
         setLoading(true);
         setError('');
 
-        fetchChapterDetail(chapterCode)
+        fetchChapterDetail(chapterCode, user?.id)
             .then((data) => {
                 setChapter(data.chapter);
                 setProblems(data.problems ?? []);
@@ -40,18 +46,33 @@ export default function ChapterChallengesPage() {
                 if (err.status === 404) {
                     setError(lang === 'ka' ? 'თავი ვერ მოიძებნა' : 'Chapter not found');
                 } else if (err.message === 'request_failed') {
-                    setError(lang === 'ka' ? 'სერვერმა მოთხოვნა უარყო' : 'Server rejected the request');
+                    setError(
+                        lang === 'ka'
+                            ? 'სერვერმა მოთხოვნა უარყო'
+                            : 'Server rejected the request'
+                    );
                 } else {
-                    setError(lang === 'ka' ? 'სერვერთან კავშირი ვერ მოხერხდა' : 'Could not connect to server');
+                    setError(
+                        lang === 'ka'
+                            ? 'სერვერთან კავშირი ვერ მოხერხდა'
+                            : 'Could not connect to server'
+                    );
                 }
                 setLoading(false);
             });
-    }, [chapterCode, lang]);
+    }, [chapterCode, lang, user?.id]);
+
+    const meta = useMemo(
+        () => getChapterMeta(chapter?.code ?? chapterCode),
+        [chapter?.code, chapterCode]
+    );
 
     if (loading) {
         return (
             <main className={styles.main}>
-                <p className={styles.status}>{lang === 'ka' ? 'იტვირთება...' : 'Loading...'}</p>
+                <p className={styles.status}>
+                    {lang === 'ka' ? 'იტვირთება...' : 'Loading...'}
+                </p>
             </main>
         );
     }
@@ -59,7 +80,9 @@ export default function ChapterChallengesPage() {
     if (error || !chapter) {
         return (
             <main className={styles.main}>
-                <p className={styles.status}>{error || (lang === 'ka' ? 'თავი ვერ მოიძებნა' : 'Chapter not found')}</p>
+                <p className={styles.status}>
+                    {error || (lang === 'ka' ? 'თავი ვერ მოიძებნა' : 'Chapter not found')}
+                </p>
                 <p className={styles.hint}>
                     {lang === 'ka'
                         ? 'დარწმუნდით, რომ backend გაშვებულია (პორტი 8080) და გადატვირთეთ მას შეცვლების შემდეგ.'
@@ -73,6 +96,9 @@ export default function ChapterChallengesPage() {
     }
 
     const chapterTitle = lang === 'ka' ? chapter.titleKa : chapter.titleEn;
+    const solvedCount = problems.filter((p) => p.solved).length;
+    const totalCount = problems.length;
+    const diff = meta.difficultyInfo;
 
     return (
         <main className={styles.main}>
@@ -80,42 +106,91 @@ export default function ChapterChallengesPage() {
                 <Link to="/challenges" className={styles.backLink}>
                     {lang === 'ka' ? '← თავები' : '← Chapters'}
                 </Link>
-                <span className={styles.eyebrow}>{chapter.code}</span>
-                <h1 className={styles.title}>{chapterTitle}</h1>
-                <p className={styles.sub}>
-                    {lang === 'ka'
-                        ? `${problems.length} ამოცანა`
-                        : `${problems.length} challenges`}
-                </p>
+
+                <div className={styles.headerRow}>
+                    <span
+                        className={styles.iconTile}
+                        style={{
+                            background: meta.iconBg,
+                            borderColor: `${meta.accent}55`,
+                        }}
+                    >
+                        <ChapterIcon name={meta.icon} color={meta.accent} />
+                    </span>
+                    <div>
+                        <span
+                            className={styles.diffBadge}
+                            style={{
+                                color: diff.color,
+                                borderColor: `${diff.color}55`,
+                                background: `${diff.color}18`,
+                            }}
+                        >
+                            {lang === 'ka' ? diff.ka : diff.en}
+                        </span>
+                        <h1 className={styles.title}>{chapterTitle}</h1>
+                        <p className={styles.sub}>
+                            {user
+                                ? lang === 'ka'
+                                    ? `${solvedCount} / ${totalCount} ამოხსნილი`
+                                    : `${solvedCount} / ${totalCount} solved`
+                                : lang === 'ka'
+                                  ? `${totalCount} ამოცანა`
+                                  : `${totalCount} challenges`}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {problems.length === 0 ? (
                 <p className={styles.empty}>
-                    {lang === 'ka' ? 'ამოცანები ჯერ არ არის დამატებული' : 'No challenges added yet'}
+                    {lang === 'ka'
+                        ? 'ამოცანები ჯერ არ არის დამატებული'
+                        : 'No challenges added yet'}
                 </p>
             ) : (
-                <ul className={styles.list}>
-                    {problems.map((problem, index) => (
-                        <li key={problem.id}>
-                            <button
-                                type="button"
-                                className={styles.row}
-                                onClick={() =>
-                                    navigate(
-                                        `/challenges/${chapterCode}/${encodeURIComponent(
-                                            problemToSlug(chapter.code, problem.code)
-                                        )}`
-                                    )
-                                }
-                                aria-label={problem.title}
-                            >
-                                <span className={styles.index}>{String(index + 1).padStart(2, '0')}</span>
-                                <span className={styles.code}>{problem.code}</span>
-                                <span className={styles.problemTitle}>{problem.title}</span>
-                                <span className={styles.arrow} aria-hidden>→</span>
-                            </button>
-                        </li>
-                    ))}
+                <ul className={styles.list} style={{ '--path-accent': meta.accent }}>
+                    {problems.map((problem, index) => {
+                        const solved = Boolean(problem.solved);
+                        const isNext =
+                            !solved &&
+                            index === problems.findIndex((p) => !p.solved);
+
+                        return (
+                            <li key={problem.id}>
+                                <button
+                                    type="button"
+                                    className={`${styles.row} ${
+                                        solved ? styles.rowSolved : ''
+                                    } ${isNext ? styles.rowCurrent : ''}`}
+                                    onClick={() =>
+                                        navigate(
+                                            `/challenges/${chapterCode}/${encodeURIComponent(
+                                                problemToSlug(chapter.code, problem.code)
+                                            )}`
+                                        )
+                                    }
+                                    aria-label={
+                                        solved
+                                            ? `${problem.title} (${lang === 'ka' ? 'ამოხსნილი' : 'solved'})`
+                                            : problem.title
+                                    }
+                                >
+                                    <span className={styles.code}>{problem.code}</span>
+                                    <span className={styles.problemTitle}>{problem.title}</span>
+                                    {solved ? (
+                                        <span className={styles.solvedTag}>
+                                            {lang === 'ka' ? 'ამოხსნილი' : 'Solved'}
+                                        </span>
+                                    ) : (
+                                        <span className={styles.go} aria-hidden>
+                                            →
+                                        </span>
+                                    )}
+                                </button>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </main>

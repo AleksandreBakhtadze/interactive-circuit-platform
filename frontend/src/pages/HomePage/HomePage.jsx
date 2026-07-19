@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
 import styles from './HomePage.module.css';
 
@@ -14,6 +15,30 @@ export default function HomePage() {
         <main className={styles.main}>
 
             <section className={styles.hero}>
+                <svg
+                    className={styles.heroCircuit}
+                    viewBox="0 0 640 280"
+                    aria-hidden
+                >
+                    <path
+                        className={styles.wire}
+                        d="M40 140 H160 Q180 140 180 120 V80 H320"
+                    />
+                    <path
+                        className={styles.wire}
+                        d="M320 80 H460 Q500 80 500 120 V200 H600"
+                    />
+                    <path
+                        className={styles.wireSoft}
+                        d="M180 200 H300 Q340 200 340 160 V80"
+                    />
+                    <circle className={styles.node} cx="180" cy="140" r="5" />
+                    <circle className={styles.node} cx="320" cy="80" r="5" />
+                    <circle className={styles.node} cx="500" cy="120" r="5" />
+                    <circle className={styles.pulse} cx="40" cy="140" r="4" />
+                    <circle className={`${styles.pulse} ${styles.pulseDelay}`} cx="180" cy="200" r="4" />
+                </svg>
+
                 <div className={styles.heroInner}>
                     <p className={styles.eyebrow}>{t.eyebrow}</p>
                     <h1 className={styles.title}>
@@ -21,7 +46,7 @@ export default function HomePage() {
                         <span className={styles.accent}>{t.hero_accent}</span>
                     </h1>
                     <p className={styles.sub}>{t.hero_sub}</p>
-                    <a href="/register" className={styles.cta}>{t.hero_cta}</a>
+                    <Link to="/challenges" className={styles.cta}>{t.hero_cta}</Link>
                 </div>
             </section>
 

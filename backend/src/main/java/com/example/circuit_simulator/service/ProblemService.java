@@ -6,12 +6,16 @@ import com.example.circuit_simulator.model.Problem;
 import com.example.circuit_simulator.repository.ProblemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ProblemService {
     private final ProblemRepository problemRepository;
+    private final ProblemCompletionService completionService;
 
     public List<Problem> getAllProblems() {
         return problemRepository.findAll();
@@ -57,13 +61,26 @@ public class ProblemService {
     }
 
     public List<ProblemListItemDTO> getProblemListByChapterCode(String chapterCode) {
-        return problemRepository.findAllByChapterCode(chapterCode.toUpperCase())
-                .stream()
+        return getProblemListByChapterCode(chapterCode, null);
+    }
+
+    public List<ProblemListItemDTO> getProblemListByChapterCode(
+            String chapterCode, Long userId) {
+        List<Problem> problems =
+                problemRepository.findAllByChapterCode(chapterCode.toUpperCase());
+        Set<Long> solvedIds = userId == null
+                ? Collections.emptySet()
+                : completionService.findSolvedProblemIds(
+                        userId,
+                        problems.stream().map(Problem::getId).toList());
+
+        return problems.stream()
                 .map(p -> new ProblemListItemDTO(
                         p.getId(),
                         p.getCode(),
                         p.getTitle(),
-                        p.getDisplayOrder()
+                        p.getDisplayOrder(),
+                        solvedIds.contains(p.getId())
                 ))
                 .toList();
     }

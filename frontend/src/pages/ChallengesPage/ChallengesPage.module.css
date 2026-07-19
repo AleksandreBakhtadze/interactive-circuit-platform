@@ -18,7 +18,7 @@
 .header {
     position: relative;
     z-index: 1;
-    margin-bottom: 56px;
+    margin-bottom: 28px;
 }
 
 .eyebrow {
@@ -44,6 +44,8 @@
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-secondary);
+    max-width: 42rem;
+    line-height: 1.55;
 }
 
 .status {
@@ -55,100 +57,123 @@
     color: var(--text-muted);
 }
 
-/* Grid */
 .grid {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 2px;
-    border: 1px solid var(--border);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
 }
 
-/* Card */
 .card {
+    --card-accent: #60c5f1;
+    --card-icon-bg: rgba(96, 197, 241, 0.18);
+    text-align: left;
     background: var(--bg-card);
-    border: 1px solid transparent;
-    padding: 28px 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 18px 18px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    transition: background 0.2s, border-color 0.2s;
-    position: relative;
+    gap: 10px;
+    color: inherit;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+    transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
-    background: var(--bg-secondary);
-    border-color: rgba(96, 197, 241, 0.3);
-    z-index: 1;
+    transform: translateY(-3px) scale(1.01);
+    border-color: color-mix(in srgb, var(--card-accent) 55%, transparent);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
 }
 
-.card:hover .code {
-    color: #60c5f1;
+.card:focus-visible {
+    outline: 2px solid var(--card-accent);
+    outline-offset: 3px;
 }
 
 .cardTop {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 10px;
 }
 
-.code {
+.iconTile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--card-icon-bg);
+    border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+}
+
+.diffBadge {
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-    transition: color 0.2s;
-}
-
-.order {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid;
+    white-space: nowrap;
 }
 
 .chapterTitle {
     font-family: var(--font-display);
-    font-size: 0.98rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: var(--text-primary);
-    line-height: 1.4;
-    flex: 1;
+    line-height: 1.35;
+    margin-top: 4px;
+}
+
+.lessonCount {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: -2px;
 }
 
 .cardBottom {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.progressBar {
-    width: 100%;
-    height: 3px;
-    background: var(--border);
-}
-
-.progressFill {
-    height: 100%;
-    background: #43d9a2;
-    transition: width 0.4s ease;
-}
-
-.counts {
+    margin-top: auto;
+    padding-top: 10px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
+    gap: 12px;
 }
 
-.done { color: #43d9a2; font-weight: 700; }
-.sep  { color: var(--text-muted); }
-.total { color: var(--text-muted); }
+.frac {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.done {
+    color: var(--card-accent);
+}
+
+.sep {
+    color: var(--text-muted);
+}
+
+.total {
+    color: var(--text-secondary);
+}
 
 @media (max-width: 768px) {
-    .main { padding: 100px 16px 60px; }
-    .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .main {
+        padding: 100px 16px 60px;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
 }

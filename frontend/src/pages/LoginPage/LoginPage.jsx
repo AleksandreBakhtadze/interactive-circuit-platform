@@ -37,7 +37,7 @@ export default function LoginPage() {
 
             const data = await res.json();
             login(data);
-            navigate('/');
+            navigate('/challenges');
         } catch (err) {
             setErrorCode('NETWORK_ERROR');
         } finally {
@@ -56,28 +56,32 @@ export default function LoginPage() {
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.field}>
-                        <label className={styles.label}>{t.login_identifier}</label>
+                        <label className={styles.label} htmlFor="login-identifier">{t.login_identifier}</label>
                         <input
+                            id="login-identifier"
                             className={styles.input}
                             type="text"
                             name="identifier"
                             placeholder={t.login_identifier_ph}
                             value={form.identifier}
                             onChange={handleChange}
+                            autoComplete="username"
                             required
                         />
                     </div>
 
                     <div className={styles.field}>
-                        <label className={styles.label}>{t.login_password}</label>
+                        <label className={styles.label} htmlFor="login-password">{t.login_password}</label>
                         <div className={styles.passwordWrapper}>
                             <input
+                                id="login-password"
                                 className={styles.input}
                                 type={showPassword ? 'text' : 'password'}
                                 name="password"
                                 placeholder={t.login_password_ph}
                                 value={form.password}
                                 onChange={handleChange}
+                                autoComplete="current-password"
                                 required
                             />
                             <button
@@ -90,7 +94,11 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {errorCode && <p className={styles.error}>{t['err_' + errorCode] || t.login_error}</p>}
+                    {errorCode && (
+                        <p className={styles.error} role="alert">
+                            {t['err_' + errorCode] || t.login_error}
+                        </p>
+                    )}
 
                     <button type="submit" className={styles.btn} disabled={loading}>
                         {loading ? t.login_loading : t.login_btn}

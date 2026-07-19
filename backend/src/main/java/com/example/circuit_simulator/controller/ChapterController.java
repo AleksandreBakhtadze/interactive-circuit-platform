@@ -19,18 +19,23 @@ public class ChapterController {
     private final ProblemService problemService;
 
     @GetMapping
-    public List<ChapterDTO> getAllChapters() {
-        return chapterService.getAllChapters();
+    public List<ChapterDTO> getAllChapters(
+            @RequestParam(required = false) Long userId) {
+        return chapterService.getAllChapters(userId);
     }
 
     @GetMapping("/{code}/detail")
-    public ChapterDetailDTO getChapterDetail(@PathVariable String code) {
-        return chapterService.getChapterDetail(code);
+    public ChapterDetailDTO getChapterDetail(
+            @PathVariable String code,
+            @RequestParam(required = false) Long userId) {
+        return chapterService.getChapterDetail(code, userId);
     }
 
     @GetMapping("/{code}/problems")
-    public List<ProblemListItemDTO> getChapterProblems(@PathVariable String code) {
-        return problemService.getProblemListByChapterCode(code);
+    public List<ProblemListItemDTO> getChapterProblems(
+            @PathVariable String code,
+            @RequestParam(required = false) Long userId) {
+        return problemService.getProblemListByChapterCode(code, userId);
     }
 
     @GetMapping("/{code}/problems/{slug}")
@@ -41,7 +46,9 @@ public class ChapterController {
     }
 
     @GetMapping("/{code}")
-    public ChapterDTO getChapter(@PathVariable String code) {
-        return chapterService.getChapterByCode(code);
+    public ChapterDTO getChapter(
+            @PathVariable String code,
+            @RequestParam(required = false) Long userId) {
+        return chapterService.getChapterByCode(code, userId);
     }
 }

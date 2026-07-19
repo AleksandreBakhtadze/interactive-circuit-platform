@@ -12,4 +12,6 @@ public class ValidationResultDTO {
     private String message;
     private String messageKa;
     private List<CaseResultDTO> cases;
+    /** True when this pass was recorded (or already existed) for the user. */
+    private boolean solved;
 }

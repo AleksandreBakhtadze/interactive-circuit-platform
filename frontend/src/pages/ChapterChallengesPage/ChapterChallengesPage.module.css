@@ -18,7 +18,7 @@
 .header {
     position: relative;
     z-index: 1;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
 }
 
 .backLink {
@@ -35,24 +35,43 @@
     color: var(--accent-electric);
 }
 
-.eyebrow {
-    display: block;
+.headerRow {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.iconTile {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    border: 1px solid;
+}
+
+.diffBadge {
+    display: inline-block;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: #60c5f1;
-    margin-bottom: 12px;
+    letter-spacing: 0.06em;
+    text-transform: lowercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid;
+    margin-bottom: 8px;
 }
 
 .title {
     font-family: var(--font-display);
-    font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+    font-size: clamp(1.5rem, 3.2vw, 2.35rem);
     font-weight: 900;
     color: var(--text-primary);
     line-height: 1.25;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     max-width: 900px;
 }
 
@@ -81,60 +100,66 @@
 }
 
 .list {
+    --path-accent: #60c5f1;
     position: relative;
     z-index: 1;
     list-style: none;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    border: 1px solid var(--border);
-    max-width: 960px;
+    gap: 10px;
 }
 
 .row {
     width: 100%;
     display: grid;
-    grid-template-columns: auto auto 1fr auto;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 16px 20px;
+    gap: 12px 18px;
     padding: 18px 22px;
-    background: var(--bg-card);
-    border: 1px solid transparent;
-    color: var(--text-primary);
     text-align: left;
-    transition: background 0.2s, border-color 0.2s;
+    color: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: transform 0.18s ease, border-color 0.18s, background 0.18s;
 }
 
 .row:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--path-accent) 50%, transparent);
     background: var(--bg-secondary);
-    border-color: rgba(96, 197, 241, 0.35);
 }
 
-.row:hover .code {
-    color: #60c5f1;
+.row:focus-visible {
+    outline: 2px solid var(--path-accent);
+    outline-offset: 2px;
 }
 
-.row:hover .arrow {
-    color: #60c5f1;
-    transform: translateX(4px);
+.rowSolved {
+    border-color: rgba(67, 217, 162, 0.35);
+    background: rgba(67, 217, 162, 0.06);
 }
 
-.index {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    min-width: 1.5rem;
+.rowCurrent {
+    border-color: color-mix(in srgb, var(--path-accent) 55%, transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .code {
     font-family: var(--font-mono);
     font-size: 0.78rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     color: var(--text-muted);
     white-space: nowrap;
-    transition: color 0.2s;
+}
+
+.rowSolved .code {
+    color: rgba(67, 217, 162, 0.9);
 }
 
 .problemTitle {
@@ -144,11 +169,22 @@
     line-height: 1.35;
 }
 
-.arrow {
+.solvedTag {
     font-family: var(--font-mono);
-    font-size: 1rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: #43d9a2;
+    border: 1px solid rgba(67, 217, 162, 0.4);
+}
+
+.go {
     color: var(--text-muted);
-    transition: color 0.2s, transform 0.2s;
+    font-family: var(--font-mono);
 }
 
 @media (max-width: 768px) {
@@ -157,29 +193,26 @@
     }
 
     .row {
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: 1fr auto;
         grid-template-rows: auto auto;
         gap: 6px 12px;
         padding: 16px;
     }
 
-    .index {
-        grid-row: 1 / 3;
-    }
-
     .code {
-        grid-column: 2;
+        grid-column: 1;
         grid-row: 1;
     }
 
     .problemTitle {
-        grid-column: 2;
+        grid-column: 1;
         grid-row: 2;
         font-size: 0.92rem;
     }
 
-    .arrow {
-        grid-column: 3;
+    .solvedTag,
+    .go {
+        grid-column: 2;
         grid-row: 1 / 3;
         align-self: center;
     }

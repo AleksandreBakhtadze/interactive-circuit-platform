@@ -85,6 +85,16 @@ public class CircuitValidationService {
 
         Map<String, String> roleToId = indexRoles(components);
         List<String> missingRoles = findMissingRoles(spec, roleToId, components);
+        if (problemCode != null && problemCode.startsWith("TR.")) {
+            boolean hasTransistor = components.stream()
+                    .anyMatch(c -> "transistor".equals(c.get("type")));
+            if (!hasTransistor) {
+                missingRoles = new ArrayList<>(missingRoles);
+                if (!missingRoles.contains("transistor")) {
+                    missingRoles.add("transistor");
+                }
+            }
+        }
         if (!missingRoles.isEmpty()) {
             return ValidationResultDTO.builder()
                     .passed(false)
@@ -588,6 +598,18 @@ public class CircuitValidationService {
             return ledForwardCurrentExtreme(roleToId, nodes, true);
         }
 
+        // DI.L3.6: either LED may be the capacitor-hold branch.
+        if ("leds".equals(role)
+                && (metric.equals("tran_extinguish_time_min")
+                        || metric.equals("tran_extinguish_time_max")
+                        || metric.equals("tran_extinguish_time_spread")
+                        || metric.equals("tran_forward_current_start_min")
+                        || metric.equals("tran_forward_current_start_max")
+                        || metric.equals("tran_forward_current_at_0.2_min")
+                        || metric.equals("tran_forward_current_at_0.2_max"))) {
+            return ledsTranCurrentAggregate(metric, roleToId, simResult);
+        }
+
         // CP.L2.13: positive ⇒ this LED lights/extinguishes before otherRole.
         if (metric.startsWith("tran_lit_before:")
                 || metric.startsWith("tran_extinguish_before:")) {
@@ -733,6 +755,72 @@ public class CircuitValidationService {
             return 1.0;
         }
         return max / min;
+    }
+
+    /**
+     * Aggregate LED transient metrics (DI.L3.6 hold vs direct branch).
+     * An LED that stays lit through the whole .tran counts as extinguishing at the
+     * last sample time (capacitor hold). Never-lit LEDs are ignored for extinguish
+     * aggregates.
+     */
+    @SuppressWarnings("unchecked")
+    private double ledsTranCurrentAggregate(
+            String metric, Map<String, String> roleToId, Map<String, Object> simResult) {
+        if (metric.startsWith("tran_forward_current_start_")
+                || metric.startsWith("tran_forward_current_at_0.2_")) {
+            double min = Double.POSITIVE_INFINITY;
+            double max = Double.NEGATIVE_INFINITY;
+            int n = 0;
+            for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+                if (!entry.getKey().startsWith("led_")) {
+                    continue;
+                }
+                double i = metric.startsWith("tran_forward_current_start_")
+                        ? readTranMetric(
+                                "tran_forward_current_start", entry.getValue(), simResult)
+                        : readTranCurrentAtTime(simResult, entry.getValue(), 0.2);
+                n += 1;
+                min = Math.min(min, i);
+                max = Math.max(max, i);
+            }
+            if (n == 0) {
+                return 0.0;
+            }
+            return metric.endsWith("_min") ? min : max;
+        }
+
+        double min = Double.POSITIVE_INFINITY;
+        double max = Double.NEGATIVE_INFINITY;
+        int finite = 0;
+        List<Double> times = (List<Double>) simResult.get("time");
+        double lastT =
+                times != null && !times.isEmpty() ? times.get(times.size() - 1) : 4.0;
+        for (Map.Entry<String, String> entry : roleToId.entrySet()) {
+            if (!entry.getKey().startsWith("led_")) {
+                continue;
+            }
+            double t = readTranExtinguishTime(simResult, entry.getValue());
+            if (!Double.isFinite(t)) {
+                double peak = readTranMetric(
+                        "tran_forward_current_peak", entry.getValue(), simResult);
+                if (peak < LED_LIT_THRESHOLD) {
+                    continue;
+                }
+                t = lastT;
+            }
+            finite += 1;
+            min = Math.min(min, t);
+            max = Math.max(max, t);
+        }
+        if (finite == 0) {
+            return 0.0;
+        }
+        return switch (metric) {
+            case "tran_extinguish_time_min" -> min;
+            case "tran_extinguish_time_max" -> max;
+            case "tran_extinguish_time_spread" -> finite >= 2 ? max - min : 0.0;
+            default -> 0.0;
+        };
     }
 
     private double ledForwardCurrentExtreme(

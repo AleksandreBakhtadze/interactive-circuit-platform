@@ -33,13 +33,21 @@ export default function Navbar() {
 
             {user ? (
                 <>
-                  <Link to="/profile" className={styles.btnOutline}>{t.nav_profile}</Link>
-                  <button className={styles.btnPrimary} onClick={handleLogout}>{t.nav_logout}</button>
+                  <Link
+                    to="/account"
+                    className={`${styles.userChip} ${location.pathname === '/account' || location.pathname === '/profile' ? styles.userChipActive : ''}`}
+                    title={user.email || user.username}
+                  >
+                    <span className={styles.userName}>{user.username}</span>
+                  </Link>
+                  <button type="button" className={styles.btnGhost} onClick={handleLogout}>
+                    {t.nav_logout}
+                  </button>
                 </>
             ) : (
                 <>
-                  <Link to="/register" className={styles.btnOutline}>{t.nav_register}</Link>
-                  <Link to="/login" className={styles.btnPrimary}>{t.nav_login}</Link>
+                  <Link to="/login" className={styles.btnGhost}>{t.nav_login}</Link>
+                  <Link to="/register" className={styles.btnPrimary}>{t.nav_register}</Link>
                 </>
             )}
 

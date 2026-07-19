@@ -316,7 +316,11 @@ export function isRelayType(type) {
     return type === COMPONENT_TYPES.RELAY;
 }
 
-/** Collision uses pin cells only — footprint is unchanged for layout/anchor. */
+/**
+ * Collision uses pin (+ optional body) dots only — not the full footprint box.
+ * Lets a resistor / wire sit on the transistor base tip (left pin) while the
+ * empty corner of the 2×2 stays free for that part’s middle segment.
+ */
 export function usesSnapOnlyCells(type) {
     return isThreePinTriangleType(type);
 }
@@ -324,23 +328,17 @@ export function usesSnapOnlyCells(type) {
 /**
  * Extra grid dot blocked under triangle body (not a terminal).
  * Apex-up: centre of bottom edge between B and C pins.
- * Transistor: centre of right edge on 3×3 triangle grid (outside 2×2 footprint).
+ * Transistors: no extra body block — tip/base pin must stay shareable.
  */
 export function getTriangleBodyOffsets(type) {
     if (isApexUpTriangleType(type)) {
         return [{ dr: 1, dc: 1 }];
-    }
-    if (isTransistorType(type)) {
-        return [{ dr: 1, dc: 2 }];
     }
     return [];
 }
 
 /** Footprint used when rotating triangle body cells (may differ from placement footprint). */
 export function getTriangleBodyRotationFootprint(type) {
-    if (isTransistorType(type)) {
-        return THREE_PIN_FOOTPRINT;
-    }
     return getFootprint(type);
 }
 
@@ -570,7 +568,14 @@ export function isTransistorGroupItem(item) {
     return item?.paletteDisplay === 'transistorGroup';
 }
 
-export function getTransistorMaxCount(palette) {
+/** Per-variant limit; uses palette entry maxCount when transistor is listed directly. */
+export function getTransistorMaxCount(palette, type = null) {
+    if (type) {
+        const direct = palette?.find((p) => p.type === type);
+        if (direct?.maxCount != null) {
+            return direct.maxCount;
+        }
+    }
     const group = palette?.find(isTransistorGroupItem);
     if (!group) return 0;
     return group.maxCountPerVariant ?? 10;
@@ -3281,6 +3286,285 @@ export const SW_L3_7_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** DI.L1.1 — mid-rail diode path with full-rail button bypass. */
+export const DI_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** DI.L2.2 — series diodes dim lamp; button bypass brightens. */
+export const DI_L2_2_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა 6V',
+        labelEn: 'Lamp 6V',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** DI.L1.4 — unequal red LEDs via series diodes; button equalizes. */
+export const DI_L1_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** DI.L3.5 — motor-generation practice with one button and a steering diode. */
+export const DI_L3_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 6,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DI.L3.6 — pot divider; sync brighten / async extinguish via diode+C hold branch.
+ * Pot UI/behavior matches the VR module (mid default + live A–B slider).
+ */
+export const DI_L3_6_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** TR.L2.10 — NPN collector load; pot abruptly switches the motor. */
+export const TR_L2_10_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** TR.L2.11 — NPN emitter follower; pot gradually spins the motor. */
+export const TR_L2_11_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    RESISTOR_GROUP_PALETTE_ITEM,
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 /**
  * Inventory for SW.L3.8 — two green LEDs; resistor divider + 3-way swap (same-color).
  */
@@ -3557,6 +3841,27 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'DM.L4.4') {
         return DM_L4_4_PALETTE;
     }
+    if (problemCode === 'DI.L1.1') {
+        return DI_L1_1_PALETTE;
+    }
+    if (problemCode === 'DI.L2.2') {
+        return DI_L2_2_PALETTE;
+    }
+    if (problemCode === 'DI.L1.4') {
+        return DI_L1_4_PALETTE;
+    }
+    if (problemCode === 'DI.L3.5') {
+        return DI_L3_5_PALETTE;
+    }
+    if (problemCode === 'DI.L3.6') {
+        return DI_L3_6_PALETTE;
+    }
+    if (problemCode === 'TR.L2.10') {
+        return TR_L2_10_PALETTE;
+    }
+    if (problemCode === 'TR.L2.11') {
+        return TR_L2_11_PALETTE;
+    }
     return null;
 }
 
@@ -3644,7 +3949,14 @@ export function supportsSimulator(problemCode) {
         problemCode === 'DM.L2.8' ||
         problemCode === 'DM.L3.9' ||
         problemCode === 'DM.L2.10' ||
-        problemCode === 'DM.L4.4'
+        problemCode === 'DM.L4.4' ||
+        problemCode === 'DI.L1.1' ||
+        problemCode === 'DI.L2.2' ||
+        problemCode === 'DI.L1.4' ||
+        problemCode === 'DI.L3.5' ||
+        problemCode === 'DI.L3.6' ||
+        problemCode === 'TR.L2.10' ||
+        problemCode === 'TR.L2.11'
     );
 }
 
@@ -3664,7 +3976,8 @@ export function usesTransientSimulation(problemCode) {
         problemCode === 'CP.L2.14' ||
         problemCode === 'CP.L2.15' ||
         problemCode === 'CP.L2.16' ||
-        problemCode === 'CP.L4.19'
+        problemCode === 'CP.L4.19' ||
+        problemCode === 'DI.L3.6'
     );
 }
 
@@ -3742,7 +4055,8 @@ export function usesCircuitValidation(problemCode) {
         problemCode !== 'LR.L2.15' &&
         problemCode !== 'CP.L2.12' &&
         problemCode !== 'VR.L1.10' &&
-        problemCode !== 'DM.L4.4'
+        problemCode !== 'DM.L4.4' &&
+        problemCode !== 'DI.L3.5'
     );
 }
 
@@ -4335,6 +4649,57 @@ const PROBLEM_REQUIRED_PARTS = {
     'DM.L4.4': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
         { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+    ],
+    'DI.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'DI.L2.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 2 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'DI.L1.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 2 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'DI.L3.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+    ],
+    'DI.L3.6': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TR.L2.10': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'TR.L2.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
     ],
 };
 

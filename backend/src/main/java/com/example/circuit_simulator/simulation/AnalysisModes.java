@@ -19,7 +19,16 @@ public final class AnalysisModes {
                 || "CP.L2.14".equals(problemCode)
                 || "CP.L2.15".equals(problemCode)
                 || "CP.L2.16".equals(problemCode)
-                || "CP.L4.19".equals(problemCode);
+                || "CP.L4.19".equals(problemCode)
+                || "DI.L3.6".equals(problemCode);
+    }
+
+    /**
+     * DI.L3.6: pot stepped from bright → dim; capacitor hold uses ICs from the
+     * prior (inverted) pot DC, then .tran at the new pot position.
+     */
+    public static boolean usesPotStepDischarge(String problemCode) {
+        return "DI.L3.6".equals(problemCode);
     }
 
     /**

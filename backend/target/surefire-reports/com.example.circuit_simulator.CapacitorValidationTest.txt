@@ -1,4 +1,33 @@
 -------------------------------------------------------------------------------
 Test set: com.example.circuit_simulator.CapacitorValidationTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.303 s -- in com.example.circuit_simulator.CapacitorValidationTest
+Tests run: 24, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 1.730 s <<< FAILURE! -- in com.example.circuit_simulator.CapacitorValidationTest
+com.example.circuit_simulator.CapacitorValidationTest.cpL23ReferenceCircuitPassesValidation -- Time elapsed: 0.074 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+Not quite — check wiring and try again.
+• slide_right_crossfade | case slide_right_crossfade [tran_forward_current_early lt 0.005 actual=0.005] ==> expected: <true> but was: <false>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+	at com.example.circuit_simulator.CapacitorValidationTest.cpL23ReferenceCircuitPassesValidation(CapacitorValidationTest.java:102)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.example.circuit_simulator.CapacitorValidationTest.cpL12ReferenceCircuitPassesValidation -- Time elapsed: 0.062 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: 
+Not quite — check wiring and try again.
+• slow_charge
+• discharge_fade | case slow_charge [tran_forward_current_end gt 0.003 actual=9.0E-4] | case discharge_fade [tran_forward_current_start gt 0.001 actual=9.0E-4] ==> expected: <true> but was: <false>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+	at org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:214)
+	at com.example.circuit_simulator.CapacitorValidationTest.cpL12ReferenceCircuitPassesValidation(CapacitorValidationTest.java:80)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

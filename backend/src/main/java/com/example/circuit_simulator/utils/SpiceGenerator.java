@@ -10,6 +10,51 @@ import java.util.Locale;
 
 public class SpiceGenerator {
 
+    /** True when a two-terminal part has both ends on the same net (e.g. V 0 0). */
+    public static boolean isShortedTwoTerminal(List<String> nodes) {
+        return nodes != null
+                && nodes.size() >= 2
+                && nodes.get(0) != null
+                && nodes.get(0).equals(nodes.get(1));
+    }
+
+    /**
+     * ngspice segfaults (exit 139) on {@code Vx n n …}. Skip those sources and
+     * require at least one real supply so the board can still simulate.
+     */
+    @SuppressWarnings("unchecked")
+    public static void assertSimulatableSupplies(String json) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null || components.isEmpty()) {
+            throw new IllegalArgumentException("Circuit has no components");
+        }
+        int supplies = 0;
+        int shorted = 0;
+        for (Map<String, Object> comp : components) {
+            if (!"voltage".equals(comp.get("type"))) {
+                continue;
+            }
+            List<String> nodes = (List<String>) comp.get("nodes");
+            if (isShortedTwoTerminal(nodes)) {
+                shorted += 1;
+            } else {
+                supplies += 1;
+            }
+        }
+        if (supplies == 0) {
+            if (shorted > 0) {
+                throw new IllegalArgumentException(
+                        "Power supply terminals are shorted together. "
+                                + "For two supplies in series, connect + of one to − of the other "
+                                + "(mid-rail), and only one end to ground.");
+            }
+            throw new IllegalArgumentException("Circuit has no power supply");
+        }
+    }
+
     public static String generateSpice(String json) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> data = mapper.readValue(json, Map.class);
@@ -33,6 +78,11 @@ public class SpiceGenerator {
 
             switch (type) {
                 case "voltage":
+                    // V n n crashes ngspice (SIGSEGV / exit 139) — omit shorted supplies.
+                    if (isShortedTwoTerminal(nodes)) {
+                        sb.append("* skipped shorted voltage ").append(id).append("\n");
+                        break;
+                    }
                     sb.append("V_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
                             .append(nodes.get(1))
@@ -219,10 +269,16 @@ public class SpiceGenerator {
             nodesSet.addAll(nodes);
 
             switch (type) {
-                case "voltage" -> sb.append("V_").append(id).append(" ")
-                        .append(nodes.get(0)).append(" ")
-                        .append(nodes.get(1))
-                        .append(" DC ").append(value).append("\n");
+                case "voltage" -> {
+                    if (isShortedTwoTerminal(nodes)) {
+                        sb.append("* skipped shorted voltage ").append(id).append("\n");
+                    } else {
+                        sb.append("V_").append(id).append(" ")
+                                .append(nodes.get(0)).append(" ")
+                                .append(nodes.get(1))
+                                .append(" DC ").append(value).append("\n");
+                    }
+                }
 
                 case "resistor" -> sb.append("R_").append(id).append(" ")
                         .append(nodes.get(0)).append(" ")
@@ -341,10 +397,16 @@ public class SpiceGenerator {
             nodesSet.addAll(nodes);
 
             switch (type) {
-                case "voltage" -> sb.append("V_").append(id).append(" ")
-                        .append(nodes.get(0)).append(" ")
-                        .append(nodes.get(1))
-                        .append(" DC ").append(value).append("\n");
+                case "voltage" -> {
+                    if (isShortedTwoTerminal(nodes)) {
+                        sb.append("* skipped shorted voltage ").append(id).append("\n");
+                    } else {
+                        sb.append("V_").append(id).append(" ")
+                                .append(nodes.get(0)).append(" ")
+                                .append(nodes.get(1))
+                                .append(" DC ").append(value).append("\n");
+                    }
+                }
 
                 case "resistor" -> sb.append("R_").append(id).append(" ")
                         .append(nodes.get(0)).append(" ")
@@ -727,6 +789,32 @@ public class SpiceGenerator {
             comp.put("position", pos);
         }
 
+        return mapper.writeValueAsString(data);
+    }
+
+    /** Flip every pot wiper to {@code 1 - position} (bright ↔ dim extreme). */
+    @SuppressWarnings("unchecked")
+    public static String invertAllPotPositions(String json) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return json;
+        }
+        for (Map<String, Object> comp : components) {
+            if (!"variable_resistor".equals(comp.get("type"))) {
+                continue;
+            }
+            Object posObj = comp.get("position");
+            double pos = posObj != null ? Double.parseDouble(posObj.toString()) : 0.5;
+            if (pos < 0) {
+                pos = 0;
+            } else if (pos > 1) {
+                pos = 1;
+            }
+            comp.put("position", 1.0 - pos);
+        }
         return mapper.writeValueAsString(data);
     }
 

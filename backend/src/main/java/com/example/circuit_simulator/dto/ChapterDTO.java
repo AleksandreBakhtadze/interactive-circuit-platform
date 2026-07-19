@@ -14,4 +14,6 @@ public class ChapterDTO {
     private String titleEn;
     private Integer displayOrder;
     private long problemCount;
+    /** Solved by the requesting user; 0 when anonymous. */
+    private long solvedCount;
 }

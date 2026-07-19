@@ -5,6 +5,7 @@ import Navbar from './components/Navbar/Navbar';
 import HomePage from './pages/HomePage/HomePage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import LoginPage from './pages/LoginPage/LoginPage';
+import AccountPage from './pages/AccountPage/AccountPage';
 import ChallengesPage from './pages/ChallengesPage/ChallengesPage';
 import ChapterChallengesPage from './pages/ChapterChallengesPage/ChapterChallengesPage';
 import ChallengeDetailPage from './pages/ChallengeDetailPage/ChallengeDetailPage';
@@ -19,6 +20,8 @@ function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/login" element={<LoginPage />} />
+                        <Route path="/account" element={<AccountPage />} />
+                        <Route path="/profile" element={<AccountPage />} />
                         <Route path="/challenges" element={<ChallengesPage />} />
                         <Route path="/challenges/:chapterCode/:problemSlug" element={<ChallengeDetailPage />} />
                         <Route path="/challenges/:chapterCode" element={<ChapterChallengesPage />} />

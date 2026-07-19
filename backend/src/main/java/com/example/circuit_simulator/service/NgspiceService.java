@@ -81,6 +81,12 @@ public class NgspiceService {
         Process process = pb.start();
         int exit = process.waitFor();
         if (exit != 0) {
+            if (exit == 139 || exit == -11) {
+                throw new RuntimeException(
+                        "ngspice crashed (shorted supply or invalid netlist). "
+                                + "Check that each power supply has two different nets "
+                                + "(series supplies share a mid-rail, only one end is ground).");
+            }
             throw new RuntimeException("ngspice exited with code " + exit);
         }
     }

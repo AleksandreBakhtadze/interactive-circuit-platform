@@ -6,8 +6,10 @@ import {
     isConnectorType,
     isLedType,
     isResistorType,
+    isTransistorType,
     getLedSpec,
     parseConnectorLength,
+    parseTransistorKey,
     getResistorSpec,
 } from '../constants/componentCatalog';
 import {
@@ -99,9 +101,16 @@ const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.SLIDE_SWITCH]: 'slide_switch',
     [COMPONENT_TYPES.LAMP]: 'lamp',
     [COMPONENT_TYPES.RESISTOR]: 'resistor',
+    [COMPONENT_TYPES.DIODE]: 'diode',
     [COMPONENT_TYPES.MOTOR]: 'motor',
     [COMPONENT_TYPES.VAR_RESISTOR]: 'variable_resistor',
 };
+
+function transistorSubtype(type) {
+    const key = parseTransistorKey(type);
+    if (key === 'q2' || key === 'q4') return 'pnp';
+    return 'npn';
+}
 
 function boardTypeToRole(boardType) {
     return BOARD_TYPE_TO_ROLE[boardType] ?? boardType;
@@ -243,9 +252,28 @@ export function buildCircuitJson(
         (c) => c.type === COMPONENT_TYPES.POWER_SUPPLY
     );
     if (powerSupplies.length > 0) {
-        const psPins = getComponentTerminalPins(powerSupplies[0]);
-        if (psPins.length >= 2) {
-            groundRoot = uf.find(psPins[1]);
+        // Series stacks: true ground is a supply negative that is not another
+        // supply's positive (bottom of the chain). First-placed-PS heuristic
+        // wrongly treats the mid-rail as 0 when the top pack was placed first.
+        const psPins = powerSupplies.map((ps) => getComponentTerminalPins(ps));
+        const positiveNets = new Set(
+            psPins.map((pins) => (pins.length >= 1 ? uf.find(pins[0]) : null))
+        );
+        let groundPin = null;
+        for (let i = 0; i < powerSupplies.length; i += 1) {
+            const pins = psPins[i];
+            if (pins.length < 2) continue;
+            const negNet = uf.find(pins[1]);
+            if (!positiveNets.has(negNet)) {
+                groundPin = pins[1];
+                break;
+            }
+        }
+        if (!groundPin) {
+            groundPin = psPins[0].length >= 2 ? psPins[0][1] : null;
+        }
+        if (groundPin) {
+            groundRoot = uf.find(groundPin);
         }
     }
 
@@ -261,6 +289,8 @@ export function buildCircuitJson(
     let ledIndex = 0;
     let capacitorIndex = 0;
     let motorIndex = 0;
+    let diodeIndex = 0;
+    let transistorIndex = 0;
     let slideSwitchIndex = 0;
     const slideSwitchCount = placed.filter(
         (c) => c.type === COMPONENT_TYPES.SLIDE_SWITCH
@@ -299,6 +329,14 @@ export function buildCircuitJson(
         if (comp.type === COMPONENT_TYPES.MOTOR) {
             motorIndex += 1;
             role = `motor_${motorIndex}`;
+        }
+        if (comp.type === COMPONENT_TYPES.DIODE) {
+            diodeIndex += 1;
+            role = `diode_${diodeIndex}`;
+        }
+        if (isTransistorType(comp.type)) {
+            transistorIndex += 1;
+            role = `transistor_${transistorIndex}`;
         }
         if (comp.type === COMPONENT_TYPES.SLIDE_SWITCH) {
             if (slideSwitchCount > 1) {
@@ -388,6 +426,17 @@ export function buildCircuitJson(
                 });
                 break;
 
+            case COMPONENT_TYPES.DIODE:
+                // Board diode → plain LED model (generic silicon diode in SPICE).
+                components.push({
+                    id,
+                    role,
+                    type: 'led',
+                    nodes,
+                    color: 'plain',
+                });
+                break;
+
             case COMPONENT_TYPES.RESISTOR:
                 components.push({
                     id,
@@ -399,7 +448,16 @@ export function buildCircuitJson(
                 break;
 
             default:
-                if (isResistorType(comp.type)) {
+                if (isTransistorType(comp.type)) {
+                    // Pin order matches THREE_PIN_SNAP_VERTICAL / SpiceGenerator.
+                    components.push({
+                        id,
+                        role,
+                        type: 'transistor',
+                        subtype: transistorSubtype(comp.type),
+                        nodes,
+                    });
+                } else if (isResistorType(comp.type)) {
                     const spec = getResistorSpec(comp.type);
                     if (spec) {
                         components.push({

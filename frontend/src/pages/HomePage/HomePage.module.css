@@ -25,6 +25,64 @@
     justify-content: center;
     padding: 140px 24px 80px;
     text-align: center;
+    overflow: hidden;
+}
+
+.heroCircuit {
+    position: absolute;
+    inset: 18% 8% auto;
+    width: min(720px, 92vw);
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    opacity: 0.55;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.wire {
+    fill: none;
+    stroke: rgba(96, 197, 241, 0.55);
+    stroke-width: 2.2;
+    stroke-linecap: round;
+}
+
+.wireSoft {
+    fill: none;
+    stroke: rgba(67, 217, 162, 0.35);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-dasharray: 6 8;
+    animation: dashFlow 8s linear infinite;
+}
+
+.node {
+    fill: #60c5f1;
+}
+
+.pulse {
+    fill: #85d4f7;
+    opacity: 0.9;
+    offset-path: path('M40 140 H160 Q180 140 180 120 V80 H320 H460 Q500 80 500 120 V200 H600');
+    offset-distance: 0%;
+    animation: currentPulse 4.5s ease-in-out infinite;
+}
+
+.pulseDelay {
+    offset-path: path('M180 200 H300 Q340 200 340 160 V80');
+    animation-delay: 1.4s;
+    fill: #43d9a2;
+}
+
+@keyframes currentPulse {
+    0% { offset-distance: 0%; opacity: 0; }
+    12% { opacity: 1; }
+    88% { opacity: 1; }
+    100% { offset-distance: 100%; opacity: 0; }
+}
+
+@keyframes dashFlow {
+    to { stroke-dashoffset: -80; }
 }
 
 .hero::before {
@@ -41,6 +99,7 @@
 
 .heroInner {
     position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -89,13 +148,17 @@
     color: #111d35;
     letter-spacing: 0.04em;
     box-shadow: 0 6px 24px rgba(96, 197, 241, 0.3);
-    transition: all 0.2s;
+    transition: transform 0.2s ease, background 0.2s, box-shadow 0.2s;
 }
 
 .cta:hover {
     background: #85d4f7;
     box-shadow: 0 8px 32px rgba(96, 197, 241, 0.45);
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.03);
+}
+
+.cta:active {
+    transform: translateY(0) scale(0.98);
 }
 
 /* ── About ── */

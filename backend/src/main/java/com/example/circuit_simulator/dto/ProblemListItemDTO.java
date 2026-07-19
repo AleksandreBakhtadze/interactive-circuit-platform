@@ -12,4 +12,6 @@ public class ProblemListItemDTO {
     private String code;
     private String title;
     private Integer displayOrder;
+    /** True when the requesting user has solved this problem. */
+    private boolean solved;
 }

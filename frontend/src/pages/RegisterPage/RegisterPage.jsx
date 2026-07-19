@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
+import { useAuth } from '../../context/AuthContext';
 import { API_BASE } from '../../api';
 import styles from './RegisterPage.module.css';
 
 export default function RegisterPage() {
     const { t } = useLang();
+    const { login } = useAuth();
     const navigate = useNavigate();
 
     const [form, setForm] = useState({ username: '', email: '', password: '' });
@@ -33,7 +35,9 @@ export default function RegisterPage() {
                 return;
             }
 
-            navigate('/');
+            const data = await res.json();
+            login(data);
+            navigate('/challenges');
         } catch (err) {
             setErrorCode('NETWORK_ERROR');
         } finally {
@@ -52,41 +56,48 @@ export default function RegisterPage() {
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.field}>
-                        <label className={styles.label}>{t.reg_username}</label>
+                        <label className={styles.label} htmlFor="reg-username">{t.reg_username}</label>
                         <input
+                            id="reg-username"
                             className={styles.input}
                             type="text"
                             name="username"
                             placeholder={t.reg_username_ph}
                             value={form.username}
                             onChange={handleChange}
+                            autoComplete="username"
                             required
                         />
                     </div>
 
                     <div className={styles.field}>
-                        <label className={styles.label}>{t.reg_email}</label>
+                        <label className={styles.label} htmlFor="reg-email">{t.reg_email}</label>
                         <input
+                            id="reg-email"
                             className={styles.input}
                             type="email"
                             name="email"
                             placeholder={t.reg_email_ph}
                             value={form.email}
                             onChange={handleChange}
+                            autoComplete="email"
                             required
                         />
                     </div>
 
                     <div className={styles.field}>
-                        <label className={styles.label}>{t.reg_password}</label>
+                        <label className={styles.label} htmlFor="reg-password">{t.reg_password}</label>
                         <div className={styles.passwordWrapper}>
                             <input
+                                id="reg-password"
                                 className={styles.input}
                                 type={showPassword ? 'text' : 'password'}
                                 name="password"
                                 placeholder={t.reg_password_ph}
                                 value={form.password}
                                 onChange={handleChange}
+                                autoComplete="new-password"
+                                minLength={8}
                                 required
                             />
                             <button
@@ -99,7 +110,11 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    {errorCode && <p className={styles.error}>{t['err_' + errorCode] || t.reg_error}</p>}
+                    {errorCode && (
+                        <p className={styles.error} role="alert">
+                            {t['err_' + errorCode] || t.reg_error}
+                        </p>
+                    )}
 
                     <button type="submit" className={styles.btn} disabled={loading}>
                         {loading ? t.reg_loading : t.reg_btn}

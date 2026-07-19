@@ -127,7 +127,7 @@
 .toggle:hover { color: #60c5f1; }
 
 .btn {
-    margin: 28px 40px;
+    margin: 28px 40px 8px;
     padding: 14px;
     border: none;
     background: #60c5f1;
@@ -141,10 +141,25 @@
     transition: all 0.2s;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
     background: #85d4f7;
     box-shadow: 0 6px 28px rgba(96, 197, 241, 0.45);
     transform: translateY(-2px);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn:focus-visible {
+    outline: 2px solid #85d4f7;
+    outline-offset: 3px;
+}
+
+.input:focus-visible {
+    border-bottom-color: #60c5f1;
 }
 
 .footer {
@@ -154,6 +169,7 @@
     font-weight: 600;
     color: var(--text-secondary);
     border-top: 1px solid var(--border);
+    margin-top: 20px;
 }
 
 .link {
@@ -163,17 +179,24 @@
 
 .link:hover { text-decoration: underline; }
 
+.link:focus-visible {
+    outline: 2px solid #60c5f1;
+    outline-offset: 2px;
+}
+
 @media (max-width: 480px) {
     .cardHeader, .field, .btn { padding-left: 24px; padding-right: 24px; }
     .footer { padding-left: 24px; padding-right: 24px; }
+    .error { margin-left: 24px; margin-right: 24px; }
 }
 
 .error {
-    margin: 0 40px;
+    margin: 16px 40px 0;
     padding: 12px 16px;
     background: rgba(255, 100, 100, 0.08);
     border-left: 3px solid #ff6464;
     color: #ff9a9a;
     font-size: 0.88rem;
     font-weight: 600;
+    line-height: 1.4;
 }

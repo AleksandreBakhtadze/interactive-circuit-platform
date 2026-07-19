@@ -15,6 +15,12 @@ public class CircuitDTO {
     private String problemCode;
     /** Live phase for CP transient problems: idle | pressed | discharge. */
     private String simPhase;
+    /**
+     * DI.L3.6 live pot fade: wiper positions (by role) for the DC state before the
+     * step — ICs for .tran. When null, pot-step discharge uses inverted extremes
+     * (validation).
+     */
+    private java.util.Map<String, Double> priorPotPositions;
     private String circuitData;  // Keep as String for JSON input
     private String simulationResults;
 

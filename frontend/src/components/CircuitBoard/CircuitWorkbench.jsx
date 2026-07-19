@@ -108,6 +108,25 @@ import styles from './CircuitWorkbench.module.css';
 
 const MOVE_DRAG_THRESHOLD_PX = 4;
 
+/**
+ * Keep the rotate handle at the screen top-right of a CSS-rotated part,
+ * and counter-rotate the icon so it stays upright.
+ */
+function rotateHandleScreenStyle(rotation = 0) {
+    const r = normalizeRotation(rotation);
+    const upright = { transform: `rotate(${-r}deg)` };
+    if (r === 90) {
+        return { ...upright, top: -10, left: -10, right: 'auto', bottom: 'auto' };
+    }
+    if (r === 180) {
+        return { ...upright, bottom: -10, left: -10, top: 'auto', right: 'auto' };
+    }
+    if (r === 270) {
+        return { ...upright, bottom: -10, right: -10, top: 'auto', left: 'auto' };
+    }
+    return { ...upright, top: -10, right: -10, left: 'auto', bottom: 'auto' };
+}
+
 /** Topmost placed part under the cursor (ignores drop preview). */
 function findPlacedPartIdAt(clientX, clientY) {
     if (typeof document.elementsFromPoint !== 'function') {
@@ -1088,6 +1107,31 @@ export default function CircuitWorkbench({ problemCode }) {
         );
     };
 
+    /** Rotate an already-placed component 90° around its footprint center. */
+    const rotatePlaced = (comp) => {
+        if (!comp) return;
+        const curRot = comp.rotation ?? 0;
+        const nextRotation = normalizeRotation(curRot + 90);
+        const { w: w0, h: h0 } = getRotatedFootprint(comp.type, curRot);
+        const { w: w1, h: h1 } = getRotatedFootprint(comp.type, nextRotation);
+
+        // Pin the geometric center so the part doesn't jump from a top-left pivot.
+        const centerR = comp.row + (h0 - 1) / 2;
+        const centerC = comp.col + (w0 - 1) / 2;
+        const row = Math.round(centerR - (h1 - 1) / 2);
+        const col = Math.round(centerC - (w1 - 1) / 2);
+
+        if (!tryPlace(comp.type, row, col, nextRotation, comp.id)) return;
+
+        setPlaced((prev) =>
+            prev.map((p) =>
+                p.id === comp.id
+                    ? { ...p, row, col, rotation: nextRotation }
+                    : p
+            )
+        );
+    };
+
     /** Clear stuck pointer-drag without setState (safe during HTML5 dragstart). */
     const clearMoveSessionRef = () => {
         const session = moveSessionRef.current;
@@ -1139,6 +1183,11 @@ export default function CircuitWorkbench({ problemCode }) {
 
         // On-part pot slider — never start a board drag from the control.
         if (e.target.closest?.('[data-pot-slider]')) {
+            return;
+        }
+
+        // Rotate handle — let its own click rotate; don't drag/toggle/lock.
+        if (e.target.closest?.('[data-rotate-handle]')) {
             return;
         }
 
@@ -1746,105 +1795,7 @@ export default function CircuitWorkbench({ problemCode }) {
                     }
                 }
 
-                if (!simulationHasError(result) && isLive) {
-                    setMessage(
-                        problemCode === 'CP.L2.14'
-                            ? lang === 'ka'
-                                ? 'ჩართეთ ჩამრთველი, შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
-                                : 'Turn the switch ON, then press and hold the button on the board'
-                            : problemCode === 'SW.L1.1'
-                              ? lang === 'ka'
-                                  ? 'დააწკაპუნეთ გადამრთველზე — ანთდება მეორე შუქდიოდი'
-                                  : 'Click the slide switch — the other LED lights'
-                              : problemCode === 'SW.L1.2' ||
-                                  problemCode === 'SW.L1.13' ||
-                                  problemCode === 'SW.L2.3' ||
-                                  problemCode === 'SW.L2.4' ||
-                                  problemCode === 'SW.L2.5' ||
-                                  problemCode === 'DM.L2.2' ||
-                                  problemCode === 'DM.L2.3' ||
-                                  problemCode === 'DM.L2.6' ||
-                                  problemCode === 'DM.L2.7' ||
-                                  problemCode === 'DM.L2.8' ||
-                                  problemCode === 'DM.L3.9'
-                                ? lang === 'ka'
-                                    ? problemCode === 'DM.L3.9'
-                                        ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვის მიმართულება და წითელი/მწვანე LED იცვლება'
-                                        : problemCode === 'DM.L2.8'
-                                          ? 'დააწკაპუნეთ გადამრთველებზე — ერთნაირი პოზიცია ტრიალებს, განსხვავებული აჩერებს; ორივეს გადართვა ცვლის მიმართულებას'
-                                          : problemCode === 'DM.L2.6' ||
-                                              problemCode === 'DM.L2.7'
-                                            ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვის მიმართულება იცვლება'
-                                            : problemCode === 'DM.L2.2' ||
-                                                problemCode === 'DM.L2.3'
-                                              ? 'დააწკაპუნეთ გადამრთველზე — ბრუნვა ნელი ↔ ჩქარი'
-                                              : 'დააწკაპუნეთ გადამრთველზე — ნათება სუსტი ↔ ძლიერი'
-                                    : problemCode === 'DM.L3.9'
-                                      ? 'Click the slide — spin direction and red/green LEDs swap'
-                                      : problemCode === 'DM.L2.8'
-                                        ? 'Click the slides — same position spins, different stops; flip both to reverse'
-                                        : problemCode === 'DM.L2.6' ||
-                                            problemCode === 'DM.L2.7'
-                                          ? 'Click the slide switch — spin direction reverses'
-                                          : problemCode === 'DM.L2.2' ||
-                                              problemCode === 'DM.L2.3'
-                                            ? 'Click the slide switch — spin slow ↔ fast'
-                                            : 'Click the slide switch — brightness dim ↔ bright'
-                                : problemCode === 'SW.L4.14'
-                                  ? lang === 'ka'
-                                      ? 'დააწკაპუნეთ გადამრთველზე — ნათურა და შუქდიოდი შებრუნებულად იცვლება'
-                                      : 'Click the slide switch — lamp and LED brightness swap inversely'
-                                  : problemCode === 'SW.L2.9'
-                                  ? lang === 'ka'
-                                      ? 'ჩართეთ ჩამრთველი, აირჩიეთ გადამრთველით სიძლიერე, დააჭირეთ და არ გაუშვათ ღილაკი'
-                                      : 'Turn the switch ON, pick boost strength on the slide, then press and hold the button'
-                                  : problemCode === 'SW.L2.10'
-                                    ? lang === 'ka'
-                                        ? 'ჩართეთ ჩამრთველი, გადაართეთ შუქდიოდი, დააჭირეთ და არ გაუშვათ ღილაკი — ნათება მოიმატებს'
-                                        : 'Turn the switch ON, pick an LED with the slide, then press and hold the button to brighten'
-                                    : problemCode === 'SW.L3.11'
-                                      ? lang === 'ka'
-                                          ? 'გადაართეთ მწვანე/ლურჯი; დააჭირეთ ღილაკს — წითელი ჩაანაცვლებს (Vf)'
-                                          : 'Toggle green/blue on the slide; press the button — red replaces it (Vf clamp)'
-                                      : problemCode === 'SW.L3.6'
-                                  ? lang === 'ka'
-                                      ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — ნათურა ჩაირთვება/გამოირთვება'
-                                      : 'Click either slide switch — the lamp toggles on/off'
-                                  : problemCode === 'SW.L3.7' ||
-                                      problemCode === 'SW.L3.8'
-                                    ? lang === 'ka'
-                                        ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — შუქდიოდები იცვლება'
-                                        : 'Click either slide switch — the LEDs swap'
-                                    : problemCode === 'CP.L2.16'
-                                ? lang === 'ka'
-                                    ? 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) — ნათება თანდათან იცვლება'
-                                    : 'Click the slide switch — brightness changes gradually'
-                                : problemCode === 'CP.L4.19'
-                                  ? lang === 'ka'
-                                      ? 'დააწკაპუნეთ რომელიმე გადამრთველზე — ორივე ერთად გადაირთვება (გაორმაგება)'
-                                      : 'Click either slide — both toggle together (voltage doubler)'
-                                  : usesMasterSwitchSimulation(problemCode) &&
-                                      !isTransientResult(result)
-                                    ? lang === 'ka'
-                                        ? 'ჩართეთ ჩამრთველი ფირზე, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
-                                        : 'Turn the switch ON on the board, then toggle the slide (A–B ↔ A–C)'
-                                    : usesSwitchCrossfadeSimulation(problemCode)
-                                      ? lang === 'ka'
-                                          ? usesMasterSwitchSimulation(problemCode)
-                                              ? 'ჩართეთ ჩამრთველი, შემდეგ გადაართეთ სლაიდერი (A–B ↔ A–C)'
-                                              : 'დააწკაპუნეთ გადამრთველზე (სლაიდერზე) ფირზე გადასართავად'
-                                          : usesMasterSwitchSimulation(problemCode)
-                                            ? 'Turn the switch ON, then toggle the slide (A–B ↔ A–C)'
-                                            : 'Click the slide switch on the board to toggle'
-                                      : lang === 'ka'
-                                        ? 'დააჭირეთ და არ გაუშვათ ღილაკი ფირზე'
-                                        : 'Press and hold the button on the board'
-                    );
-                } else if (!simulationHasError(result)) {
-                    setMessage(
-                        lang === 'ka' ? 'სიმულაცია დასრულდა' : 'Simulation finished'
-                    );
-                }
+                // Interaction tips live in the Components panel; don't spam the board message while building.
             } catch (err) {
                 setSimResults(null);
                 const detail = err?.message ?? String(err);
@@ -2652,142 +2603,9 @@ export default function CircuitWorkbench({ problemCode }) {
                         {lang === 'ka' ? 'დეტალები' : 'Components'}
                     </h2>
                     <p className={styles.paletteHint}>
-                    {problemCode === 'DI.L3.6'
-                            ? lang === 'ka'
-                                ? 'სიმულაციის რეჟიმი: ორი კვება სერიულად (შუა წერტილი!); ცოცია შუაში — ორივე LED; ერთი მიმართულებით — სინქრონული ნათება; მეორე მიმართულებით — ერთი სწრაფად ქრება, მეორე ნელა (დიოდი+კონდენსატორი).'
-                                : 'Simulation mode: series the two supplies (shared mid-rail!); pot mid — both LEDs; one way — sync brighten; the other way — one dims with the pot, the other fades slowly (diode+capacitor hold).'
-                          : problemCode === 'TR.L2.10'
-                            ? lang === 'ka'
-                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია შორიდან მოძრაობით ძრავი ერთბაშად ირთვება (კოლექტორული ჩართვა).'
-                                : 'Simulation mode: switch ON — moving the pot turns the motor on abruptly (collector circuit).'
-                          : problemCode === 'TR.L2.11'
-                            ? lang === 'ka'
-                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოციას გადაადგილებით ძრავი თანდათანობით აჩქარდება (ემიტერული ჩართვა).'
-                                : 'Simulation mode: switch ON — moving the pot spins the motor gradually (emitter follower).'
-                          : problemCode === 'VR.L1.1' ||
-                          problemCode === 'VR.L1.2' ||
-                          problemCode === 'VR.L1.3' ||
-                          problemCode === 'VR.L1.4' ||
-                          problemCode === 'VR.L1.5' ||
-                          problemCode === 'VR.L2.6' ||
-                          problemCode === 'VR.L2.7' ||
-                          problemCode === 'VR.L2.8' ||
-                          problemCode === 'VR.L2.9' ||
-                          problemCode === 'VR.L1.10'
-                            ? lang === 'ka'
-                                ? problemCode === 'VR.L1.10'
-                                    ? 'სიმულაციის რეჟიმი: ააწყვეთ სურათის წრედი; ცოცია შუაში და ბოლოში — ნათურა არ უნდა აინთოს (დამცავი ~50 Ω). შემდეგ უპასუხეთ ტესტს.'
-                                    : problemCode === 'VR.L2.9'
-                                    ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ცვლის ნათებას; გადაართეთ გადამრთველი — იგივე მოძრაობის მიმართულება შებრუნდება.'
-                                    : problemCode === 'VR.L2.8'
-                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მაქსიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ამცირებს ნათებას, მაგრამ LED არ ქრება (დამატებითი R პოტის მიმდევრობით).'
-                                    : problemCode === 'VR.L2.7'
-                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მაქსიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ამცირებს ნათებას და ჩაქრობს LED-ს (პოტი || LED, B–C შეერთებული).'
-                                    : problemCode === 'VR.L2.6'
-                                    ? 'სიმულაციის რეჟიმი: ცოცია შუაში — მინიმალური ნათება; ნებისმიერი მიმართულებით გადაადგილება ზრდის ნათებას (B–C შეერთებული).'
-                                    : problemCode === 'VR.L1.5'
-                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ცვლის ნათებას; დააჭირეთ ღილაკს — LED მაქსიმუმზეა, ცოცია აღარ მოქმედებს.'
-                                      : problemCode === 'VR.L1.4'
-                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი — ცოცია ნათებას არ ცვლის; დააჭირეთ ღილაკს — მაშინ ცოცია ცვლის ნათებას.'
-                                      : problemCode === 'VR.L1.3'
-                                        ? 'სიმულაციის რეჟიმი: ცოცია შუაში — ორივე LED; გადაადგილეთ — ერთი ძლიერდება, მეორე სუსტდება.'
-                                        : problemCode === 'VR.L1.2'
-                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), გადაადგილეთ ცოცია — LED უნდა აინთოს და ერთ ნაპირზე ბოლომდე ჩაქრეს.'
-                                          : 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ გადაადგილეთ ცვლადი რეზისტორის ცოცია — LED-ის ნათება უნდა შეიცვალოს.'
-                                : problemCode === 'VR.L1.10'
-                                  ? 'Simulation mode: build the figure; mid and end-stop — lamp stays dark (~50 Ω floor). Then answer the quiz.'
-                                  : problemCode === 'VR.L2.9'
-                                  ? 'Simulation mode: switch ON — pot changes brightness; flip the slide switch to reverse that direction.'
-                                  : problemCode === 'VR.L2.8'
-                                  ? 'Simulation mode: pot mid = brightest; move either way to dim but stay lit (series R in shunt branch).'
-                                  : problemCode === 'VR.L2.7'
-                                  ? 'Simulation mode: pot mid = brightest; move either way to dim and extinguish (pot || LED, B–C shorted).'
-                                  : problemCode === 'VR.L2.6'
-                                  ? 'Simulation mode: pot mid = dimmest; move either way to brighten (B–C shorted).'
-                                  : problemCode === 'VR.L1.5'
-                                    ? 'Simulation mode: switch ON — pot changes brightness; hold button — LED max, pot ignored.'
-                                    : problemCode === 'VR.L1.4'
-                                      ? 'Simulation mode: switch ON — pot ignored until you hold the button; then pot changes brightness.'
-                                    : problemCode === 'VR.L1.3'
-                                      ? 'Simulation mode: pot mid — both LEDs; move it — one brightens, the other dims.'
-                                      : problemCode === 'VR.L1.2'
-                                        ? 'Simulation mode: turn the switch ON, move the pot — LED should light and fully extinguish at one end.'
-                                        : 'Simulation mode: turn the switch ON, then move the pot slider — LED brightness should change.'
-                        : problemCode === 'ST.L2.4' || problemCode === 'ST.L2.10'
-                            ? lang === 'ka'
-                                ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ ერთდროულად დააჭირეთ ორივე ღილაკს.'
-                                : 'Simulation mode: turn the switch ON, then press and hold both buttons together.'
-                            : problemCode === 'ST.L2.11' || problemCode === 'ST.L2.12'
-                              ? lang === 'ka'
-                                  ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ნებისმიერ ღილაკს.'
-                                  : 'Simulation mode: turn the switch ON, then press either button.'
-                              : problemCode === 'ST.L2.13' || problemCode === 'ST.L2.14'
-                                ? lang === 'ka'
-                                    ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); თითოეული ღილაკი თავის შუქდიოდ(ებ)ს ანთებს.'
-                                    : 'Simulation mode: turn the switch ON; each button lights its own LED(s).'
-                                : problemCode === 'LR.L3.9'
-                                  ? lang === 'ka'
-                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); პირველი ღილაკი ზრდის, მეორე ამცირებს LED-ის ნათებას.'
-                                      : 'Simulation mode: turn the switch ON; the first button brightens and the second dims the LED.'
-                                  : problemCode === 'LR.L3.10'
-                                    ? lang === 'ka'
-                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ღილაკზე დაჭერისას ერთი LED ძლიერდება, მეორე სუსტდება.'
-                                        : 'Simulation mode: turn the switch ON; pressing the button brightens one LED and dims the other.'
-                                    : problemCode === 'LR.L1.11' ||
-                                        problemCode === 'LR.L2.12' ||
-                                        problemCode === 'DM.L4.4'
-                                      ? lang === 'ka'
-                                          ? problemCode === 'DM.L4.4'
-                                              ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შეადარეთ LED-ების ნათება; ზუსტი შედარებისთვის დააჭირეთ ღილაკს.'
-                                              : 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON) და შეადარეთ ორივე LED-ის ნათება.'
-                                          : problemCode === 'DM.L4.4'
-                                            ? 'Simulation mode: turn the switch ON, compare LED brightness; press the button for a precise comparison.'
-                                            : 'Simulation mode: turn the switch ON and compare both LED brightness levels.'
-                                  : problemCode === 'LR.L2.5'
-                                  ? lang === 'ka'
-                                      ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); ერთი ღილაკი — ნათურა, მეორე — LED.'
-                                      : 'Simulation mode: turn the switch ON; one button lights the lamp, the other the LED.'
-                                  : problemCode === 'LR.L3.6' ||
-                                      problemCode === 'DM.L2.5' ||
-                                      problemCode === 'DM.L2.10'
-                                    ? lang === 'ka'
-                                        ? problemCode === 'DM.L2.10'
-                                            ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); დააწკაპუნეთ ძრავზე — გაჩერება/გაშვება (თითით შეჩერება).'
-                                            : problemCode === 'DM.L2.5'
-                                              ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON); დააჭირეთ ღილაკს ძრავის გასაჩერებლად.'
-                                              : 'სიმულაციის რეჟიმი: LED თავიდან ანთებულია; დააჭირეთ ღილაკს მის ჩასაქრობად.'
-                                        : problemCode === 'DM.L2.10'
-                                          ? 'Simulation mode: turn the switch ON; click the motor to stall/release (finger stop).'
-                                          : problemCode === 'DM.L2.5'
-                                            ? 'Simulation mode: turn the switch ON; press and hold the button to stop the motor.'
-                                            : 'Simulation mode: the LED starts on; press and hold the button to turn it off.'
-                                    : problemCode === 'LR.L2.7'
-                                      ? lang === 'ka'
-                                          ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ღილაკს ნათების მოსამატებლად.'
-                                          : 'Simulation mode: turn the switch ON, then press the button to brighten the LED.'
-                                      : problemCode === 'LR.L3.8'
-                                        ? lang === 'ka'
-                                            ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ ღილაკს ნათების შესამცირებლად.'
-                                            : 'Simulation mode: turn the switch ON, then press the button to dim the LED.'
-                                  : problemCode === 'ST.L1.3' ||
-                                      problemCode === 'ST.L1.8' ||
-                                      problemCode === 'ST.L2.9' ||
-                                      problemCode === 'LR.L1.1' ||
-                                      problemCode === 'LR.L1.2' ||
-                                      problemCode === 'LR.L1.3' ||
-                                      problemCode === 'LR.L2.4' ||
-                                      problemCode === 'DM.L1.1'
-                                    ? lang === 'ka'
-                                        ? 'სიმულაციის რეჟიმი: ჩართეთ ჩამრთველი (ON), შემდეგ დააჭირეთ და არ გაუშვათ ღილაკი.'
-                                        : 'Simulation mode: turn the switch ON, then press and hold the button.'
-                                    : lang === 'ka'
-                                    ? '↻ შებრუნება · გადაიტანეთ ფირზე · მარჯვენა ღილაკი დეტალზე — წაშლა'
-                                    : '↻ rotate · drag to board · right-click a component to remove it'}
-                    </p>
-                    <p className={styles.paletteHint}>
                         {lang === 'ka'
-                            ? 'მარჯვენა ღილაკი — დეტალის წაშლა · ღილაკზე ორჯერ დაწკაპუნება — დაჭერილზე ჩაკეტვა; შემდეგი დაწკაპუნება — განბლოკვა'
-                            : 'Right-click — remove a component · Double-click a button — lock it pressed; click again — unlock'}
+                            ? '↻ შებრუნება · გადაიტანეთ დაფაზე'
+                            : '↻ rotate · drag onto the board'}
                     </p>
                     <button
                         type="button"
@@ -2797,6 +2615,23 @@ export default function CircuitWorkbench({ problemCode }) {
                     >
                         {lang === 'ka' ? 'დაფის გასუფთავება' : 'Clear board'}
                     </button>
+                    <p className={styles.paletteHint}>
+                        {lang === 'ka'
+                            ? 'მარჯვენა ღილაკი დეტალზე — წაშლა'
+                            : 'Right-click a component to delete it'}
+                    </p>
+                    <p className={styles.paletteHint}>
+                        {lang === 'ka'
+                            ? 'დაფაზე დეტალზე გადაფარებისას ↻ ღილაკი აბრუნებს (ან R)'
+                            : 'Hover a placed part and click ↻ to rotate it (or press R)'}
+                    </p>
+                    {palette.some((item) => item.type === COMPONENT_TYPES.BUTTON) && (
+                        <p className={styles.paletteHint}>
+                            {lang === 'ka'
+                                ? 'ღილაკზე ორჯერ დაწკაპუნება — დაჭერილზე ჩაკეტვა; კიდევ ერთხელ — განბლოკვა'
+                                : 'Double-click a button to lock it pressed; click again to unlock'}
+                        </p>
+                    )}
                 </div>
                 <div className={styles.paletteItems}>
                     {standardPalette.map(renderPaletteCard)}
@@ -3140,6 +2975,12 @@ export default function CircuitWorkbench({ problemCode }) {
                                 onContextMenu={(e) => {
                                     removeComponent(comp.id, e);
                                 }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'r' || e.key === 'R') {
+                                        e.preventDefault();
+                                        rotatePlaced(comp);
+                                    }
+                                }}
                                 role={
                                     interactive &&
                                     !isVarResistorType(comp.type)
@@ -3209,6 +3050,34 @@ export default function CircuitWorkbench({ problemCode }) {
                                         : undefined
                                 }
                             >
+                                <button
+                                    type="button"
+                                    data-rotate-handle
+                                    tabIndex={-1}
+                                    className={styles.rotateHandle}
+                                    style={rotateHandleScreenStyle(rotation)}
+                                    title={
+                                        lang === 'ka'
+                                            ? 'შებრუნება 90° (ან R)'
+                                            : 'Rotate 90° (or press R)'
+                                    }
+                                    aria-label={
+                                        lang === 'ka'
+                                            ? 'დეტალის შებრუნება'
+                                            : 'Rotate component'
+                                    }
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        rotatePlaced(comp);
+                                        e.currentTarget.blur();
+                                    }}
+                                    onContextMenu={(e) => {
+                                        e.stopPropagation();
+                                    }}
+                                >
+                                    ↻
+                                </button>
                                 <div
                                     className={
                                         useGlowOverlay

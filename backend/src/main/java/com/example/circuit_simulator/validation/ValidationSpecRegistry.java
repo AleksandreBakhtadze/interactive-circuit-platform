@@ -77,6 +77,15 @@ public class ValidationSpecRegistry {
             Map.entry("DI.L3.6", diL36()),
             Map.entry("TR.L2.10", trL210()),
             Map.entry("TR.L2.11", trL211()),
+            Map.entry("TR.L2.12", trL212()),
+            Map.entry("TR.L2.13", trL213()),
+            Map.entry("TR.L2.14", trL214()),
+            Map.entry("TR.L2.16", trL216()),
+            Map.entry("TR.L2.17", trL217()),
+            Map.entry("TCP.L1.1", tcpL11()),
+            Map.entry("TCP.L1.2", tcpL12()),
+            Map.entry("TCP.L1.3", tcpL13()),
+            Map.entry("TCP.L1.4", tcpL14()),
             Map.entry("DM.L1.1", dmL11()),
             Map.entry("DM.L2.2", dmL22()),
             Map.entry("DM.L2.3", dmL23()),
@@ -408,6 +417,483 @@ public class ValidationSpecRegistry {
                                                 1.35)
                                 ),
                                 Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TR.L2.12 — collector load lamp; quiescent base R (≥1k) lights dimly;
+     * button parallels a second R (≥1k) to raise Ib and brighten.
+     */
+    private static ProblemValidationSpec trL212() {
+        return new ProblemValidationSpec(
+                "TR.L2.12",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_dim",
+                                "ჩამრთველი ჩართულია — ნათურა ანთია (სუსტად/საშუალოდ)",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.025),
+                                        new ValidationCheck("lamp", "current", "lt", 0.105)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_bright",
+                                "ღილაკი დაჭერილია — ნათურის ნათება მოემატა",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.09),
+                                        new ValidationCheck(
+                                                "lamp", "current_vs_prior", "gt", 1.2)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TR.L2.13 — emitter follower lamp; base at full V → bright; button closes
+     * a divider to ~V/2 → dims.
+     */
+    private static ProblemValidationSpec trL213() {
+        return new ProblemValidationSpec(
+                "TR.L2.13",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_bright",
+                                "ჩამრთველი ჩართულია — ნათურა ძლიერად ანთია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.08)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_dim",
+                                "ღილაკი დაჭერილია — ნათურის ნათება მოიკლო",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.015),
+                                        new ValidationCheck("lamp", "current", "lt", 0.075),
+                                        new ValidationCheck(
+                                                "lamp", "current_vs_prior", "lt", 0.75)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TR.L2.14 — collector-load lamp biased by 100Ω + motor divider.
+     * Motor spinning (high Rm) → lamp on; stalled (low Rm) → lamp off.
+     */
+    private static ProblemValidationSpec trL214() {
+        return new ProblemValidationSpec(
+                "TR.L2.14",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია",
+                                Map.of("switch", "open", "motor_1", "running"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "running_lamp_on",
+                                "ჩამრთველი ჩართულია, ძრავი ტრიალებს — ნათურა ანთია",
+                                Map.of("switch", "closed", "motor_1", "running"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05),
+                                        new ValidationCheck("motor_1", "current", "gt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "stalled_lamp_off",
+                                "ძრავი მექანიკურად გაჩერებულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "motor_1", "stalled"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01),
+                                        new ValidationCheck("motor_1", "current", "gt", 0.05)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TR.L2.16 — antagonistic CE loads: pot drives motor BJT; lamp BJT base
+     * taken from motor collector through 1k so motor-on ⇒ lamp-off and vice versa.
+     */
+    private static ProblemValidationSpec trL216() {
+        return new ProblemValidationSpec(
+                "TR.L2.16",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_motor_end",
+                                "ცოცია ერთ ბოლოში — ძრავი ტრიალებს, ნათურა ჩამქრალია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.1),
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_lamp_end",
+                                "ცოცია მეორე ბოლოში — ნათურა ანთია, ძრავი გაჩერებულია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.08),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.04)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TR.L2.17 — AND: lamp lights only when both buttons are pressed
+     * (series transistors, or series buttons into one transistor).
+     */
+    private static ProblemValidationSpec trL217() {
+        return new ProblemValidationSpec(
+                "TR.L2.17",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of(
+                                        "switch", "open",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_both_open",
+                                "ჩამრთველი ჩართულია, ღილაკები არ არის დაჭერილი",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "only_button_1",
+                                "მხოლოდ პირველი ღილაკი დაჭერილია — ნათურა ჩამქრალია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "only_button_2",
+                                "მხოლოდ მეორე ღილაკი დაჭერილია — ნათურა ჩამქრალია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "both_buttons",
+                                "ორივე ღილაკი დაჭერილია — ნათურა ანთია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TCP.L1.1 — CE LED; button charges C; high-R base bleed keeps LED on for
+     * several seconds after release, then fades out (long-hold discharge).
+     */
+    private static ProblemValidationSpec tcpL11() {
+        return new ProblemValidationSpec(
+                "TCP.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — შუქდიოდი ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართულია — შუქდიოდი ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_instant_on",
+                                "ღილაკი დაჭერილია — შუქდიოდი მყისიერად ანთია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.003)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_hold_then_fade",
+                                "ღილაკის გაშვების შემდეგ ნათება რამდენიმე წამი რჩება და ჩაქრება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "gt",
+                                                0.003),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "lt",
+                                                0.001)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * TCP.L1.2 — LED || CE shunt; idle LED on; press charges C → BJT shunts LED off;
+     * release holds dark then LED returns (long-hold discharge).
+     */
+    private static ProblemValidationSpec tcpL12() {
+        return new ProblemValidationSpec(
+                "TCP.L1.2",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — შუქდიოდი ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_led_on",
+                                "ჩამრთველი ჩართულია — შუქდიოდი ანთია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.003)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_instant_off",
+                                "ღილაკი დაჭერილია — შუქდიოდი მყისიერად ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_hold_off_then_on",
+                                "ღილაკის გაშვების შემდეგ რამდენიმე წამი ჩამქრალია, შემდეგ ანთება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_start",
+                                                "lt",
+                                                0.001),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_end",
+                                                "gt",
+                                                0.003)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * TCP.L1.3 — like L1.1 but lamp load: dual 470 µF || , CE switch, long hold after release.
+     */
+    private static ProblemValidationSpec tcpL13() {
+        return new ProblemValidationSpec(
+                "TCP.L1.3",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_instant_on",
+                                "ღილაკი დაჭერილია — ნათურა მყისიერად ანთია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_early",
+                                                "gt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "gt",
+                                                0.05)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_hold_then_fade",
+                                "ღილაკის გაშვების შემდეგ ნათება რამდენიმე წამი რჩება და ჩაქრება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.01)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * TCP.L1.4 — slow RC charge of dual 470 µF (high R_charge); lamp brightens gradually
+     * on press, then fades faster on release (lower R_base bleed).
+     */
+    private static ProblemValidationSpec tcpL14() {
+        return new ProblemValidationSpec(
+                "TCP.L1.4",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_slow_brighten",
+                                "ღილაკის დაჭერა — ნათურა თანდათან ანთდება",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "lt",
+                                                0.02),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_early",
+                                                "lt",
+                                                0.03),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "gt",
+                                                0.05)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_faster_fade",
+                                "ღილაკის გაშვება — ნათურა შედარებით ჩქარა ჩაქრება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.025),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_fall",
+                                                "gt",
+                                                0.04)
+                                ),
+                                "discharge"
                         )
                 )
         );

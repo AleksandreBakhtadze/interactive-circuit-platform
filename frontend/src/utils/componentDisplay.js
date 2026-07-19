@@ -119,7 +119,7 @@ const MOTOR_OFF_RATIO = 0.05;
  * Absolute DC full-speed reference (~12 V / 50 Ω motor model).
  * One 6 V pack ≈ 0.12 A → half speed; two packs in series ≈ 0.24 A → full.
  * Do not fold live |I| into the peak — that made every current look 100%.
- * Stall-indicator tasks (DM.L2.10 / L3.11) use higher Rm when “running”
+ * Stall-indicator tasks (DM.L2.10 / L3.11 / TR.L2.14) use higher Rm when “running”
  * (~700 Ω) so |I|≈15–20 mA — still above MOTOR_OFF_RATIO × this reference.
  */
 const MOTOR_REF_CURRENT = 0.24;

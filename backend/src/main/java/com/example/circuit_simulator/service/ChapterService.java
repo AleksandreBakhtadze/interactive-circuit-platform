@@ -18,7 +18,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ChapterService {
 
-    private static final String HIDDEN_CHAPTER_CODE = "PR";
+    private static final Set<String> HIDDEN_CHAPTER_CODES = Set.of("PR", "TRL");
 
     private final ChapterRepository chapterRepository;
     private final ProblemRepository problemRepository;
@@ -31,7 +31,7 @@ public class ChapterService {
     public List<ChapterDTO> getAllChapters(Long userId) {
         return chapterRepository.findAll()
                 .stream()
-                .filter(ch -> !HIDDEN_CHAPTER_CODE.equalsIgnoreCase(ch.getCode()))
+                .filter(ch -> !HIDDEN_CHAPTER_CODES.contains(ch.getCode().toUpperCase()))
                 .sorted((a, b) -> a.getDisplayOrder() - b.getDisplayOrder())
                 .map(ch -> toChapterDto(ch, userId))
                 .toList();

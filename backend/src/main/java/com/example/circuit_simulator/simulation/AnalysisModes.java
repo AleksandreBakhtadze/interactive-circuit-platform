@@ -20,7 +20,20 @@ public final class AnalysisModes {
                 || "CP.L2.15".equals(problemCode)
                 || "CP.L2.16".equals(problemCode)
                 || "CP.L4.19".equals(problemCode)
-                || "DI.L3.6".equals(problemCode);
+                || "DI.L3.6".equals(problemCode)
+                || "TCP.L1.1".equals(problemCode)
+                || "TCP.L1.2".equals(problemCode)
+                || "TCP.L1.3".equals(problemCode)
+                || "TCP.L1.4".equals(problemCode);
+    }
+
+    /**
+     * TCP.L1.1–L1.3 — long RC hold through transistor base; discharge needs ~35 s window.
+     */
+    public static boolean usesLongHoldDischarge(String problemCode) {
+        return "TCP.L1.1".equals(problemCode)
+                || "TCP.L1.2".equals(problemCode)
+                || "TCP.L1.3".equals(problemCode);
     }
 
     /**
@@ -44,7 +57,8 @@ public final class AnalysisModes {
                 || "CP.L2.4".equals(problemCode)
                 || "CP.L2.13".equals(problemCode)
                 || "CP.L2.14".equals(problemCode)
-                || "CP.L2.15".equals(problemCode);
+                || "CP.L2.15".equals(problemCode)
+                || "TCP.L1.4".equals(problemCode);
     }
 
     /**
@@ -83,7 +97,11 @@ public final class AnalysisModes {
                 || "CP.L2.6".equals(problemCode)
                 || "CP.L2.7".equals(problemCode)
                 || "CP.L2.12".equals(problemCode)
-                || "CP.L2.14".equals(problemCode);
+                || "CP.L2.14".equals(problemCode)
+                || "TCP.L1.1".equals(problemCode)
+                || "TCP.L1.2".equals(problemCode)
+                || "TCP.L1.3".equals(problemCode)
+                || "TCP.L1.4".equals(problemCode);
     }
 
     /**

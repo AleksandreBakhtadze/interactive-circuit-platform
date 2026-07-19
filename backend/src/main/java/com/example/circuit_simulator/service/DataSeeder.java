@@ -28,7 +28,6 @@ public class DataSeeder implements CommandLineRunner {
                 new Chapter(null, "CP",  "კონდენსატორი", "Capacitor", 6),
                 new Chapter(null, "DI",  "ნახევარგამტარული დიოდი", "Semiconductor Diode", 8),
                 new Chapter(null, "TR",  "ტრანზისტორი", "Transistor", 9),
-                new Chapter(null, "TRL", "ტრანზისტორის და რელეს ერთობლივი გამოყენება", "Transistor & Relay", 10),
                 new Chapter(null, "TCP", "ტრანზისტორის და კონდენსატორის ერთობლივი გამოყენება", "Transistor & Capacitor", 11),
                 new Chapter(null, "DTR", "დარლინგტონის წყვილის და ორი კასკადის გამოყენება", "Darlington Pair", 12),
                 new Chapter(null, "TFB", "უკუკავშირი და ჰისტერეზისი", "Feedback & Hysteresis", 13),

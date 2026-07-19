@@ -60,12 +60,6 @@ const META = {
         difficulty: 'intermediate',
         icon: 'transistor',
     },
-    TRL: {
-        accent: '#a78bfa',
-        iconBg: 'rgba(167, 139, 250, 0.22)',
-        difficulty: 'advanced',
-        icon: 'relay',
-    },
     TCP: {
         accent: '#67e8f9',
         iconBg: 'rgba(103, 232, 249, 0.2)',

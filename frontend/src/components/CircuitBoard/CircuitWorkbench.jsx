@@ -417,6 +417,24 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN Q1, ძრავი, რეზისტორი';
         }
+        if (problemCode === 'TR.L2.12' || problemCode === 'TR.L2.13') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q1, ნათურა, 2 რეზისტორი (≥1k)';
+        }
+        if (problemCode === 'TR.L2.14') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, NPN Q1, ნათურა, ძრავი, რეზისტორი';
+        }
+        if (problemCode === 'TR.L2.16') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, 2 NPN, ნათურა, ძრავი, რეზისტორები';
+        }
+        if (problemCode === 'TR.L2.17') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, 2 NPN, ნათურა, 1k რეზისტორები';
+        }
+        if (problemCode === 'TCP.L1.1' || problemCode === 'TCP.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q1, წითელი LED, კონდენსატორი, რეზისტორები';
+        }
+        if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q1, ნათურა, 2×470µF კონდენსატორი, რეზისტორები';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -686,6 +704,24 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
         return 'Place: 2 power supplies, switch, variable resistor, NPN Q1, motor, resistor';
     }
+    if (problemCode === 'TR.L2.12' || problemCode === 'TR.L2.13') {
+        return 'Place: 2 power supplies, switch, button, NPN Q1, lamp, 2 resistors (≥1k)';
+    }
+    if (problemCode === 'TR.L2.14') {
+        return 'Place: 2 power supplies, switch, NPN Q1, lamp, motor, resistor';
+    }
+    if (problemCode === 'TR.L2.16') {
+        return 'Place: 2 power supplies, switch, variable resistor, 2 NPN, lamp, motor, resistors';
+    }
+    if (problemCode === 'TR.L2.17') {
+        return 'Place: 2 power supplies, switch, 2 buttons, 2 NPN, lamp, 1k resistors';
+    }
+    if (problemCode === 'TCP.L1.1' || problemCode === 'TCP.L1.2') {
+        return 'Place: 2 power supplies, switch, button, NPN Q1, red LED, capacitor, resistors';
+    }
+    if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
+        return 'Place: 2 power supplies, switch, button, NPN Q1, lamp, 2×470µF capacitors, resistors';
+    }
     return 'Place: power supply, button, lamp';
 }
 
@@ -852,10 +888,20 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'DI.L3.6'
         ) {
             setCapacitorKey('470uf');
+        } else if (problemCode === 'TCP.L1.1' || problemCode === 'TCP.L1.2') {
+            setCapacitorKey('100uf');
+        } else if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
+            setCapacitorKey('470uf');
         } else {
             setCapacitorKey('10uf');
         }
         if (problemCode === 'CP.L2.5') {
+            setResistorKey('5ko1');
+        } else if (problemCode === 'TCP.L1.1' || problemCode === 'TCP.L1.2') {
+            setResistorKey('100ko');
+        } else if (problemCode === 'TCP.L1.3') {
+            setResistorKey('1ko');
+        } else if (problemCode === 'TCP.L1.4') {
             setResistorKey('5ko1');
         } else if (
             problemCode === 'VR.L1.1' ||
@@ -873,8 +919,15 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'VR.L2.13' ||
             problemCode === 'DI.L3.6' ||
             problemCode === 'TR.L2.10' ||
-            problemCode === 'TR.L2.11'
+            problemCode === 'TR.L2.11' ||
+            problemCode === 'TR.L2.13'
         ) {
+            setResistorKey('1ko');
+        } else if (problemCode === 'TR.L2.12') {
+            setResistorKey('5ko1');
+        } else if (problemCode === 'TR.L2.14' || problemCode === 'TR.L2.16') {
+            setResistorKey('100o');
+        } else if (problemCode === 'TR.L2.17') {
             setResistorKey('1ko');
         } else if (
             problemCode === 'CP.L2.6' ||
@@ -1814,14 +1867,22 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'CP.L2.14' ||
                                 problemCode === 'CP.L2.15' ||
                                 problemCode === 'CP.L2.16' ||
-                                problemCode === 'DI.L3.6',
+                                problemCode === 'DI.L3.6' ||
+                                problemCode === 'TCP.L1.1' ||
+                                problemCode === 'TCP.L1.2' ||
+                                problemCode === 'TCP.L1.3' ||
+                                problemCode === 'TCP.L1.4',
                             fullDuration:
                                 (crossfade &&
                                     usesMasterSwitchSimulation(problemCode) &&
                                     !parallelPolarity) ||
                                 problemCode === 'CP.L2.14' ||
                                 problemCode === 'CP.L2.15' ||
-                                problemCode === 'CP.L2.16',
+                                problemCode === 'CP.L2.16' ||
+                                problemCode === 'TCP.L1.1' ||
+                                problemCode === 'TCP.L1.2' ||
+                                problemCode === 'TCP.L1.3' ||
+                                problemCode === 'TCP.L1.4',
                             // DI.L3.6: ~2–2.5 s fade so live pot-drag steps stay readable
                             // when each move cancels/restarts the prior .tran.
                             readableCrossfade:

@@ -87,7 +87,8 @@ public class CircuitValidationService {
 
         Map<String, String> roleToId = indexRoles(components);
         List<String> missingRoles = findMissingRoles(spec, roleToId, components);
-        if (problemCode != null && problemCode.startsWith("TR.")) {
+        if (problemCode != null
+                && (problemCode.startsWith("TR.") || problemCode.startsWith("TCP."))) {
             boolean hasTransistor = components.stream()
                     .anyMatch(c -> "transistor".equals(c.get("type")));
             if (!hasTransistor) {
@@ -1185,6 +1186,10 @@ public class CircuitValidationService {
             // Motor (signed series): magnitude helpers + polarity flip across cases.
             case "tran_current_abs_start" -> Math.abs(series.get(0));
             case "tran_current_abs_end" -> Math.abs(series.get(series.size() - 1));
+            case "tran_current_abs_early" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 0.1));
+            case "tran_current_abs_fall" ->
+                    Math.abs(series.get(0)) - Math.abs(series.get(series.size() - 1));
             case "tran_current_abs_peak" -> {
                 double peak = series.stream().mapToDouble(Math::abs).max().orElse(0.0);
                 lastMotorSignedExtremum.set(signedExtremum(series));

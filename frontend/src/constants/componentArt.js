@@ -70,13 +70,13 @@ const CAPACITOR_ART_SNAPS = Object.fromEntries(
     CAPACITOR_SPECS.map((s) => [capacitorType(s.key), RESISTOR_ART_SNAP])
 );
 
-/** Vertical transistor (217×326): collector top, base left, emitter bottom. */
+/** Vertical transistor (217×326): collector top, base left, emitter bottom (2×3). */
 const TRIANGLE_ART_VERTICAL = {
     svgWidth: 217,
     svgHeight: 326,
     points: [
         { u: 162 / 217, v: 54.17 / 326, dr: 0, dc: 1 },
-        { u: 162 / 217, v: 270.83 / 326, dr: 1, dc: 1 },
+        { u: 162 / 217, v: 270.83 / 326, dr: 2, dc: 1 },
         { u: 54 / 217, v: 162.5 / 326, dr: 1, dc: 0 },
     ],
 };

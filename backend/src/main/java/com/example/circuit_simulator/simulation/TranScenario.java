@@ -27,6 +27,14 @@ public record TranScenario(
         return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.OPEN, "discharge");
     }
 
+    /**
+     * TCP.L1.x — 100 µF + 100 kΩ base bleed keeps the BJT on ~tens of seconds;
+     * use a longer window so release fade / recovery is visible in validation.
+     */
+    public static TranScenario longHoldDischarge() {
+        return new TranScenario(0.07, 35.0, 0, 0, Set.of(), SwitchTimeline.OPEN, "discharge");
+    }
+
     public static TranScenario charge() {
         return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "pressed");
     }

@@ -138,7 +138,11 @@ export function isToggleInteractive(type) {
 
 /** DM.L2.10 / DM.L3.11: click motor to stall / release (finger-stop). */
 export function supportsMotorStallToggle(problemCode) {
-    return problemCode === 'DM.L2.10' || problemCode === 'DM.L3.11';
+    return (
+        problemCode === 'DM.L2.10' ||
+        problemCode === 'DM.L3.11' ||
+        problemCode === 'TR.L2.14'
+    );
 }
 
 /** Parts the student can operate during live simulation. */

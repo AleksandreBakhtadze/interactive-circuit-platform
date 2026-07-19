@@ -103,6 +103,10 @@ public class SpiceGenerator {
     }
 
     public static String generateSpice(String json) throws Exception {
+        return generateSpice(json, null);
+    }
+
+    public static String generateSpice(String json, String problemCode) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> data = mapper.readValue(json, Map.class);
 
@@ -274,7 +278,7 @@ public class SpiceGenerator {
                     .append(" ").append(node).append(" 0 1e12\n"); // 1e12 instead of 1e9
         }
 
-        appendModels(sb);
+        appendModels(sb, problemCode);
         sb.append(".options savecurrents\n");
         sb.append("\n.control\n");
         sb.append("op\n");
@@ -743,6 +747,10 @@ public class SpiceGenerator {
     }
 
     private static void appendModels(StringBuilder sb) {
+        appendModels(sb, null);
+    }
+
+    private static void appendModels(StringBuilder sb, String problemCode) {
         // Slightly soft Si diode (~0.25–0.35 V at mA) so a parallel LED+2×diode
         // branch can still glow dimly when a bare LED clamps the shared node —
         // matching the Snap-Circuits-style DI.L1.4 demo. Keep enough drop for
@@ -752,8 +760,16 @@ public class SpiceGenerator {
         sb.append(".model LEDMODEL_RED   D (IS=9e-21 N=1.9  RS=55 BV=20)\n");
         sb.append(".model LEDMODEL_GREEN D (IS=2e-21 N=2.0  RS=3  BV=20)\n");
         sb.append(".model LEDMODEL_BLUE  D (IS=5e-22 N=2.2  RS=4  BV=20)\n");
-        sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
-        sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=150 VAF=100 IKF=0.3 RC=0.1)\n");
+        // TR.L2.12 needs lower β so a ≥1k quiescent base R (e.g. 5.1k) leaves the
+        // collector-load lamp clearly dim vs button-parallel 1k path. Keep BF=150
+        // elsewhere so TR.L2.10 stays an abrupt CE switch vs TR.L2.11 follower.
+        int bf = "TR.L2.12".equals(problemCode) ? 40 : 150;
+        sb.append(".model NPN_MODEL NPN (IS=1e-14 BF=")
+                .append(bf)
+                .append(" VAF=100 IKF=0.3 RC=0.1)\n");
+        sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=")
+                .append(bf)
+                .append(" VAF=100 IKF=0.3 RC=0.1)\n");
         sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
         sb.append(".model PNP_DARLINGTON PNP (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
     }

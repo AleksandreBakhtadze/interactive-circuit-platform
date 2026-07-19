@@ -109,23 +109,31 @@ public class SimulationService {
                 }
                 return switch (phase) {
                     case idle -> runDcToMap(circuitJson);
+                    // TCP.L1.3: charge .tran so instant-on (low R_charge) can be
+                    // distinguished from slow-charge topologies in validation.
                     case pressed -> AnalysisModes.usesSlowCharge(problemCode)
+                                    || "TCP.L1.3".equals(problemCode)
                             ? runChargeTranToMap(circuitJson)
                             : runDcToMap(circuitJson);
                     case discharge -> AnalysisModes.usesPotStepDischarge(problemCode)
                             ? runPotStepDischargeTranToMap(circuitJson, priorPotPositions)
-                            : runDischargeTranToMap(circuitJson);
+                            : runDischargeTranToMap(circuitJson, problemCode);
                 };
             }
 
-            return runDcToMap(circuitJson);
+            return runDcToMap(circuitJson, problemCode);
         } catch (Exception e) {
             return Map.of("error", e.getMessage());
         }
     }
 
     private Map<String, Object> runDcToMap(String circuitJson) throws Exception {
-        Map<String, Double> nodeVoltages = runDcAndParse(circuitJson);
+        return runDcToMap(circuitJson, null);
+    }
+
+    private Map<String, Object> runDcToMap(String circuitJson, String problemCode)
+            throws Exception {
+        Map<String, Double> nodeVoltages = runDcAndParse(circuitJson, problemCode);
         Map<String, Object> componentVoltages =
                 computeComponentVoltages(circuitJson, nodeVoltages);
 
@@ -151,15 +159,23 @@ public class SimulationService {
     }
 
     private Map<String, Object> runDischargeTranToMap(String circuitJson) throws Exception {
+        return runDischargeTranToMap(circuitJson, null);
+    }
+
+    private Map<String, Object> runDischargeTranToMap(String circuitJson, String problemCode)
+            throws Exception {
         String chargedJson = SpiceGenerator.applySwitchStates(
                 circuitJson, Map.of("button_1", "closed"));
-        Map<String, Double> chargedNodes = runDcAndParse(chargedJson);
+        Map<String, Double> chargedNodes = runDcAndParse(chargedJson, problemCode);
+        TranScenario scenario = AnalysisModes.usesLongHoldDischarge(problemCode)
+                ? TranScenario.longHoldDischarge()
+                : TranScenario.discharge();
         return simulateTranToMap(
                 circuitJson,
                 SpiceGenerator.generateDischargeTranSpice(
                         circuitJson,
                         chargedNodes,
-                        TranScenario.discharge()));
+                        scenario));
     }
 
     /**
@@ -395,7 +411,12 @@ public class SimulationService {
     }
 
     private Map<String, Double> runDcAndParse(String circuitJson) throws Exception {
-        String spice = SpiceGenerator.generateSpice(circuitJson);
+        return runDcAndParse(circuitJson, null);
+    }
+
+    private Map<String, Double> runDcAndParse(String circuitJson, String problemCode)
+            throws Exception {
+        String spice = SpiceGenerator.generateSpice(circuitJson, problemCode);
         String runId = UUID.randomUUID().toString().replace("-", "");
         Path circuitFile = Paths.get("circuit-" + runId + ".cir");
         Path logFile = Paths.get("output-" + runId + ".txt");

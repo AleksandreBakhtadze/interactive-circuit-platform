@@ -189,6 +189,15 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'VR.L1.10') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, ნათურა (სურათის მიხედვით)';
         }
+        if (problemCode === 'VR.L2.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, მწვანე და წითელი LED, ნათურა, 3 რეზისტორი';
+        }
+        if (problemCode === 'VR.L2.12') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L2.13') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ცვლადი რეზისტორი, წითელი LED, რეზისტორი (საპირისპირო ბოლოები)';
+        }
         if (problemCode === 'ST.L2.9') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, რეზისტორი';
         }
@@ -378,6 +387,15 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'DM.L2.10') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ძრავი, წითელი LED, რეზისტორი (1 kΩ) და 20 Ω ან ნათურა';
         }
+        if (problemCode === 'DM.L3.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ძრავი, წითელი და მწვანე LED, 3 რეზისტორი (მაგ. 100 Ω + 2×1 kΩ)';
+        }
+        if (problemCode === 'DM.L2.13') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 გადამრთველი, ძრავი, ნათურა';
+        }
+        if (problemCode === 'DM.L3.14') {
+            return 'განათავსეთ: 2 კვების წყარო, ძრავი (და ნაცნობი დეტალები — ჩამრთველი, ღილაკები, LED…)';
+        }
         if (problemCode === 'DM.L4.4') {
             return 'განათავსეთ: 2 კვების წყარო, ძრავი (და საზომი დეტალები სურვილისამებრ)';
         }
@@ -439,6 +457,15 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'VR.L1.10') {
         return 'Place: 2 power supplies, switch, variable resistor, lamp (follow the figure)';
+    }
+    if (problemCode === 'VR.L2.11') {
+        return 'Place: 2 power supplies, switch, variable resistor, green and red LED, lamp, 3 resistors';
+    }
+    if (problemCode === 'VR.L2.12') {
+        return 'Place: 2 power supplies, switch, 2 variable resistors, red LED, resistor';
+    }
+    if (problemCode === 'VR.L2.13') {
+        return 'Place: 2 power supplies, switch, 2 variable resistors, red LED, resistor (opposite ends)';
     }
     if (problemCode === 'ST.L2.9') {
         return 'Place: 2 power supplies, switch, button, red and green LED, resistor';
@@ -628,6 +655,15 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'DM.L2.10') {
         return 'Place: 2 power supplies, switch, motor, red LED, resistor (1 kΩ) and 20 Ω or lamp';
+    }
+    if (problemCode === 'DM.L3.11') {
+        return 'Place: 2 power supplies, switch, motor, red and green LED, 3 resistors (e.g. 100 Ω + 2×1 kΩ)';
+    }
+    if (problemCode === 'DM.L2.13') {
+        return 'Place: 2 power supplies, switch, 2 slide switches, motor, lamp';
+    }
+    if (problemCode === 'DM.L3.14') {
+        return 'Place: 2 power supplies, motor (plus familiar parts — switch, buttons, LEDs…)';
     }
     if (problemCode === 'DM.L4.4') {
         return 'Place: 2 power supplies, motor (plus measurement parts as needed)';
@@ -832,6 +868,9 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'VR.L2.8' ||
             problemCode === 'VR.L2.9' ||
             problemCode === 'VR.L1.10' ||
+            problemCode === 'VR.L2.11' ||
+            problemCode === 'VR.L2.12' ||
+            problemCode === 'VR.L2.13' ||
             problemCode === 'DI.L3.6' ||
             problemCode === 'TR.L2.10' ||
             problemCode === 'TR.L2.11'
@@ -2116,9 +2155,13 @@ export default function CircuitWorkbench({ problemCode }) {
                     ? lang === 'ka'
                         ? 'ამ ამოცანაში ავტომატური შემოწმება არ არის — ააწყვეთ საზომი წრედი და შეადარეთ ძაბვები/ნათება.'
                         : 'No automated check for this task — build a measurement circuit and compare voltages/brightness.'
-                    : lang === 'ka'
-                      ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და დააკვირდით სიმულაციას.'
-                      : 'No circuit check for this task — rebuild from the picture and watch the live simulation.'
+                    : problemCode === 'DM.L3.14'
+                      ? lang === 'ka'
+                          ? 'ამ ამოცანაში ავტომატური შემოწმება არ არის — ააწყვეთ გენერაციის წრედი (ძრავი + ინდიკატორი); ინერცია/გენერაცია სრულად იხილება ფიზიკურ ნაკრებზე.'
+                          : 'No automated check for this task — build a generation circuit (motor + indicator); coasting/generator effect is fully visible on the physical kit.'
+                      : lang === 'ka'
+                        ? 'ამ ამოცანაში წრედის შემოწმება არ არის — ააწყვეთ სურათის მიხედვით და დააკვირდით სიმულაციას.'
+                        : 'No circuit check for this task — rebuild from the picture and watch the live simulation.'
             );
             return;
         }

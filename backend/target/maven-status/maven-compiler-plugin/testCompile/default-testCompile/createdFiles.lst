@@ -2,8 +2,8 @@ com/example/circuit_simulator/DiL36SimReproTest.class
 com/example/circuit_simulator/SlideSwitchValidationTest.class
 com/example/circuit_simulator/TranSimulationTest.class
 com/example/circuit_simulator/TransistorValidationTest.class
-com/example/circuit_simulator/DiodeValidationTest.class
 com/example/circuit_simulator/StL24LayoutTest.class
+com/example/circuit_simulator/DiodeValidationTest.class
 com/example/circuit_simulator/CircuitSimulatorApplicationTests.class
 com/example/circuit_simulator/StarterValidationTest.class
 com/example/circuit_simulator/CapacitorValidationTest.class

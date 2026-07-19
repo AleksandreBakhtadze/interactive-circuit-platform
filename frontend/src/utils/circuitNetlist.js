@@ -136,9 +136,9 @@ export function isToggleInteractive(type) {
     );
 }
 
-/** DM.L2.10: click motor to stall / release (finger-stop). */
+/** DM.L2.10 / DM.L3.11: click motor to stall / release (finger-stop). */
 export function supportsMotorStallToggle(problemCode) {
-    return problemCode === 'DM.L2.10';
+    return problemCode === 'DM.L2.10' || problemCode === 'DM.L3.11';
 }
 
 /** Parts the student can operate during live simulation. */
@@ -295,6 +295,10 @@ export function buildCircuitJson(
     const slideSwitchCount = placed.filter(
         (c) => c.type === COMPONENT_TYPES.SLIDE_SWITCH
     ).length;
+    let varResistorIndex = 0;
+    const varResistorCount = placed.filter(
+        (c) => c.type === COMPONENT_TYPES.VAR_RESISTOR
+    ).length;
 
     for (const comp of placed) {
         if (isConnectorType(comp.type)) {
@@ -344,6 +348,14 @@ export function buildCircuitJson(
                 role = `slide_switch_${slideSwitchIndex}`;
             } else {
                 role = 'slide_switch';
+            }
+        }
+        if (comp.type === COMPONENT_TYPES.VAR_RESISTOR) {
+            if (varResistorCount > 1) {
+                varResistorIndex += 1;
+                role = `variable_resistor_${varResistorIndex}`;
+            } else {
+                role = 'variable_resistor';
             }
         }
 

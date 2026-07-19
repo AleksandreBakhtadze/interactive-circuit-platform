@@ -131,6 +131,22 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'VR.L2.11': [
+        {
+            src: '/problems/VR.L2.11/board.png',
+            altKa: 'VR.L2.11 წრედი ფირზე',
+            altEn: 'VR.L2.11 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/VR.L2.11/schematic.png',
+            altKa: 'VR.L2.11 სქემა',
+            altEn: 'VR.L2.11 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

@@ -982,6 +982,149 @@ export const DM_L2_10_PALETTE = [
 ];
 
 /**
+ * Inventory for DM.L3.11 — run (green) + stall (red) indicators across motor / sense R.
+ * Sense ≈100 Ω so stalled V_motor stays below green Vf; click motor to stall.
+ */
+export const DM_L3_11_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 6,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for DM.L2.13 — mid-tap voltage SPDT + lamp/motor select SPDT + master SPST.
+ */
+export const DM_L2_13_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * Inventory for DM.L3.14 — motor-as-generator practice (inertia / LED indication).
+ * Practice only: SPICE motor is resistive (no coasting back-EMF).
+ */
+export const DM_L3_14_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 2,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 6,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
  * Inventory for DM.L2.5 — motor runs with switch; parallel button bypass stops it.
  * Series lamp or resistor(s) required so the button does not short the supply.
  */
@@ -1509,6 +1652,72 @@ export const VR_L2_9_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for VR.L2.12 — two pots as series rheostats + red LED + series R. */
+export const VR_L2_12_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L2.13 — complementary series rheostats (sync keeps brightness). */
+export const VR_L2_13_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 /** Inventory for VR.L1.10 — quiz: pot as rheostat + 6 V lamp (practice/sim, no validation). */
 export const VR_L1_10_PALETTE = [
     {
@@ -1540,6 +1749,51 @@ export const VR_L1_10_PALETTE = [
         labelKa: 'ძრავი',
         labelEn: 'Motor',
         maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L2.11 — quiz: pot divider + green LED || (red LED + lamp on wiper). */
+export const VR_L2_11_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 3,
     },
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
@@ -3638,6 +3892,15 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'VR.L1.10') {
         return VR_L1_10_PALETTE;
     }
+    if (problemCode === 'VR.L2.11') {
+        return VR_L2_11_PALETTE;
+    }
+    if (problemCode === 'VR.L2.12') {
+        return VR_L2_12_PALETTE;
+    }
+    if (problemCode === 'VR.L2.13') {
+        return VR_L2_13_PALETTE;
+    }
     if (problemCode === 'ST.L2.4') {
         return ST_L2_4_PALETTE;
     }
@@ -3839,6 +4102,15 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'DM.L2.10') {
         return DM_L2_10_PALETTE;
     }
+    if (problemCode === 'DM.L3.11') {
+        return DM_L3_11_PALETTE;
+    }
+    if (problemCode === 'DM.L2.13') {
+        return DM_L2_13_PALETTE;
+    }
+    if (problemCode === 'DM.L3.14') {
+        return DM_L3_14_PALETTE;
+    }
     if (problemCode === 'DM.L4.4') {
         return DM_L4_4_PALETTE;
     }
@@ -3883,6 +4155,9 @@ export function supportsSimulator(problemCode) {
         problemCode === 'VR.L2.8' ||
         problemCode === 'VR.L2.9' ||
         problemCode === 'VR.L1.10' ||
+        problemCode === 'VR.L2.11' ||
+        problemCode === 'VR.L2.12' ||
+        problemCode === 'VR.L2.13' ||
         problemCode === 'ST.L2.4' ||
         problemCode === 'ST.L2.9' ||
         problemCode === 'LR.L1.1' ||
@@ -3950,6 +4225,9 @@ export function supportsSimulator(problemCode) {
         problemCode === 'DM.L2.8' ||
         problemCode === 'DM.L3.9' ||
         problemCode === 'DM.L2.10' ||
+        problemCode === 'DM.L3.11' ||
+        problemCode === 'DM.L2.13' ||
+        problemCode === 'DM.L3.14' ||
         problemCode === 'DM.L4.4' ||
         problemCode === 'DI.L1.1' ||
         problemCode === 'DI.L2.2' ||
@@ -4056,7 +4334,9 @@ export function usesCircuitValidation(problemCode) {
         problemCode !== 'LR.L2.15' &&
         problemCode !== 'CP.L2.12' &&
         problemCode !== 'VR.L1.10' &&
+        problemCode !== 'VR.L2.11' &&
         problemCode !== 'DM.L4.4' &&
+        problemCode !== 'DM.L3.14' &&
         problemCode !== 'DI.L3.5'
     );
 }
@@ -4164,6 +4444,29 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
         { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
         { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'VR.L2.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'VR.L2.12': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'VR.L2.13': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 2 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
     ],
     'ST.L2.4': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
@@ -4646,6 +4949,25 @@ const PROBLEM_REQUIRED_PARTS = {
             anyOf: [COMPONENT_TYPES.LAMP, COMPONENT_TYPES.RESISTOR],
             maxCount: 1,
         },
+    ],
+    'DM.L3.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'DM.L2.13': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 2 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+    ],
+    'DM.L3.14': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
     ],
     'DM.L4.4': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },

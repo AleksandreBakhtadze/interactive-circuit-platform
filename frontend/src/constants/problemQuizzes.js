@@ -949,6 +949,132 @@ const VR_L110_QUIZ = {
     ],
 };
 
+const VR_L211_QUIZ = {
+    problemCode: 'VR.L2.11',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa:
+                'რა მოხდება თუ ცოციას დავაყენებთ შუა წერტილში და ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn:
+                'What happens if you set the wiper mid-way and turn the switch on?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Nothing lights',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ნათურაც და შუქდიოდებიც აინთება',
+                    textEn: 'The lamp and both LEDs light',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მხოლოდ შუქდიოდები აინთება',
+                    textEn: 'Only the LEDs light',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'მხოლოდ მწვანე შუქდიოდი აინთება',
+                    textEn: 'Only the green LED lights',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+            ],
+            correctKey: 'დ',
+            explanationKa:
+                'მხოლოდ მწვანე შუქდიოდი აინთება. ნათურაში საკმარისი დენი ვერ გაივლის; '
+                + 'წითელ შუქდიოდზე საკმარისი ძაბვა არ იქნება მოდებული.',
+            explanationEn:
+                'Only the green LED lights. The lamp does not get enough current, '
+                + 'and the red LED does not get enough voltage from the mid wiper.',
+        },
+        {
+            id: 'q2',
+            promptKa: 'რა მოხდება თუ ცოციას გადავაადგილებთ ზევით?',
+            promptEn: 'What happens if you move the wiper upward?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ნათურაც და შუქდიოდებიც აინთება',
+                    textEn: 'The lamp and both LEDs light',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ შუქდიოდები აინთება',
+                    textEn: 'Only the LEDs light',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მხოლოდ მწვანე შუქდიოდი აინთება',
+                    textEn: 'Only the green LED lights',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'მხოლოდ ნათურა აინთება',
+                    textEn: 'Only the lamp lights',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'მწვანე და წითელი შუქდიოდები აინთება; ნათურა არ აინთება, '
+                + 'რადგან მასში საკმარისი დენი ვერ გაივლის.',
+            explanationEn:
+                'Green and red LEDs light; the lamp still does not get enough current to glow.',
+        },
+        {
+            id: 'q3',
+            promptKa: 'რა მოხდება თუ ცოციას გადავაადგილებთ ქვევით?',
+            promptEn: 'What happens if you move the wiper downward?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Nothing lights',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ შუქდიოდები აინთება',
+                    textEn: 'Only the LEDs light',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'მხოლოდ მწვანე შუქდიოდი აინთება',
+                    textEn: 'Only the green LED lights',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'ნათურაც და შუქდიოდებიც აინთება',
+                    textEn: 'The lamp and both LEDs light',
+                },
+            ],
+            correctKey: 'დ',
+            explanationKa:
+                'მხოლოდ მწვანე შუქდიოდი აინთება. ნათურაში საკმარისი დენი ვერ გაივლის; '
+                + 'წითელ შუქდიოდზე საკმარისი ძაბვა არ იქნება მოდებული.',
+            explanationEn:
+                'Only the green LED lights. The lamp lacks current, and the red LED '
+                + 'lacks enough voltage when the wiper is toward ground.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
@@ -958,6 +1084,7 @@ const QUIZZES_BY_CODE = {
     'LR.L2.15': LR_L215_QUIZ,
     'CP.L2.12': CP_L212_QUIZ,
     'VR.L1.10': VR_L110_QUIZ,
+    'VR.L2.11': VR_L211_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

@@ -137,6 +137,54 @@ public class CircuitValidationService {
                 chosen = swapped;
             }
         }
+        // DM.L2.13: voltage vs load SPDT — either placement order OK;
+        // also retry inverted lamp/motor throw on the load SPDT.
+        if (!chosen.allPassed() && "DM.L2.13".equals(problemCode)) {
+            CaseEvaluation slideSwapped =
+                    evaluateCases(
+                            spec,
+                            circuitJson,
+                            problemCode,
+                            roleToId,
+                            components,
+                            false,
+                            false,
+                            true,
+                            false);
+            if (slideSwapped.allPassed()) {
+                chosen = slideSwapped;
+            } else {
+                CaseEvaluation loadInverted =
+                        evaluateCases(
+                                spec,
+                                circuitJson,
+                                problemCode,
+                                roleToId,
+                                components,
+                                false,
+                                false,
+                                false,
+                                true);
+                if (loadInverted.allPassed()) {
+                    chosen = loadInverted;
+                } else {
+                    CaseEvaluation both =
+                            evaluateCases(
+                                    spec,
+                                    circuitJson,
+                                    problemCode,
+                                    roleToId,
+                                    components,
+                                    false,
+                                    false,
+                                    true,
+                                    true);
+                    if (both.allPassed()) {
+                        chosen = both;
+                    }
+                }
+            }
+        }
         // Pot B↔C / wiper orientation — try inverted positions if needed (VR.L1.2).
         if (!chosen.allPassed() && specUsesPotPositions(spec)) {
             CaseEvaluation inverted =
@@ -164,6 +212,33 @@ public class CircuitValidationService {
             if (!flipped.allPassed() && specUsesTwoButtons(spec)) {
                 flipped = evaluateCases(
                         spec, flippedSupplyJson, problemCode, roleToId, components, true, false);
+            }
+            if (!flipped.allPassed() && "DM.L2.13".equals(problemCode)) {
+                for (boolean swapSl : new boolean[] {false, true}) {
+                    for (boolean invLoad : new boolean[] {false, true}) {
+                        if (!swapSl && !invLoad) {
+                            continue;
+                        }
+                        CaseEvaluation attempt =
+                                evaluateCases(
+                                        spec,
+                                        flippedSupplyJson,
+                                        problemCode,
+                                        roleToId,
+                                        components,
+                                        false,
+                                        false,
+                                        swapSl,
+                                        invLoad);
+                        if (attempt.allPassed()) {
+                            flipped = attempt;
+                            break;
+                        }
+                    }
+                    if (flipped.allPassed()) {
+                        break;
+                    }
+                }
             }
             if (!flipped.allPassed() && specUsesPotPositions(spec)) {
                 CaseEvaluation flippedPots = evaluateCases(
@@ -305,6 +380,43 @@ public class CircuitValidationService {
         return out;
     }
 
+    /** Swap slide_switch_1 ↔ slide_switch_2 (DM.L2.13 voltage vs load SPDT placement). */
+    private Map<String, String> maybeSwapSlideStates(
+            Map<String, String> states, boolean swapSlides) {
+        if (!swapSlides) {
+            return states;
+        }
+        Map<String, String> out = new LinkedHashMap<>(states);
+        if (!out.containsKey("slide_switch_1") && !out.containsKey("slide_switch_2")) {
+            return states;
+        }
+        String s1 = out.remove("slide_switch_1");
+        String s2 = out.remove("slide_switch_2");
+        if (s2 != null) {
+            out.put("slide_switch_1", s2);
+        }
+        if (s1 != null) {
+            out.put("slide_switch_2", s1);
+        }
+        return out;
+    }
+
+    /** Flip left↔right on slide_switch_2 (DM.L2.13 lamp vs motor throw orientation). */
+    private Map<String, String> maybeInvertLoadSlide(
+            Map<String, String> states, boolean invertLoadSlide) {
+        if (!invertLoadSlide || !states.containsKey("slide_switch_2")) {
+            return states;
+        }
+        Map<String, String> out = new LinkedHashMap<>(states);
+        String s = out.get("slide_switch_2");
+        if ("left".equals(s)) {
+            out.put("slide_switch_2", "right");
+        } else if ("right".equals(s)) {
+            out.put("slide_switch_2", "left");
+        }
+        return out;
+    }
+
     private CaseEvaluation evaluateCases(
             ProblemValidationSpec spec,
             String circuitJson,
@@ -314,13 +426,63 @@ public class CircuitValidationService {
             boolean swapButtons,
             boolean invertPots)
             throws Exception {
+        return evaluateCases(
+                spec,
+                circuitJson,
+                problemCode,
+                roleToId,
+                components,
+                swapButtons,
+                invertPots,
+                false,
+                false);
+    }
+
+    private CaseEvaluation evaluateCases(
+            ProblemValidationSpec spec,
+            String circuitJson,
+            String problemCode,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components,
+            boolean swapButtons,
+            boolean invertPots,
+            boolean swapSlides)
+            throws Exception {
+        return evaluateCases(
+                spec,
+                circuitJson,
+                problemCode,
+                roleToId,
+                components,
+                swapButtons,
+                invertPots,
+                swapSlides,
+                false);
+    }
+
+    private CaseEvaluation evaluateCases(
+            ProblemValidationSpec spec,
+            String circuitJson,
+            String problemCode,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components,
+            boolean swapButtons,
+            boolean invertPots,
+            boolean swapSlides,
+            boolean invertLoadSlide)
+            throws Exception {
         List<CaseResultDTO> caseResults = new ArrayList<>();
         Map<String, Double> observedMetrics = new HashMap<>();
         boolean allPassed = true;
 
         for (ValidationCase validationCase : spec.cases()) {
             Map<String, String> states =
-                    maybeSwapButtonStates(validationCase.switchStates(), swapButtons);
+                    maybeInvertLoadSlide(
+                            maybeSwapSlideStates(
+                                    maybeSwapButtonStates(
+                                            validationCase.switchStates(), swapButtons),
+                                    swapSlides),
+                            invertLoadSlide);
             String caseJson = SpiceGenerator.applySwitchStates(circuitJson, states);
             caseJson = SpiceGenerator.applyPotPositions(
                     caseJson,

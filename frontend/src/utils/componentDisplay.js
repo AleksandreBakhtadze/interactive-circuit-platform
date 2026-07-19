@@ -114,11 +114,13 @@ export function getComponentCurrent(
 }
 
 /** Below this |I|/peak fraction the motor fan is considered stopped. */
-const MOTOR_OFF_RATIO = 0.08;
+const MOTOR_OFF_RATIO = 0.05;
 /**
  * Absolute DC full-speed reference (~12 V / 50 Ω motor model).
  * One 6 V pack ≈ 0.12 A → half speed; two packs in series ≈ 0.24 A → full.
  * Do not fold live |I| into the peak — that made every current look 100%.
+ * Stall-indicator tasks (DM.L2.10 / L3.11) use higher Rm when “running”
+ * (~700 Ω) so |I|≈15–20 mA — still above MOTOR_OFF_RATIO × this reference.
  */
 const MOTOR_REF_CURRENT = 0.24;
 const MOTOR_PERIOD_SLOW_SEC = 1.15;
@@ -174,8 +176,14 @@ export function getMotorSpinState(
 
 function isLampLit(results, spiceComponentId, voltage) {
     const current = getComponentCurrent(results, spiceComponentId);
-    if (isLitCurrent(current)) return true;
-    return isLitVoltage(voltage);
+    const v =
+        typeof voltage === 'number'
+            ? Math.abs(voltage)
+            : Math.abs(getComponentVoltage(results, spiceComponentId) ?? 0);
+    // Match getLampDcBrightnessRatio: tiny IR drop (~mV) must not flip the ON image.
+    if (typeof current === 'number' && current > 0.005) return true;
+    if (typeof current === 'number') return false;
+    return v > 0.8;
 }
 
 export function isTransientResult(results) {

@@ -725,8 +725,8 @@
 /* Compact pot dial on the lower body of the triangle. */
 .potSliderWrap {
     position: absolute;
-    left: 22%;
-    right: 22%;
+    left: 30%;
+    right: 30%;
     top: auto;
     bottom: 14%;
     z-index: 4;

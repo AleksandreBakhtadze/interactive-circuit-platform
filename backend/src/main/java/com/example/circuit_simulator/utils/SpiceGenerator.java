@@ -871,12 +871,14 @@ public class SpiceGenerator {
 
     /**
      * Effective motor resistance. Default 50 Ω keeps existing DM tasks unchanged.
-     * {@code running}/{@code stalled} model back-EMF vs winding R (DM.L2.10 stall LED).
+     * {@code running}/{@code stalled} model back-EMF vs winding R (DM.L2.10 / L3.11).
+     * Stalled ≈2 Ω so V_motor drops below green Vf even with a 20 Ω sense resistor
+     * (L3.11 green ‖ motor); running stays high so the red sense LED stays off.
      */
     private static String motorResistanceOhms(Map<String, Object> comp) {
         Object state = comp.get("state");
         if ("stalled".equals(state)) {
-            return "12";
+            return "2";
         }
         if ("running".equals(state)) {
             return "700";

@@ -9,7 +9,9 @@ import {
     normalizeRotation,
     rotationSteps,
 } from '../../constants/componentRotation';
-import { DOT_COL_X, DOT_ROW_Y, getDotPitch, pointerToNearestDot } from './boardLayout';
+import { DOT_COL_X, DOT_ROW_Y, getDotPitch, gridPointToStagePx, pointerToGridPoint, pointerToNearestDot } from './boardLayout';
+
+export { pointerToGridPoint };
 
 export const BOARD_ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 export const BOARD_COLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -412,6 +414,26 @@ export function getPartStyle(gridEl, row, col, w, h, type, rotation = 0) {
         width: `${width}px`,
         height: `${height}px`,
         rotation: rot,
+    };
+}
+
+/** Free-floating torch/cover preview centred on a fractional grid point. */
+export function getAccessoryStyleAtGridPoint(gridEl, row, col, type) {
+    const stage = getBoardStage(gridEl);
+    if (!stage) return null;
+
+    const rect = stage.getBoundingClientRect();
+    const center = gridPointToStagePx(row, col, rect);
+    const snapRow = Math.round(row);
+    const snapCol = Math.round(col);
+    const bounds = getDotCellBounds(rect, snapRow, snapCol, 1, 1);
+
+    return {
+        left: `${center.x - bounds.width / 2}px`,
+        top: `${center.y - bounds.height / 2}px`,
+        width: `${bounds.width}px`,
+        height: `${bounds.height}px`,
+        rotation: 0,
     };
 }
 

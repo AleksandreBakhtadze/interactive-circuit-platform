@@ -46,3 +46,30 @@ export function pointerToNearestDot(clientX, clientY, stageEl) {
 export function dotPinId(row, col) {
     return `${ROWS[row]}${COLS[col]}`;
 }
+
+/** Fractional grid row/col from pointer (not snapped to dots). */
+export function pointerToGridPoint(clientX, clientY, stageEl) {
+    const rect = stageEl.getBoundingClientRect();
+    const stepX =
+        DOT_COL_X.length > 1 ? DOT_COL_X[1] - DOT_COL_X[0] : 0.108;
+    const stepY =
+        DOT_ROW_Y.length > 1 ? DOT_ROW_Y[1] - DOT_ROW_Y[0] : 0.143;
+    const nx = (clientX - rect.left) / rect.width;
+    const ny = (clientY - rect.top) / rect.height;
+    return {
+        row: (ny - DOT_ROW_Y[0]) / stepY,
+        col: (nx - DOT_COL_X[0]) / stepX,
+    };
+}
+
+/** Stage pixel centre for a fractional grid point. */
+export function gridPointToStagePx(row, col, rect) {
+    const stepX =
+        DOT_COL_X.length > 1 ? DOT_COL_X[1] - DOT_COL_X[0] : 0.108;
+    const stepY =
+        DOT_ROW_Y.length > 1 ? DOT_ROW_Y[1] - DOT_ROW_Y[0] : 0.143;
+    return {
+        x: (DOT_COL_X[0] + col * stepX) * rect.width,
+        y: (DOT_ROW_Y[0] + row * stepY) * rect.height,
+    };
+}

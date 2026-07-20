@@ -28,7 +28,7 @@ const LED_ON_IMAGES = {
 const LIT_CURRENT_THRESHOLD = 0.01;
 
 /** LEDs can conduct visibly below 10 mA (e.g. ~1 mA with a larger series resistor). */
-const LED_LIT_CURRENT_THRESHOLD = 0.00015;
+const LED_LIT_CURRENT_THRESHOLD = 0.00005;
 
 /**
  * Current that maps to full LED glow opacity.
@@ -52,7 +52,7 @@ function isLitCurrent(current) {
 }
 
 function isLedLitCurrent(current) {
-    return typeof current === 'number' && current > LED_LIT_CURRENT_THRESHOLD;
+    return typeof current === 'number' && Math.abs(current) > LED_LIT_CURRENT_THRESHOLD;
 }
 
 /**
@@ -360,8 +360,7 @@ export function getPlacedComponentImage(type, opts = {}) {
         );
 
         const lit =
-            dischargeFading ||
-            isLedLitCurrent(forwardCurrent);
+            dischargeFading || isLedLitCurrent(forwardCurrent);
 
         if (liveSimMode && simOk && lit) {
             return LED_ON_IMAGES[ledKey] ?? base;
@@ -456,6 +455,8 @@ export function getLedBrightnessRatio(
 
 /**
  * Steady-state LED glow from absolute forward current (different resistors → different brightness).
+ * Antiparallel / pot-divider tasks (VR.L3.19) conduct in the tens–hundreds of µA range for
+ * much of the slider travel — use a sensitive sub-mA scale so glow ramps in gradually.
  */
 export function getLedDcBrightnessRatio(results, spiceComponentId, frameIndex = 0) {
     const current = getComponentCurrent(
@@ -464,21 +465,129 @@ export function getLedDcBrightnessRatio(results, spiceComponentId, frameIndex = 
         { signed: true },
         frameIndex
     );
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
     if (!isLedLitCurrent(current)) {
         return 0;
     }
-    // Boost the low end so ~1 mA (≈1k at 3 V) still glows; keep headroom so
-    // 100 Ω vs 1k (or 1k vs 5.1k) stay visibly different.
-    const ratio = getCurrentBrightnessRatio(current, LED_FULL_BRIGHT_CURRENT, {
-        gamma: 0.5,
-        floor: 0.008,
+    const referenceCurrent =
+        abs <= 0.002 ? 0.0008 : LED_FULL_BRIGHT_CURRENT;
+    const ratio = getCurrentBrightnessRatio(abs, referenceCurrent, {
+        gamma: 0.42,
+        floor: 0.005,
     });
-    // Never show a “lit” LED as fully dark.
     return Math.max(0.28, ratio);
 }
 
 /**
- * Steady-state lamp glow. Prefer current when available — voltage saturates
+ * VR.L3.19 / VR.L1.20 antiparallel LEDs: currents stay tiny until near Vf.
+ * Glow only when forward-biased (signed V > 0). Combine sub-Vf voltage hint
+ * with forward current for a smooth ramp into full conduction.
+ */
+export function getAntiparallelLedDcBrightnessRatio(
+    results,
+    spiceComponentId,
+    frameIndex = 0
+) {
+    const current = getComponentCurrent(
+        results,
+        spiceComponentId,
+        { signed: true },
+        frameIndex
+    );
+    const forwardVoltage = getComponentVoltage(
+        results,
+        spiceComponentId,
+        frameIndex
+    );
+    const forwardCurrent =
+        typeof current === 'number' && current > 0 ? current : 0;
+    const isForwardBiased =
+        typeof forwardVoltage === 'number' && forwardVoltage > 0;
+
+    if (!isForwardBiased && forwardCurrent <= 0) {
+        return 0;
+    }
+
+    let fromCurrent = 0;
+    if (forwardCurrent >= 0.000001) {
+        const referenceCurrent =
+            forwardCurrent <= 0.002 ? 0.0012 : LED_FULL_BRIGHT_CURRENT;
+        fromCurrent = getCurrentBrightnessRatio(forwardCurrent, referenceCurrent, {
+            gamma: 0.34,
+            floor: 0.001,
+        });
+        fromCurrent = Math.max(0.22, fromCurrent);
+    }
+
+    let fromVoltage = 0;
+    if (isForwardBiased) {
+        if (forwardVoltage >= 1.65) {
+            fromVoltage = 0.55;
+        }
+        if (forwardVoltage > 0.3) {
+            const t = Math.min(1, (forwardVoltage - 0.3) / 1.7);
+            fromVoltage = Math.max(
+                fromVoltage,
+                0.12 + 0.5 * Math.pow(t, 0.55)
+            );
+        }
+    }
+
+    return Math.max(fromCurrent, fromVoltage);
+}
+
+/**
+ * VR.L3.22 / VR.L4.23 RGB/BGR pot-divider branches: currents often stay in the
+ * low µA range. Glow on positive forward current or clear forward voltage (V > 0).
+ */
+export function getRgbSequenceLedDcBrightnessRatio(
+    results,
+    spiceComponentId,
+    frameIndex = 0
+) {
+    const current = getComponentCurrent(
+        results,
+        spiceComponentId,
+        { signed: true },
+        frameIndex
+    );
+    const forwardVoltage = getComponentVoltage(
+        results,
+        spiceComponentId,
+        frameIndex
+    );
+    const forwardCurrent =
+        typeof current === 'number' && current > 0 ? current : 0;
+    const isForwardBiased =
+        typeof forwardVoltage === 'number' && forwardVoltage > 0;
+
+    if (!isForwardBiased && forwardCurrent <= 0) {
+        return 0;
+    }
+
+    if (forwardCurrent >= 0.0000001) {
+        if (forwardCurrent <= 0.00005) {
+            const t = Math.min(1, forwardCurrent / 0.00005);
+            return 0.32 + 0.38 * Math.pow(t, 0.45);
+        }
+        const referenceCurrent =
+            forwardCurrent <= 0.003 ? 0.0008 : LED_FULL_BRIGHT_CURRENT;
+        const ratio = getCurrentBrightnessRatio(forwardCurrent, referenceCurrent, {
+            gamma: 0.32,
+            floor: 0.001,
+        });
+        return Math.max(0.4, ratio);
+    }
+
+    if (isForwardBiased && forwardVoltage >= 1.35) {
+        const t = Math.min(1, (forwardVoltage - 1.35) / 0.85);
+        return 0.35 + 0.6 * Math.pow(t, 0.42);
+    }
+
+    return 0;
+}
+
+/**
  * above ~6 V so diode / small-R drops on a 12 V rail look identical.
  * Falls back to voltage when current cannot be read.
  */
@@ -580,6 +689,41 @@ export function getAbsoluteLedBrightness(current, opts = {}) {
     );
     // ~2 mA → ~0.68; ~10 mA → 1 (still a clear step between 5.1 kΩ and 1 kΩ).
     return 0.42 + 0.58 * Math.pow(t, 0.55);
+}
+
+/**
+ * PR.L1.2 / L2.3: glow relative to ambient LED current (no torch).
+ * Ambient (ratio ≈ 1) → full bright; lower current → visibly dimmer.
+ */
+export function getPhotoModuleLedDimBrightness(current, baselineCurrent) {
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
+    const litMin = 0.00008;
+    if (abs < litMin) {
+        return 0;
+    }
+
+    const base =
+        typeof baselineCurrent === 'number' && baselineCurrent > litMin
+            ? baselineCurrent
+            : null;
+
+    if (base === null) {
+        // Before the first ambient sim, healthy current should look fully lit.
+        if (abs >= LED_FULL_BRIGHT_CURRENT) {
+            return 1;
+        }
+        return getAbsoluteLedBrightness(abs);
+    }
+
+    const ratio = abs / base;
+
+    if (ratio >= 0.98) {
+        return 1;
+    }
+
+    // Softer than ^2.5 so mid-shunt (~40–60% current) still looks dimly lit,
+    // not fully extinguished before the torch is adjacent.
+    return Math.max(0.12, Math.pow(ratio, 1.7));
 }
 
 /**

@@ -587,6 +587,29 @@
     pointer-events: auto;
 }
 
+.paletteItemAccessory {
+    cursor: grab;
+    touch-action: none;
+}
+
+.paletteItemAccessory:active {
+    cursor: grabbing;
+}
+
+.dropPreviewTorch {
+    outline-color: rgba(255, 220, 80, 0.85);
+}
+
+.dropPreviewCover {
+    outline-color: rgba(40, 40, 40, 0.75);
+}
+
+.accessoryPreview {
+    pointer-events: none;
+    overflow: visible;
+    opacity: 0.92;
+}
+
 .dropPreview {
     opacity: 0.55;
     outline: 2px dashed #60c5f1;
@@ -599,6 +622,20 @@
     cursor: grab;
     overflow: visible;
     touch-action: none;
+}
+
+.placedPartAccessory {
+    cursor: grab;
+}
+
+.placedPartAccessoryDragging {
+    cursor: grabbing;
+    filter: brightness(1.08);
+}
+
+/* Torch / cover stay grabbable while another part is being dragged */
+.boardHostDragging .placedPartAccessory {
+    pointer-events: auto;
 }
 
 .placedPartInteractive {

@@ -276,6 +276,9 @@ export const COMPONENT_TYPES = {
     RELAY: 'relay',
     SLIDE_SWITCH: 'slide_switch',
     VAR_RESISTOR: 'var_resistor',
+    PHOTO_RESISTOR: 'photo_resistor',
+    TORCH: 'torch',
+    COVER: 'cover',
 };
 
 const FOOTPRINTS = {
@@ -285,6 +288,9 @@ const FOOTPRINTS = {
     [COMPONENT_TYPES.RESISTOR]: { w: 3, h: 1 },
     [COMPONENT_TYPES.SWITCH]: { w: 3, h: 1 },
     [COMPONENT_TYPES.MOTOR]: { w: 3, h: 1 },
+    [COMPONENT_TYPES.PHOTO_RESISTOR]: { w: 3, h: 1 },
+    [COMPONENT_TYPES.TORCH]: { w: 1, h: 1 },
+    [COMPONENT_TYPES.COVER]: { w: 1, h: 1 },
 };
 
 function isTwoPinWideType(type) {
@@ -294,8 +300,26 @@ function isTwoPinWideType(type) {
         isCapacitorType(type) ||
         type === COMPONENT_TYPES.SWITCH ||
         type === COMPONENT_TYPES.MOTOR ||
-        type === COMPONENT_TYPES.DIODE
+        type === COMPONENT_TYPES.DIODE ||
+        type === COMPONENT_TYPES.PHOTO_RESISTOR
     );
+}
+
+export function isPhotoResistorType(type) {
+    return type === COMPONENT_TYPES.PHOTO_RESISTOR;
+}
+
+export function isTorchType(type) {
+    return type === COMPONENT_TYPES.TORCH;
+}
+
+export function isCoverType(type) {
+    return type === COMPONENT_TYPES.COVER;
+}
+
+/** Torch / cover — placed on board but not wired into the circuit. */
+export function isPhotoAccessoryType(type) {
+    return isTorchType(type) || isCoverType(type);
 }
 
 export function isThreePinTriangleType(type) {
@@ -391,6 +415,7 @@ const SNAP_OFFSETS = {
     [COMPONENT_TYPES.LAMP]: TWO_PIN_SNAP,
     [COMPONENT_TYPES.SWITCH]: TWO_PIN_SNAP,
     [COMPONENT_TYPES.MOTOR]: TWO_PIN_SNAP,
+    [COMPONENT_TYPES.PHOTO_RESISTOR]: TWO_PIN_SNAP,
 };
 
 export function getSnapOffsets(type) {
@@ -1365,6 +1390,150 @@ export const VR_L1_1_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** Inventory for PR.L1.1 — photoresistor + red LED + series R + switch, two supplies. */
+export const PR_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.PHOTO_RESISTOR,
+        labelKa: 'ფოტორეზისტორი',
+        labelEn: 'Photoresistor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    {
+        type: COMPONENT_TYPES.TORCH,
+        labelKa: 'ფანრი',
+        labelEn: 'Torch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.COVER,
+        labelKa: 'დამფარავი',
+        labelEn: 'Cover',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for PR.L1.2 — same parts as L1.1 (parallel PR ∥ LED). */
+export const PR_L1_2_PALETTE = PR_L1_1_PALETTE;
+
+/** Inventory for PR.L2.3 — parallel LED ∥ (PR + series R); two 1 kΩ resistors. */
+export const PR_L2_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.PHOTO_RESISTOR,
+        labelKa: 'ფოტორეზისტორი',
+        labelEn: 'Photoresistor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    {
+        type: COMPONENT_TYPES.TORCH,
+        labelKa: 'ფანრი',
+        labelEn: 'Torch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.COVER,
+        labelKa: 'დამფარავი',
+        labelEn: 'Cover',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for PR.L2.4 — SPDT mode switch + 1k/5.1k + blue LED (combined PR modes). */
+export const PR_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.PHOTO_RESISTOR,
+        labelKa: 'ფოტორეზისტორი',
+        labelEn: 'Photoresistor',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    {
+        type: COMPONENT_TYPES.TORCH,
+        labelKa: 'ფანრი',
+        labelEn: 'Torch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.COVER,
+        labelKa: 'დამფარავი',
+        labelEn: 'Cover',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
 /** Inventory for VR.L1.2 — pot voltage divider + LED/series R + parallel R, two 3 V supplies. */
 export const VR_L1_2_PALETTE = [
     {
@@ -1411,6 +1580,162 @@ export const VR_L1_3_PALETTE = [
         labelKa: 'ჩამრთველი',
         labelEn: 'Switch',
         maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L1.20 — two resistors form voltage divider mid-rail; anti-parallel red+green LEDs. */
+export const VR_L1_20_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L3.22 — pot feeds RGB branches (10k/5.1k/1k); bottom track via 1k to GND. */
+export const VR_L3_22_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L4.23 — BGR sequence; pot + per-color divider branches (extra R allowed). */
+export const VR_L4_23_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 1,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('blue'),
+        labelKa: 'LED ლურჯი',
+        labelEn: 'LED Blue',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 3,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L3.19 — pot as voltage divider; anti-parallel red+green LEDs. */
+export const VR_L3_19_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
     },
     {
         type: COMPONENT_TYPES.VAR_RESISTOR,
@@ -1711,6 +2036,39 @@ export const VR_L2_13_PALETTE = [
         labelKa: 'LED წითელი',
         labelEn: 'LED Red',
         maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/** Inventory for VR.L2.15 — RV1 master brightness + RV2 balance between two red LEDs. */
+export const VR_L2_15_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 2,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
     },
     {
         ...RESISTOR_GROUP_PALETTE_ITEM,
@@ -4287,6 +4645,18 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'VR.L1.1') {
         return VR_L1_1_PALETTE;
     }
+    if (problemCode === 'PR.L1.1') {
+        return PR_L1_1_PALETTE;
+    }
+    if (problemCode === 'PR.L1.2') {
+        return PR_L1_2_PALETTE;
+    }
+    if (problemCode === 'PR.L2.3') {
+        return PR_L2_3_PALETTE;
+    }
+    if (problemCode === 'PR.L2.4') {
+        return PR_L2_4_PALETTE;
+    }
     if (problemCode === 'VR.L1.2') {
         return VR_L1_2_PALETTE;
     }
@@ -4322,6 +4692,21 @@ export function getPaletteForProblem(problemCode) {
     }
     if (problemCode === 'VR.L2.13') {
         return VR_L2_13_PALETTE;
+    }
+    if (problemCode === 'VR.L2.15') {
+        return VR_L2_15_PALETTE;
+    }
+    if (problemCode === 'VR.L3.19') {
+        return VR_L3_19_PALETTE;
+    }
+    if (problemCode === 'VR.L1.20') {
+        return VR_L1_20_PALETTE;
+    }
+    if (problemCode === 'VR.L3.22') {
+        return VR_L3_22_PALETTE;
+    }
+    if (problemCode === 'VR.L4.23') {
+        return VR_L4_23_PALETTE;
     }
     if (problemCode === 'ST.L2.4') {
         return ST_L2_4_PALETTE;
@@ -4595,6 +4980,10 @@ export function supportsSimulator(problemCode) {
         problemCode === 'ST.L1.5' ||
         problemCode === 'ST.L1.8' ||
         problemCode === 'VR.L1.1' ||
+        problemCode === 'PR.L1.1' ||
+        problemCode === 'PR.L1.2' ||
+        problemCode === 'PR.L2.3' ||
+        problemCode === 'PR.L2.4' ||
         problemCode === 'VR.L1.2' ||
         problemCode === 'VR.L1.3' ||
         problemCode === 'VR.L1.4' ||
@@ -4607,6 +4996,11 @@ export function supportsSimulator(problemCode) {
         problemCode === 'VR.L2.11' ||
         problemCode === 'VR.L2.12' ||
         problemCode === 'VR.L2.13' ||
+        problemCode === 'VR.L2.15' ||
+        problemCode === 'VR.L3.19' ||
+        problemCode === 'VR.L1.20' ||
+        problemCode === 'VR.L3.22' ||
+        problemCode === 'VR.L4.23' ||
         problemCode === 'ST.L2.4' ||
         problemCode === 'ST.L2.9' ||
         problemCode === 'LR.L1.1' ||
@@ -4846,6 +5240,35 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: ledType('red'), maxCount: 1 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
     ],
+    'PR.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.PHOTO_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'PR.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.PHOTO_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'PR.L2.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.PHOTO_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'PR.L2.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.PHOTO_RESISTOR, maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
     'VR.L1.2': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
         { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
@@ -4934,6 +5357,45 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 2 },
         { type: ledType('red'), maxCount: 1 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'VR.L2.15': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 2 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'VR.L3.19': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'VR.L1.20': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'VR.L3.22': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 4 },
+    ],
+    'VR.L4.23': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: ledType('red'), maxCount: 1 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('blue'), maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 5 },
     ],
     'ST.L2.4': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },

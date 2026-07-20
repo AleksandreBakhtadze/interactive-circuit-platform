@@ -17,8 +17,6 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (chapterRepository.count() > 0) return; // already seeded
-
         List<Chapter> chapters = List.of(
                 new Chapter(null, "ST",  "გაცნობითი ამოცანები, მთავარი დეტალების გამოყენებით", "Introductory Challenges", 1),
                 new Chapter(null, "LR",  "შუქდიოდები და რეზისტორები", "LEDs and Resistors", 2),
@@ -26,6 +24,7 @@ public class DataSeeder implements CommandLineRunner {
                 new Chapter(null, "DM",  "მუდმივი დენის ძრავი", "DC Motor", 4),
                 new Chapter(null, "VR",  "ცვლადი რეზისტორი", "Variable Resistor", 5),
                 new Chapter(null, "CP",  "კონდენსატორი", "Capacitor", 6),
+                new Chapter(null, "PR",  "ფოტორეზისტორი", "Photoresistor", 7),
                 new Chapter(null, "DI",  "ნახევარგამტარული დიოდი", "Semiconductor Diode", 8),
                 new Chapter(null, "TR",  "ტრანზისტორი", "Transistor", 9),
                 new Chapter(null, "TCP", "ტრანზისტორის და კონდენსატორის ერთობლივი გამოყენება", "Transistor & Capacitor", 11),
@@ -35,7 +34,17 @@ public class DataSeeder implements CommandLineRunner {
                 new Chapter(null, "GEN", "ცვლადი სიგნალის გენერაცია", "Signal Generation", 15)
         );
 
-        chapterRepository.saveAll(chapters);
+        for (Chapter seed : chapters) {
+            chapterRepository.findByCode(seed.getCode()).ifPresentOrElse(
+                    existing -> {
+                        existing.setTitleKa(seed.getTitleKa());
+                        existing.setTitleEn(seed.getTitleEn());
+                        existing.setDisplayOrder(seed.getDisplayOrder());
+                        chapterRepository.save(existing);
+                    },
+                    () -> chapterRepository.save(seed)
+            );
+        }
         System.out.println("Chapters seeded.");
     }
 }

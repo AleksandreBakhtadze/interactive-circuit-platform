@@ -75,6 +75,15 @@ export const translations = {
         err_INVALID_IDENTIFIER: 'მომხმარებელი ან ელ-ფოსტა ვერ მოიძებნა.',
         err_INVALID_PASSWORD:   'პაროლი არასწორია.',
         err_NETWORK_ERROR:      'სერვერთან კავშირი ვერ მოხერხდა.',
+
+        account_solved: 'ამოხსნილი ამოცანები',
+        account_solved_loading: 'იტვირთება...',
+        account_solved_count: '{solved} / {total}',
+        account_badges: 'ბეჯები',
+        account_badges_empty: 'ჯერ არ გაქვთ ბეჯი',
+        account_activity: 'აქტივობა',
+        account_activity_less: 'ნაკლები',
+        account_activity_more: 'მეტი',
     },
     en: {
         nav_challenges: 'Challenges',
@@ -152,5 +161,14 @@ export const translations = {
         err_INVALID_IDENTIFIER: 'Username or email not found.',
         err_INVALID_PASSWORD:   'Incorrect password.',
         err_NETWORK_ERROR:      'Could not connect to server.',
+
+        account_solved: 'Solved problems',
+        account_solved_loading: 'Loading...',
+        account_solved_count: '{solved} / {total}',
+        account_badges: 'Badges',
+        account_badges_empty: 'No badges yet',
+        account_activity: 'Activity',
+        account_activity_less: 'Less',
+        account_activity_more: 'More',
     }
 };

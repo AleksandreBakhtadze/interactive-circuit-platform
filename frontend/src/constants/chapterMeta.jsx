@@ -48,6 +48,12 @@ const META = {
         difficulty: 'intermediate',
         icon: 'capacitor',
     },
+    PR: {
+        accent: '#fcd34d',
+        iconBg: 'rgba(252, 211, 77, 0.22)',
+        difficulty: 'intermediate',
+        icon: 'photoresistor',
+    },
     DI: {
         accent: '#c4b5fd',
         iconBg: 'rgba(196, 181, 253, 0.22)',
@@ -165,6 +171,14 @@ export function ChapterIcon({ name, color = 'currentColor' }) {
             return (
                 <svg {...common}>
                     <path d="M4 12h6M14 12h6M10 6v12M14 6v12" />
+                </svg>
+            );
+        case 'photoresistor':
+            return (
+                <svg {...common}>
+                    <circle cx="18" cy="6" r="3.5" />
+                    <path d="M18 2.5v1M18 8.5v1M21.5 6h-1M15.5 6h-1M20.5 3.5l-.7.7M16.2 7.8l-.7.7M20.5 8.5l-.7-.7M16.2 4.2l-.7-.7" />
+                    <path d="M2 16h4l2-4 3 8 3-8 2 4h6" />
                 </svg>
             );
         case 'diode':

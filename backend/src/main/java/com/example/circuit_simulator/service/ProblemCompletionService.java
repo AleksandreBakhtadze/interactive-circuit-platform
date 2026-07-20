@@ -1,5 +1,6 @@
 package com.example.circuit_simulator.service;
 
+import com.example.circuit_simulator.dto.UserActivityDayDTO;
 import com.example.circuit_simulator.model.Problem;
 import com.example.circuit_simulator.model.ProblemCompletion;
 import com.example.circuit_simulator.repository.ProblemCompletionRepository;
@@ -12,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -57,10 +60,35 @@ public class ProblemCompletionService {
         return completionRepository.countByUserIdAndChapterId(userId, chapterId);
     }
 
+    public long countSolved(Long userId) {
+        if (userId == null) {
+            return 0;
+        }
+        if (!userRepository.existsById(userId)) {
+            return 0;
+        }
+        return completionRepository.countByUserId(userId);
+    }
+
     public Set<Long> findSolvedProblemIds(Long userId, List<Long> problemIds) {
         if (userId == null || problemIds == null || problemIds.isEmpty()) {
             return Collections.emptySet();
         }
         return completionRepository.findSolvedProblemIds(userId, problemIds);
+    }
+
+    public List<UserActivityDayDTO> getActivitySinceMonths(Long userId, int months) {
+        if (userId == null || months < 1) {
+            return List.of();
+        }
+        if (!userRepository.existsById(userId)) {
+            return List.of();
+        }
+        LocalDateTime since = LocalDate.now().minusMonths(months).atStartOfDay();
+        return completionRepository.countGroupedByDaySince(userId, since).stream()
+                .map(row -> new UserActivityDayDTO(
+                        row[0].toString(),
+                        ((Number) row[1]).longValue()))
+                .toList();
     }
 }

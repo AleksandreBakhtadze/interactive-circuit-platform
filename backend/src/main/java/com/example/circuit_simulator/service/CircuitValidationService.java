@@ -488,6 +488,8 @@ public class CircuitValidationService {
             caseJson = SpiceGenerator.applyPotPositions(
                     caseJson,
                     maybeInvertPotPositions(validationCase.potPositions(), invertPots));
+            caseJson = SpiceGenerator.applyLightLevels(
+                    caseJson, validationCase.lightLevels());
             Map<String, Object> simResult = validationCase.simPhase() != null
                     ? simulationService.simulateToMap(
                             caseJson, problemCode, validationCase.simPhase())
@@ -1054,7 +1056,7 @@ public class CircuitValidationService {
                 continue;
             }
             double forward = readCurrent(entry.getValue(), nodes, true);
-            if (forward <= 0.0001) {
+            if (forward <= 1e-5) {
                 continue;
             }
             lit += 1;

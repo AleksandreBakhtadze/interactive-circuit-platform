@@ -3,6 +3,7 @@ package com.example.circuit_simulator.service;
 import com.example.circuit_simulator.dto.ChapterDTO;
 import com.example.circuit_simulator.dto.ChapterDetailDTO;
 import com.example.circuit_simulator.dto.ProblemListItemDTO;
+import com.example.circuit_simulator.dto.UserBadgeDTO;
 import com.example.circuit_simulator.model.Chapter;
 import com.example.circuit_simulator.model.Problem;
 import com.example.circuit_simulator.repository.ChapterRepository;
@@ -18,7 +19,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ChapterService {
 
-    private static final Set<String> HIDDEN_CHAPTER_CODES = Set.of("PR", "TRL");
+    private static final Set<String> HIDDEN_CHAPTER_CODES = Set.of("TRL");
 
     private final ChapterRepository chapterRepository;
     private final ProblemRepository problemRepository;
@@ -31,10 +32,46 @@ public class ChapterService {
     public List<ChapterDTO> getAllChapters(Long userId) {
         return chapterRepository.findAll()
                 .stream()
-                .filter(ch -> !HIDDEN_CHAPTER_CODES.contains(ch.getCode().toUpperCase()))
+                .filter(ch -> !isHiddenChapter(ch.getCode()))
                 .sorted((a, b) -> a.getDisplayOrder() - b.getDisplayOrder())
                 .map(ch -> toChapterDto(ch, userId))
                 .toList();
+    }
+
+    /** Total problems across visible modules (sum of per-chapter counts). */
+    public long countPublishedProblems() {
+        return chapterRepository.findAll()
+                .stream()
+                .filter(ch -> !isHiddenChapter(ch.getCode()))
+                .mapToLong(ch -> problemRepository.countByChapterId(ch.getId()))
+                .sum();
+    }
+
+    /** Module badges earned when every problem in a chapter is solved. */
+    public List<UserBadgeDTO> getEarnedBadges(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        return chapterRepository.findAll()
+                .stream()
+                .filter(ch -> !isHiddenChapter(ch.getCode()))
+                .filter(ch -> isChapterComplete(userId, ch))
+                .sorted((a, b) -> a.getDisplayOrder() - b.getDisplayOrder())
+                .map(ch -> new UserBadgeDTO(ch.getCode(), ch.getTitleKa(), ch.getTitleEn()))
+                .toList();
+    }
+
+    private boolean isChapterComplete(Long userId, Chapter chapter) {
+        long total = problemRepository.countByChapterId(chapter.getId());
+        if (total == 0) {
+            return false;
+        }
+        long solved = completionService.countSolvedInChapter(userId, chapter.getId());
+        return solved >= total;
+    }
+
+    private static boolean isHiddenChapter(String code) {
+        return HIDDEN_CHAPTER_CODES.contains(code.toUpperCase());
     }
 
     public ChapterDTO getChapterByCode(String code) {

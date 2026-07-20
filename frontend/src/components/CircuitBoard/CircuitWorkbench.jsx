@@ -35,6 +35,7 @@ import {
     getTransistorMaxCount,
     getTransistorSpec,
     isResistorType,
+    isPhotoAccessoryType,
     LED_SPECS,
     ledType,
     parseCapacitorKey,
@@ -59,8 +60,11 @@ import {
     getComponentVoltage,
     getLedBrightnessRatio,
     getLedDcBrightnessRatio,
+    getAntiparallelLedDcBrightnessRatio,
+    getRgbSequenceLedDcBrightnessRatio,
     getLampDcBrightnessRatio,
     getBaselineRelativeLedBrightness,
+    getPhotoModuleLedDimBrightness,
     getAbsoluteLedBrightness,
     getAbsoluteLampBrightness,
     getMotorSpinState,
@@ -99,14 +103,19 @@ import {
 } from '../CircuitSimulator/circuitUtils';
 import CircuitBoard from './CircuitBoard';
 import {
+    getAccessoryStyleAtGridPoint,
     getPartStyle,
     parseDragPayload,
     partStyleToCss,
+    pointerToGridPoint,
     pointerToPin,
+    getBoardStage,
 } from './boardPlacement';
 import styles from './CircuitWorkbench.module.css';
 
 const MOVE_DRAG_THRESHOLD_PX = 4;
+/** Live sim while dragging torch / cover (photoresistor light). */
+const ACCESSORY_SIM_DEBOUNCE_MS = 25;
 
 /**
  * Keep the rotate handle at the screen top-right of a CSS-rotated part,
@@ -162,6 +171,15 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'VR.L1.1') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, რეზისტორი';
         }
+        if (problemCode === 'PR.L1.1' || problemCode === 'PR.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ფოტორეზისტორი, წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'PR.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ფოტორეზისტორი, წითელი LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'PR.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ფოტორეზისტორი, ლურჯი LED, 2 რეზისტორი';
+        }
         if (problemCode === 'VR.L1.2') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, 2 რეზისტორი';
         }
@@ -197,6 +215,21 @@ function incompleteBoardMessage(problemCode, lang) {
         }
         if (problemCode === 'VR.L2.13') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ცვლადი რეზისტორი, წითელი LED, რეზისტორი (საპირისპირო ბოლოები)';
+        }
+        if (problemCode === 'VR.L2.15') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ცვლადი რეზისტორი, 2 წითელი LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L3.19') {
+            return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, წითელი LED, მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'VR.L1.20') {
+            return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, წითელი LED, მწვანე LED, 2 ერთნაირი რეზისტორი';
+        }
+        if (problemCode === 'VR.L3.22') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი, მწვანე და ლურჯი LED, რეზისტორები (1k×2, 5.1k, 10k)';
+        }
+        if (problemCode === 'VR.L4.23') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი, მწვანე და ლურჯი LED, რეზისტორები';
         }
         if (problemCode === 'ST.L2.9') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, წითელი და მწვანე LED, რეზისტორი';
@@ -449,6 +482,15 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'VR.L1.1') {
         return 'Place: 2 power supplies, switch, variable resistor, red LED, resistor';
     }
+    if (problemCode === 'PR.L1.1' || problemCode === 'PR.L1.2') {
+        return 'Place: 2 power supplies, switch, photoresistor, red LED, resistor';
+    }
+    if (problemCode === 'PR.L2.3') {
+        return 'Place: 2 power supplies, switch, photoresistor, red LED, 2 resistors';
+    }
+    if (problemCode === 'PR.L2.4') {
+        return 'Place: 2 power supplies, switch, slide switch, photoresistor, blue LED, 2 resistors';
+    }
     if (problemCode === 'VR.L1.2') {
         return 'Place: 2 power supplies, switch, variable resistor, red LED, 2 resistors';
     }
@@ -484,6 +526,21 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'VR.L2.13') {
         return 'Place: 2 power supplies, switch, 2 variable resistors, red LED, resistor (opposite ends)';
+    }
+    if (problemCode === 'VR.L2.15') {
+        return 'Place: 2 power supplies, switch, 2 variable resistors, 2 red LEDs, resistor';
+    }
+    if (problemCode === 'VR.L3.19') {
+        return 'Place: 2 power supplies, variable resistor, red LED, green LED, resistor';
+    }
+    if (problemCode === 'VR.L1.20') {
+        return 'Place: 2 power supplies, variable resistor, red LED, green LED, 2 equal resistors';
+    }
+    if (problemCode === 'VR.L3.22') {
+        return 'Place: 2 power supplies, switch, variable resistor, red, green and blue LED, resistors (1k×2, 5.1k, 10k)';
+    }
+    if (problemCode === 'VR.L4.23') {
+        return 'Place: 2 power supplies, switch, variable resistor, red, green and blue LED, resistors';
     }
     if (problemCode === 'ST.L2.9') {
         return 'Place: 2 power supplies, switch, button, red and green LED, resistor';
@@ -738,6 +795,9 @@ export default function CircuitWorkbench({ problemCode }) {
                 potPositions: {},
                 switchStates: {},
             };
+        initialDraftRef.current.placed = (
+            initialDraftRef.current.placed ?? []
+        ).filter((part) => !isPhotoAccessoryType(part.type));
     }
     const initialDraft = initialDraftRef.current;
     const gridRef = useRef(null);
@@ -746,6 +806,11 @@ export default function CircuitWorkbench({ problemCode }) {
     const potPositionsRef = useRef({ ...initialDraft.potPositions });
     const potSimTimerRef = useRef(null);
     const boardSimTimerRef = useRef(null);
+    const accessorySimTimerRef = useRef(null);
+    const accessoryDragAnchorRef = useRef(null);
+    const photoAccessoryDragRef = useRef(null);
+    const simRequestIdRef = useRef(0);
+    const placedRef = useRef([]);
     const pendingClickInteractRef = useRef(null);
     const lastButtonClickAtRef = useRef({});
     const lockedButtonIdsRef = useRef(new Set());
@@ -756,6 +821,7 @@ export default function CircuitWorkbench({ problemCode }) {
         clickInteract: async () => {},
         runLiveSim: async () => {},
     });
+    const scheduleAccessoryDragSimulationRef = useRef(() => {});
     /** DI.L3.6: last pot position that kicked off a live sim (for prior-IC discharge steps). */
     const di36LastSimPotRef = useRef({});
     const moveSessionRef = useRef(null);
@@ -763,6 +829,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const boardHostRef = useRef(null);
 
     const [placed, setPlaced] = useState(() => initialDraft.placed);
+    placedRef.current = placed;
     const [paletteRotations, setPaletteRotations] = useState({});
     const [connectorLength, setConnectorLength] = useState(3);
     const [resistorKey, setResistorKey] = useState('100o');
@@ -801,6 +868,8 @@ export default function CircuitWorkbench({ problemCode }) {
     const pressedLedCurrentMaxRef = useRef(null);
     /** CP.L2.14: dim baseline current with master ON / button open. */
     const baselineLedCurrentRef = useRef(null);
+    /** PR.*: ambient LED current (no torch) for relative brightness. */
+    const photoLedBaselineRef = useRef(null);
     const [ledTranAnimPhase, setLedTranAnimPhase] = useState(null);
     const idleSimResultsRef = useRef(null);
     /** Motor fan: deg/sec by component id + accumulated angle. */
@@ -824,7 +893,7 @@ export default function CircuitWorkbench({ problemCode }) {
     // Persist board layout so returning to this challenge restores the build.
     useEffect(() => {
         saveCircuitDraft(userId, problemCode, {
-            placed,
+            placed: placed.filter((part) => !isPhotoAccessoryType(part.type)),
             potPositions,
             switchStates,
         });
@@ -842,6 +911,9 @@ export default function CircuitWorkbench({ problemCode }) {
             }
             if (boardSimTimerRef.current) {
                 clearTimeout(boardSimTimerRef.current);
+            }
+            if (accessorySimTimerRef.current) {
+                clearTimeout(accessorySimTimerRef.current);
             }
         };
     }, []);
@@ -917,6 +989,11 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'VR.L2.11' ||
             problemCode === 'VR.L2.12' ||
             problemCode === 'VR.L2.13' ||
+            problemCode === 'VR.L2.15' ||
+            problemCode === 'VR.L3.19' ||
+            problemCode === 'VR.L1.20' ||
+            problemCode === 'VR.L3.22' ||
+            problemCode === 'VR.L4.23' ||
             problemCode === 'DI.L3.6' ||
             problemCode === 'TR.L2.10' ||
             problemCode === 'TR.L2.11' ||
@@ -992,6 +1069,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const [submitStatus, setSubmitStatus] = useState(null);
     const [activeDrag, setActiveDrag] = useState(null);
     const [hoverPin, setHoverPin] = useState(null);
+    const [accessoryDragPoint, setAccessoryDragPoint] = useState(null);
 
     const connectorGroup = getConnectorGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
@@ -1043,6 +1121,10 @@ export default function CircuitWorkbench({ problemCode }) {
     );
 
     const remaining = (type) => {
+        if (isPhotoAccessoryType(type)) {
+            const def = palette?.find((p) => p.type === type);
+            return def?.maxCount ?? 1;
+        }
         const connectorLen = parseConnectorLength(type);
         if (connectorLen !== null) {
             const max = getConnectorMaxCount(palette);
@@ -1083,6 +1165,9 @@ export default function CircuitWorkbench({ problemCode }) {
     const activeTransistorType = transistorType(transistorKey);
 
     const tryPlace = (type, row, col, rotation, ignoreId = null) => {
+        if (isPhotoAccessoryType(type)) {
+            return false;
+        }
         const connectorLen = parseConnectorLength(type);
         const used = countPlacedByType(placed, type);
 
@@ -1355,7 +1440,8 @@ export default function CircuitWorkbench({ problemCode }) {
         }
 
         e.preventDefault();
-        setHoverPin(pointerToPin(e.clientX, e.clientY, gridRef.current));
+        const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
+        setHoverPin(pin);
     };
 
     const finishMoveSession = (e) => {
@@ -1429,10 +1515,12 @@ export default function CircuitWorkbench({ problemCode }) {
 
     const handlePalettePointerDown = (e, type, left) => {
         if (
-            left <= 0 ||
             e.button !== 0 ||
             e.target.closest?.('button, input, select')
         ) {
+            return;
+        }
+        if (!isPhotoAccessoryType(type) && left <= 0) {
             return;
         }
 
@@ -1448,6 +1536,22 @@ export default function CircuitWorkbench({ problemCode }) {
         e.currentTarget.setPointerCapture(e.pointerId);
         setActiveDrag({ type, rotation, grabDr: 0, grabDc: 0 });
         setHoverPin(null);
+    };
+
+    const palettePointerToGridPoint = (clientX, clientY) => {
+        const grid = gridRef.current;
+        const stage = getBoardStage(grid);
+        if (!stage) return null;
+        const rect = stage.getBoundingClientRect();
+        if (
+            clientX < rect.left ||
+            clientX > rect.right ||
+            clientY < rect.top ||
+            clientY > rect.bottom
+        ) {
+            return null;
+        }
+        return pointerToGridPoint(clientX, clientY, stage);
     };
 
     const palettePointerToPin = (clientX, clientY) => {
@@ -1469,6 +1573,24 @@ export default function CircuitWorkbench({ problemCode }) {
         const session = palettePointerSessionRef.current;
         if (!session || session.pointerId !== e.pointerId) return;
         e.preventDefault();
+
+        if (isPhotoAccessoryType(session.type)) {
+            const pt = palettePointerToGridPoint(e.clientX, e.clientY);
+            setAccessoryDragPoint(pt);
+            if (pt) {
+                scheduleAccessoryDragSimulationRef.current({
+                    type: session.type,
+                    row: pt.row,
+                    col: pt.col,
+                });
+            } else {
+                scheduleAccessoryDragSimulationRef.current(null, {
+                    flush: true,
+                });
+            }
+            return;
+        }
+
         setHoverPin(palettePointerToPin(e.clientX, e.clientY));
     };
 
@@ -1484,6 +1606,22 @@ export default function CircuitWorkbench({ problemCode }) {
         palettePointerSessionRef.current = null;
         setHoverPin(null);
         setActiveDrag(null);
+        setAccessoryDragPoint(null);
+
+        if (isPhotoAccessoryType(session.type)) {
+            photoAccessoryDragRef.current = null;
+            accessoryDragAnchorRef.current = null;
+            if (accessorySimTimerRef.current) {
+                clearTimeout(accessorySimTimerRef.current);
+                accessorySimTimerRef.current = null;
+            }
+            if (liveSimModeRef.current) {
+                scheduleAccessoryDragSimulationRef.current(null, {
+                    flush: true,
+                });
+            }
+            return;
+        }
 
         if (cancelled) return;
         const pin = palettePointerToPin(e.clientX, e.clientY);
@@ -1599,6 +1737,14 @@ export default function CircuitWorkbench({ problemCode }) {
         setSubmitStatus(null);
         setHoverPin(null);
         setActiveDrag(null);
+        setAccessoryDragPoint(null);
+        photoAccessoryDragRef.current = null;
+        photoLedBaselineRef.current = null;
+        accessoryDragAnchorRef.current = null;
+        if (accessorySimTimerRef.current) {
+            clearTimeout(accessorySimTimerRef.current);
+            accessorySimTimerRef.current = null;
+        }
     };
 
     useEffect(() => {
@@ -1765,11 +1911,19 @@ export default function CircuitWorkbench({ problemCode }) {
             const isLive = options.live ?? liveSimMode;
             const simPhase = options.simPhase ?? 'idle';
             const priorPotPositions = options.priorPotPositions;
+            const boardPlaced = options.placedOverride ?? placed;
+            const floatingPhotoAccessories =
+                options.floatingPhotoAccessories ??
+                (photoAccessoryDragRef.current
+                    ? [photoAccessoryDragRef.current]
+                    : []);
+            const requestId = ++simRequestIdRef.current;
             const circuitJson = buildCircuitJson(
-                placed,
+                boardPlaced,
                 states,
                 problemCode,
-                potPositionsRef.current
+                potPositionsRef.current,
+                floatingPhotoAccessories
             );
 
             if (!circuitJson.components.length) {
@@ -1793,6 +1947,10 @@ export default function CircuitWorkbench({ problemCode }) {
                     priorPotPositions
                 );
                 const result = normalizeSimulationResults(raw);
+
+                if (requestId !== simRequestIdRef.current) {
+                    return;
+                }
 
                 if (simulationHasError(result)) {
                     setSimResults(null);
@@ -1826,6 +1984,35 @@ export default function CircuitWorkbench({ problemCode }) {
                                     // Too little current to count as baseline (e.g. 100 kΩ).
                                     baselineLedCurrentRef.current = null;
                                     pressedLedCurrentMaxRef.current = null;
+                                }
+                            }
+                        }
+                        if (
+                            typeof problemCode === 'string' &&
+                            problemCode.startsWith('PR.') &&
+                            !photoAccessoryDragRef.current &&
+                            !isTransientResult(result)
+                        ) {
+                            const ledComp = placed.find((p) => isLedType(p.type));
+                            const slideComp = placed.find((p) =>
+                                isSlideSwitchType(p.type)
+                            );
+                            const slideState = slideComp
+                                ? switchStatesRef.current[slideComp.id] ?? 'left'
+                                : 'left';
+                            const captureDimBaseline =
+                                problemCode === 'PR.L1.2' ||
+                                problemCode === 'PR.L2.3' ||
+                                (problemCode === 'PR.L2.4' &&
+                                    slideState === 'right');
+                            if (ledComp && captureDimBaseline) {
+                                const i = getComponentCurrent(
+                                    result,
+                                    toSpiceId(ledComp.id),
+                                    { signed: true }
+                                );
+                                if (typeof i === 'number' && i >= 0.001) {
+                                    photoLedBaselineRef.current = i;
                                 }
                             }
                         }
@@ -1897,6 +2084,9 @@ export default function CircuitWorkbench({ problemCode }) {
 
                 // Interaction tips live in the Components panel; don't spam the board message while building.
             } catch (err) {
+                if (requestId !== simRequestIdRef.current) {
+                    return;
+                }
                 setSimResults(null);
                 const detail = err?.message ?? String(err);
                 const isNetwork =
@@ -1912,7 +2102,9 @@ export default function CircuitWorkbench({ problemCode }) {
                           : `Error: ${detail}`
                 );
             } finally {
-                setSimulating(false);
+                if (requestId === simRequestIdRef.current) {
+                    setSimulating(false);
+                }
             }
         },
         [
@@ -1928,6 +2120,53 @@ export default function CircuitWorkbench({ problemCode }) {
             setTranFrame,
         ]
     );
+
+    const scheduleAccessoryDragSimulation = useCallback(
+        (floater, { flush = false } = {}) => {
+            if (!liveSimModeRef.current) return;
+
+            photoAccessoryDragRef.current = floater;
+
+            const anchorKey = floater
+                ? `${floater.type}:${floater.row.toFixed(2)},${floater.col.toFixed(2)}`
+                : 'none';
+            if (!flush && accessoryDragAnchorRef.current === anchorKey) {
+                return;
+            }
+            accessoryDragAnchorRef.current = anchorKey;
+
+            if (accessorySimTimerRef.current) {
+                clearTimeout(accessorySimTimerRef.current);
+                accessorySimTimerRef.current = null;
+            }
+
+            const run = () => {
+                accessorySimTimerRef.current = null;
+                if (!liveSimModeRef.current) return;
+                const active = photoAccessoryDragRef.current;
+                runLiveSimulation(switchStatesRef.current, {
+                    live: true,
+                    simPhase: 'idle',
+                    floatingPhotoAccessories: active ? [active] : [],
+                });
+            };
+
+            if (flush) {
+                run();
+            } else if (floater) {
+                accessorySimTimerRef.current = setTimeout(
+                    run,
+                    ACCESSORY_SIM_DEBOUNCE_MS
+                );
+            }
+        },
+        [runLiveSimulation]
+    );
+
+    useEffect(() => {
+        scheduleAccessoryDragSimulationRef.current =
+            scheduleAccessoryDragSimulation;
+    }, [scheduleAccessoryDragSimulation]);
 
     // Keep switch/pot state in sync with the board and re-simulate automatically.
     useEffect(() => {
@@ -2311,6 +2550,7 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const renderPaletteCard = (item) => {
+        const isAccessory = isPhotoAccessoryType(item.type);
         const left = remaining(item.type);
         const rotation = getPaletteRotation(item.type);
         const wide = isWidePalettePart(item.type);
@@ -2318,7 +2558,7 @@ export default function CircuitWorkbench({ problemCode }) {
         return (
             <div key={item.type} className={styles.paletteCard}>
                 <div
-                    className={`${styles.paletteItem} ${styles.paletteItemStandard} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
+                    className={`${styles.paletteItem} ${styles.paletteItemStandard} ${!isAccessory && left <= 0 ? styles.paletteItemDisabled : ''} ${isAccessory ? styles.paletteItemAccessory : ''}`}
                     draggable={false}
                     {...palettePointerHandlers(item.type, left)}
                 >
@@ -2330,17 +2570,25 @@ export default function CircuitWorkbench({ problemCode }) {
                     >
                         {renderPreviewImg(item.type, rotation)}
                     </div>
-                    <span className={styles.paletteCount}>×{left}</span>
+                    <span className={styles.paletteCount}>
+                        {isAccessory
+                            ? lang === 'ka'
+                                ? 'გადაათრიე'
+                                : 'drag'
+                            : `×${left}`}
+                    </span>
                 </div>
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(item.type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
+                {!isAccessory ? (
+                    <button
+                        type="button"
+                        className={styles.rotateBtn}
+                        title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
+                        onClick={(e) => cyclePaletteRotation(item.type, e)}
+                    >
+                        ↻
+                        <span className={styles.rotateDeg}>{rotation}°</span>
+                    </button>
+                ) : null}
             </div>
         );
     };
@@ -2685,19 +2933,32 @@ export default function CircuitWorkbench({ problemCode }) {
             : null;
 
     const previewPartStyle =
-        activeDrag && previewAnchor && previewFootprint
-            ? getPartStyle(
+        activeDrag &&
+        isPhotoAccessoryType(activeDrag.type) &&
+        accessoryDragPoint
+            ? getAccessoryStyleAtGridPoint(
                   gridRef.current,
-                  previewAnchor.row,
-                  previewAnchor.col,
-                  previewFootprint.w,
-                  previewFootprint.h,
-                  activeDrag.type,
-                  previewRotation
+                  accessoryDragPoint.row,
+                  accessoryDragPoint.col,
+                  activeDrag.type
               )
-            : null;
+            : activeDrag && previewAnchor && previewFootprint
+              ? getPartStyle(
+                    gridRef.current,
+                    previewAnchor.row,
+                    previewAnchor.col,
+                    previewFootprint.w,
+                    previewFootprint.h,
+                    activeDrag.type,
+                    previewRotation
+                )
+              : null;
 
     const previewCss = previewPartStyle ? partStyleToCss(previewPartStyle) : null;
+    const previewIsTorch =
+        activeDrag?.type === COMPONENT_TYPES.TORCH;
+    const previewIsCover =
+        activeDrag?.type === COMPONENT_TYPES.COVER;
 
     return (
         <div className={styles.workbench}>
@@ -2707,9 +2968,13 @@ export default function CircuitWorkbench({ problemCode }) {
                         {lang === 'ka' ? 'დეტალები' : 'Components'}
                     </h2>
                     <p className={styles.paletteHint}>
-                        {lang === 'ka'
-                            ? '↻ შებრუნება · გადაიტანეთ დაფაზე'
-                            : '↻ rotate · drag onto the board'}
+                        {problemCode?.startsWith('PR.')
+                            ? lang === 'ka'
+                                ? '↻ შებრუნება · ფანრი — მიახლოე; დამფარავი — ფოტორეზისტორზე'
+                                : '↻ rotate · torch: move near · cover: on photoresistor'
+                            : lang === 'ka'
+                              ? '↻ შებრუნება · გადაიტანეთ დაფაზე'
+                              : '↻ rotate · drag onto the board'}
                     </p>
                     <button
                         type="button"
@@ -2762,7 +3027,7 @@ export default function CircuitWorkbench({ problemCode }) {
                 <CircuitBoard gridRef={gridRef} simulator>
                     {previewCss && activeDrag && (
                         <div
-                            className={styles.dropPreview}
+                            className={`${isPhotoAccessoryType(activeDrag.type) ? styles.accessoryPreview : styles.dropPreview} ${previewIsTorch ? styles.dropPreviewTorch : ''} ${previewIsCover ? styles.dropPreviewCover : ''}`}
                             style={{ ...previewCss, zIndex: 25 }}
                             aria-hidden
                         >
@@ -2773,12 +3038,25 @@ export default function CircuitWorkbench({ problemCode }) {
                                         alt=""
                                         className={styles.partImgAligned}
                                         draggable={false}
+                                        style={
+                                            previewIsTorch
+                                                ? {
+                                                      filter: 'drop-shadow(0 0 6px rgba(255, 230, 100, 0.95))',
+                                                  }
+                                                : previewIsCover
+                                                  ? {
+                                                        filter: 'drop-shadow(0 0 5px rgba(0, 0, 0, 0.55))',
+                                                    }
+                                                  : undefined
+                                        }
                                     />
                                 </div>
                             ) : null}
                         </div>
                     )}
-                    {placed.map((comp, index) => {
+                    {placed
+                        .filter((comp) => !isPhotoAccessoryType(comp.type))
+                        .map((comp, index) => {
                         // boardLayoutTick: wait for grid mount before measuring pins
                         void boardLayoutTick;
                         const rotation = comp.rotation ?? 0;
@@ -2963,6 +3241,73 @@ export default function CircuitWorkbench({ problemCode }) {
                                 pressedLedCurrentMaxRef.current,
                                 ledBrightnessDirection
                             );
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            (problemCode === 'VR.L3.22' || problemCode === 'VR.L4.23')
+                        ) {
+                            brightnessRatio = getRgbSequenceLedDcBrightnessRatio(
+                                simResults,
+                                spiceComponentId,
+                                frameIndex
+                            );
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (simOk && isLedType(comp.type) && (problemCode === 'VR.L3.19' || problemCode === 'VR.L1.20')) {
+                            brightnessRatio = getAntiparallelLedDcBrightnessRatio(
+                                simResults,
+                                spiceComponentId,
+                                frameIndex
+                            );
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            problemCode === 'PR.L2.4'
+                        ) {
+                            const slideComp = placed.find((p) =>
+                                isSlideSwitchType(p.type)
+                            );
+                            const slideState = slideComp
+                                ? switchStatesRef.current[slideComp.id] ?? 'left'
+                                : 'left';
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            if (slideState === 'right') {
+                                brightnessRatio = getPhotoModuleLedDimBrightness(
+                                    i,
+                                    photoLedBaselineRef.current
+                                );
+                            } else {
+                                brightnessRatio = getLedDcBrightnessRatio(
+                                    simResults,
+                                    spiceComponentId,
+                                    frameIndex
+                                );
+                            }
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            (problemCode === 'PR.L1.2' ||
+                                problemCode === 'PR.L2.3')
+                        ) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            brightnessRatio = getPhotoModuleLedDimBrightness(
+                                i,
+                                photoLedBaselineRef.current
+                            );
+                            isLedTranFade = brightnessRatio > 0;
                         } else if (simOk && isLedType(comp.type)) {
                             // DC / steady: different series resistors → different glow.
                             brightnessRatio = getLedDcBrightnessRatio(
@@ -3219,6 +3564,17 @@ export default function CircuitWorkbench({ problemCode }) {
                                             alt=""
                                             aria-hidden
                                             className={styles.partImgAligned}
+                                            style={
+                                                comp.type === COMPONENT_TYPES.TORCH
+                                                    ? {
+                                                          filter: 'drop-shadow(0 0 6px rgba(255, 230, 100, 0.95))',
+                                                      }
+                                                    : comp.type === COMPONENT_TYPES.COVER
+                                                      ? {
+                                                            filter: 'drop-shadow(0 0 5px rgba(0, 0, 0, 0.55))',
+                                                        }
+                                                      : undefined
+                                            }
                                             draggable={false}
                                         />
                                     ) : (

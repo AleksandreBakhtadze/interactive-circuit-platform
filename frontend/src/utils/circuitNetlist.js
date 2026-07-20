@@ -5,7 +5,11 @@ import {
     isCapacitorType,
     isConnectorType,
     isLedType,
+    isPhotoResistorType,
+    isPhotoAccessoryType,
     isResistorType,
+    isTorchType,
+    isCoverType,
     isTransistorType,
     getLedSpec,
     parseConnectorLength,
@@ -91,6 +95,39 @@ export function toSpiceId(id) {
 /** Max track resistance for the 10k potentiometer part. */
 export const VAR_RESISTOR_MAX_OHMS = 10000;
 
+/** Photoresistor at maximum light (torch adjacent). */
+export const PHOTO_RESISTOR_R_MIN = 200;
+
+/** Photoresistor when fully covered. */
+export const PHOTO_RESISTOR_R_MAX = 1_000_000;
+
+/** Ambient resistance with no torch and no cover nearby. */
+export const PHOTO_RESISTOR_R_AMBIENT = 50_000;
+
+/** Grid distance treated as “fully on” for torch / cover. */
+export const PHOTO_FULL_EFFECT_DISTANCE = 0.75;
+
+/**
+ * Beyond this grid distance torch / cover have no effect (ambient light only).
+ * Keeps a distant torch on the board from brightening the photoresistor.
+ */
+export const PHOTO_ACCESSORY_MAX_RANGE = 2.5;
+
+/**
+ * Exponent on torch proximity when mapping to light level.
+ * >1 keeps mid-range torch from collapsing PR resistance (parallel-shunt tasks
+ * otherwise look “off” while the torch is still a cell away).
+ */
+export const PHOTO_TORCH_LIGHT_EXPONENT = 2;
+
+/**
+ * Light level for ambient (50 kΩ) on log R curve between 200 Ω and 1 MΩ.
+ */
+export const PHOTO_AMBIENT_LIGHT_LEVEL =
+    1 -
+    Math.log(PHOTO_RESISTOR_R_AMBIENT / PHOTO_RESISTOR_R_MIN) /
+        Math.log(PHOTO_RESISTOR_R_MAX / PHOTO_RESISTOR_R_MIN);
+
 /** Default wiper position (mid-track). */
 export const DEFAULT_POT_POSITION = 0.5;
 
@@ -104,6 +141,7 @@ const BOARD_TYPE_TO_ROLE = {
     [COMPONENT_TYPES.DIODE]: 'diode',
     [COMPONENT_TYPES.MOTOR]: 'motor',
     [COMPONENT_TYPES.VAR_RESISTOR]: 'variable_resistor',
+    [COMPONENT_TYPES.PHOTO_RESISTOR]: 'photo_resistor',
 };
 
 function transistorSubtype(type) {
@@ -166,6 +204,159 @@ export function isVarResistorType(type) {
     return type === COMPONENT_TYPES.VAR_RESISTOR;
 }
 
+/** Grid centre of a placed part (for torch ↔ photoresistor distance). */
+export function getComponentGridCenter(comp) {
+    const { w, h } = getRotatedFootprint(comp.type, comp.rotation ?? 0);
+    return {
+        row: comp.row + (h - 1) / 2,
+        col: comp.col + (w - 1) / 2,
+    };
+}
+
+/**
+ * Torch / cover strength from grid distance: 1 when adjacent, 0 beyond max range.
+ */
+export function accessoryEffectFromDistance(distance) {
+    const d = Math.max(0, Number(distance) || 0);
+    if (!Number.isFinite(d) || d >= PHOTO_ACCESSORY_MAX_RANGE) {
+        return 0;
+    }
+    if (d <= PHOTO_FULL_EFFECT_DISTANCE) {
+        return 1;
+    }
+    const span = PHOTO_ACCESSORY_MAX_RANGE - PHOTO_FULL_EFFECT_DISTANCE;
+    const t = (d - PHOTO_FULL_EFFECT_DISTANCE) / span;
+    return (1 - t) * (1 - t);
+}
+
+/** Map light level to photoresistor resistance (log curve). */
+export function photoResistorOhmsFromLightLevel(lightLevel) {
+    const light = clampPotPosition(lightLevel);
+    const ratio = PHOTO_RESISTOR_R_MAX / PHOTO_RESISTOR_R_MIN;
+    return Math.round(PHOTO_RESISTOR_R_MIN * ratio ** (1 - light));
+}
+
+function accessoryGridCenter(accessory) {
+    if (
+        Number.isFinite(accessory.row) &&
+        Number.isFinite(accessory.col)
+    ) {
+        return { row: accessory.row, col: accessory.col };
+    }
+    return getComponentGridCenter(accessory);
+}
+
+/** Cover blocks light only when dragged onto the photoresistor body. */
+function isCoverOverPhotoResistor(photoComp, cover) {
+    const { w, h } = getRotatedFootprint(
+        photoComp.type,
+        photoComp.rotation ?? 0
+    );
+    const fr = Number(cover.row);
+    const fc = Number(cover.col);
+    if (!Number.isFinite(fr) || !Number.isFinite(fc)) {
+        return false;
+    }
+    const rowMin = photoComp.row - 0.5;
+    const rowMax = photoComp.row + h - 0.5;
+    const colMin = photoComp.col - 0.5;
+    const colMax = photoComp.col + w - 0.5;
+    return (
+        fr >= rowMin && fr <= rowMax && fc >= colMin && fc <= colMax
+    );
+}
+
+function hasCoverOverPhotoResistor(photoComp, placed, floatingAccessories = []) {
+    for (const part of placed) {
+        if (!isCoverType(part.type)) continue;
+        if (isCoverOverPhotoResistor(photoComp, part)) {
+            return true;
+        }
+    }
+    for (const floater of floatingAccessories) {
+        if (!isCoverType(floater.type)) continue;
+        if (isCoverOverPhotoResistor(photoComp, floater)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function nearestAccessoryDistance(
+    photoComp,
+    placed,
+    typeCheck,
+    floatingAccessories = []
+) {
+    const center = getComponentGridCenter(photoComp);
+    let nearest = Infinity;
+    for (const part of placed) {
+        if (!typeCheck(part.type)) continue;
+        const other = accessoryGridCenter(part);
+        const d = Math.hypot(center.row - other.row, center.col - other.col);
+        if (d < nearest) {
+            nearest = d;
+        }
+    }
+    for (const floater of floatingAccessories) {
+        if (!typeCheck(floater.type)) continue;
+        const other = accessoryGridCenter(floater);
+        const d = Math.hypot(center.row - other.row, center.col - other.col);
+        if (d < nearest) {
+            nearest = d;
+        }
+    }
+    return nearest;
+}
+
+/**
+ * Effective light 0..1 from torch (bright) and cover (dark).
+ * Ambient → 50 kΩ; max light → 200 Ω; full cover → 1 MΩ.
+ * @param {Array<{type:string,row:number,col:number}>} [floatingAccessories]
+ *        — torch/cover dragged from palette (not placed on board)
+ */
+export function lightLevelForPhotoResistor(
+    photoComp,
+    placed,
+    floatingAccessories = []
+) {
+    const isCovered = hasCoverOverPhotoResistor(
+        photoComp,
+        placed,
+        floatingAccessories
+    );
+    const torchDist = nearestAccessoryDistance(
+        photoComp,
+        placed,
+        isTorchType,
+        floatingAccessories
+    );
+
+    const coverEffect = isCovered ? 1 : 0;
+    const torchEffect = Number.isFinite(torchDist)
+        ? accessoryEffectFromDistance(torchDist)
+        : 0;
+
+    if (coverEffect >= 1) {
+        return 0;
+    }
+    if (torchEffect >= 1 && coverEffect === 0) {
+        return 1;
+    }
+
+    let light = PHOTO_AMBIENT_LIGHT_LEVEL;
+
+    if (torchEffect > 0) {
+        const torchLight = Math.pow(torchEffect, PHOTO_TORCH_LIGHT_EXPONENT);
+        light += torchLight * (1 - PHOTO_AMBIENT_LIGHT_LEVEL);
+    }
+    if (coverEffect > 0) {
+        light -= coverEffect * PHOTO_AMBIENT_LIGHT_LEVEL;
+    }
+
+    return Math.min(1, Math.max(0, light));
+}
+
 /** Clamp potentiometer wiper position to [0, 1]. */
 export function clampPotPosition(position) {
     const n = Number(position);
@@ -223,7 +414,8 @@ export function buildCircuitJson(
     placed,
     switchStatesById = {},
     problemCode = null,
-    potPositionsById = {}
+    potPositionsById = {},
+    floatingPhotoAccessories = []
 ) {
     const uf = new UnionFind();
     const supplyVolts =
@@ -234,13 +426,15 @@ export function buildCircuitJson(
             : '6';
 
     for (const comp of placed) {
-        if (isConnectorType(comp.type)) {
-            const spanPins = getConnectorSpanPins(comp);
-            for (const pin of spanPins) {
-                uf.add(pin);
-            }
-            for (let i = 1; i < spanPins.length; i += 1) {
-                uf.union(spanPins[0], spanPins[i]);
+        if (isConnectorType(comp.type) || isPhotoAccessoryType(comp.type)) {
+            if (isConnectorType(comp.type)) {
+                const spanPins = getConnectorSpanPins(comp);
+                for (const pin of spanPins) {
+                    uf.add(pin);
+                }
+                for (let i = 1; i < spanPins.length; i += 1) {
+                    uf.union(spanPins[0], spanPins[i]);
+                }
             }
             continue;
         }
@@ -303,9 +497,13 @@ export function buildCircuitJson(
     const varResistorCount = placed.filter(
         (c) => c.type === COMPONENT_TYPES.VAR_RESISTOR
     ).length;
+    let photoResistorIndex = 0;
+    const photoResistorCount = placed.filter((c) =>
+        isPhotoResistorType(c.type)
+    ).length;
 
     for (const comp of placed) {
-        if (isConnectorType(comp.type)) {
+        if (isConnectorType(comp.type) || isPhotoAccessoryType(comp.type)) {
             continue;
         }
 
@@ -360,6 +558,14 @@ export function buildCircuitJson(
                 role = `variable_resistor_${varResistorIndex}`;
             } else {
                 role = 'variable_resistor';
+            }
+        }
+        if (isPhotoResistorType(comp.type)) {
+            if (photoResistorCount > 1) {
+                photoResistorIndex += 1;
+                role = `photo_resistor_${photoResistorIndex}`;
+            } else {
+                role = 'photo_resistor';
             }
         }
 
@@ -441,6 +647,23 @@ export function buildCircuitJson(
                     ),
                 });
                 break;
+
+            case COMPONENT_TYPES.PHOTO_RESISTOR: {
+                const light = lightLevelForPhotoResistor(
+                    comp,
+                    placed,
+                    floatingPhotoAccessories
+                );
+                components.push({
+                    id,
+                    role,
+                    type: 'photo_resistor',
+                    nodes,
+                    value: String(photoResistorOhmsFromLightLevel(light)),
+                    lightLevel: light,
+                });
+                break;
+            }
 
             case COMPONENT_TYPES.DIODE:
                 // Board diode → plain LED model (generic silicon diode in SPICE).

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.time.LocalDateTime;
 
 @Repository
 public interface ProblemCompletionRepository extends JpaRepository<ProblemCompletion, Long> {
@@ -16,6 +17,8 @@ public interface ProblemCompletionRepository extends JpaRepository<ProblemComple
     Optional<ProblemCompletion> findByUserIdAndProblemId(Long userId, Long problemId);
 
     boolean existsByUserIdAndProblemId(Long userId, Long problemId);
+
+    long countByUserId(Long userId);
 
     @Query("""
             SELECT COUNT(c) FROM ProblemCompletion c, Problem p
@@ -32,4 +35,14 @@ public interface ProblemCompletionRepository extends JpaRepository<ProblemComple
             """)
     Set<Long> findSolvedProblemIds(
             @Param("userId") Long userId, @Param("problemIds") List<Long> problemIds);
+
+    @Query(value = """
+            SELECT CAST(completed_at AS date) AS day, COUNT(*) AS cnt
+            FROM problem_completions
+            WHERE user_id = :userId AND completed_at >= :since
+            GROUP BY CAST(completed_at AS date)
+            ORDER BY day
+            """, nativeQuery = true)
+    List<Object[]> countGroupedByDaySince(
+            @Param("userId") Long userId, @Param("since") LocalDateTime since);
 }

@@ -141,6 +141,7 @@ public class SpiceGenerator {
                     break;
 
                 case "resistor":
+                case "photo_resistor":
                     sb.append("R_").append(id).append(" ")
                             .append(nodes.get(0)).append(" ")
                             .append(nodes.get(1)).append(" ")
@@ -331,7 +332,7 @@ public class SpiceGenerator {
                     }
                 }
 
-                case "resistor" -> sb.append("R_").append(id).append(" ")
+                case "resistor", "photo_resistor" -> sb.append("R_").append(id).append(" ")
                         .append(nodes.get(0)).append(" ")
                         .append(nodes.get(1)).append(" ")
                         .append(value).append("\n");
@@ -459,7 +460,7 @@ public class SpiceGenerator {
                     }
                 }
 
-                case "resistor" -> sb.append("R_").append(id).append(" ")
+                case "resistor", "photo_resistor" -> sb.append("R_").append(id).append(" ")
                         .append(nodes.get(0)).append(" ")
                         .append(nodes.get(1)).append(" ")
                         .append(value).append("\n");
@@ -854,6 +855,52 @@ public class SpiceGenerator {
                 pos = 1;
             }
             comp.put("position", pos);
+        }
+
+        return mapper.writeValueAsString(data);
+    }
+
+    private static final double PHOTO_RESISTOR_R_MIN = 200.0;
+    private static final double PHOTO_RESISTOR_R_MAX = 1_000_000.0;
+
+    private static double photoResistorOhmsFromLight(double light) {
+        if (light < 0) {
+            light = 0;
+        } else if (light > 1) {
+            light = 1;
+        }
+        double ratio = PHOTO_RESISTOR_R_MAX / PHOTO_RESISTOR_R_MIN;
+        return Math.round(PHOTO_RESISTOR_R_MIN * Math.pow(ratio, 1.0 - light));
+    }
+
+    /** Override photoresistor resistance from light level 0..1 (0 = dark, 1 = bright). */
+    public static String applyLightLevels(String json, Map<String, Double> levelsByRole)
+            throws Exception {
+        if (levelsByRole == null || levelsByRole.isEmpty()) {
+            return json;
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+
+        for (Map<String, Object> comp : components) {
+            if (!"photo_resistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String role = (String) comp.get("role");
+            if (role == null || !levelsByRole.containsKey(role)) {
+                continue;
+            }
+            double light = levelsByRole.get(role);
+            if (light < 0) {
+                light = 0;
+            } else if (light > 1) {
+                light = 1;
+            }
+            double ohms = photoResistorOhmsFromLight(light);
+            comp.put("value", String.valueOf(Math.round(ohms)));
+            comp.put("lightLevel", light);
         }
 
         return mapper.writeValueAsString(data);

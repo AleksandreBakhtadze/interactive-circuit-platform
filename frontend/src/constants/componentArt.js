@@ -176,6 +176,26 @@ export const COMPONENT_ART_SNAPS = {
 
     [COMPONENT_TYPES.VAR_RESISTOR]: APEX_UP_TRIANGLE_ART,
 
+    [COMPONENT_TYPES.PHOTO_RESISTOR]: RESISTOR_ART_SNAP,
+
+    [COMPONENT_TYPES.TORCH]: {
+        svgWidth: 109,
+        svgHeight: 109,
+        points: [
+            { u: 0.5, v: 0.5, dr: 0, dc: 0 },
+            { u: 0.5, v: 0.5, dr: 0, dc: 0 },
+        ],
+    },
+
+    [COMPONENT_TYPES.COVER]: {
+        svgWidth: 109,
+        svgHeight: 109,
+        points: [
+            { u: 0.5, v: 0.5, dr: 0, dc: 0 },
+            { u: 0.5, v: 0.5, dr: 0, dc: 0 },
+        ],
+    },
+
     ...CONNECTOR_ART_SNAPS,
     ...RESISTOR_ART_SNAPS,
     ...CAPACITOR_ART_SNAPS,

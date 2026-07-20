@@ -19,6 +19,50 @@ export function isConnectorType(type) {
     return parseConnectorLength(type) !== null;
 }
 
+/** Free two-pin cable wires (rubber-band place: pin → drag → pin). */
+export const WIRE_COLOR_SPECS = [
+    {
+        key: 'red',
+        file: 'wire-pin-red.svg',
+        cable: '#c62828',
+        pickerLabel: 'R',
+        labelEn: 'Red',
+        labelKa: 'წითელი',
+    },
+    {
+        key: 'lightRed',
+        file: 'wire-pin-light-red.svg',
+        cable: '#d98989',
+        pickerLabel: 'L',
+        labelEn: 'Light red',
+        labelKa: 'ღია წითელი',
+    },
+    {
+        key: 'black',
+        file: 'wire-pin-black.svg',
+        cable: '#616161',
+        pickerLabel: 'B',
+        labelEn: 'Black',
+        labelKa: 'შავი',
+    },
+];
+
+export const WIRE_COLOR_KEYS = WIRE_COLOR_SPECS.map((s) => s.key);
+
+export function getWireColorSpec(colorKey) {
+    return (
+        WIRE_COLOR_SPECS.find((s) => s.key === colorKey) ?? WIRE_COLOR_SPECS[0]
+    );
+}
+
+export function getWirePinImage(colorKey) {
+    return `/components/${getWireColorSpec(colorKey).file}`;
+}
+
+export function getWireCableColor(colorKey) {
+    return getWireColorSpec(colorKey).cable;
+}
+
 /**
  * Resistor SVGs in frontend/public/components/
  * Naming: …o = Ω, …ko = kΩ (e.g. 5ko1 → 5.1 kΩ).
@@ -279,7 +323,12 @@ export const COMPONENT_TYPES = {
     PHOTO_RESISTOR: 'photo_resistor',
     TORCH: 'torch',
     COVER: 'cover',
+    WIRE: 'wire',
 };
+
+export function isWireType(type) {
+    return type === COMPONENT_TYPES.WIRE;
+}
 
 const FOOTPRINTS = {
     [COMPONENT_TYPES.POWER_SUPPLY]: { w: 2, h: 3 },
@@ -378,6 +427,9 @@ export function getThreePinSnapOffsets(type) {
 }
 
 export function getFootprint(type) {
+    if (isWireType(type)) {
+        return { w: 1, h: 1 };
+    }
     const connectorLen = parseConnectorLength(type);
     if (connectorLen !== null) {
         return { w: connectorLen, h: 1 };
@@ -419,6 +471,9 @@ const SNAP_OFFSETS = {
 };
 
 export function getSnapOffsets(type) {
+    if (isWireType(type)) {
+        return [{ dr: 0, dc: 0 }];
+    }
     const connectorLen = parseConnectorLength(type);
     if (connectorLen !== null) {
         return [
@@ -472,6 +527,31 @@ export const CONNECTOR_GROUP_PALETTE_ITEM = {
     maxCountPerLength: 10,
     lengths: CONNECTOR_LENGTHS,
 };
+
+export const WIRE_GROUP_ID = 'wires';
+
+export const WIRE_GROUP_PALETTE_ITEM = {
+    type: COMPONENT_TYPES.WIRE,
+    paletteDisplay: 'wireGroup',
+    labelKa: 'მავთულები',
+    labelEn: 'Wires',
+    maxCount: 20,
+    colors: WIRE_COLOR_KEYS,
+};
+
+export function isWireGroupItem(item) {
+    return item?.paletteDisplay === 'wireGroup';
+}
+
+export function getWireMaxCount(palette) {
+    const group = palette?.find(isWireGroupItem);
+    if (!group) return 0;
+    return group.maxCount ?? 20;
+}
+
+export function getWireGroupItem(palette = []) {
+    return palette.find(isWireGroupItem) ?? null;
+}
 
 export function isConnectorGroupItem(item) {
     return item?.paletteDisplay === 'connectorGroup';
@@ -615,6 +695,7 @@ export function getStandardPaletteItems(palette = []) {
     return palette.filter(
         (p) =>
             !isConnectorGroupItem(p) &&
+            !isWireGroupItem(p) &&
             !isResistorGroupItem(p) &&
             !isLedGroupItem(p) &&
             !isCapacitorGroupItem(p) &&
@@ -679,6 +760,7 @@ export const ST_L1_1_PALETTE = [
         maxCount: 1,
     },
     CONNECTOR_GROUP_PALETTE_ITEM,
+    WIRE_GROUP_PALETTE_ITEM,
     RESISTOR_GROUP_PALETTE_ITEM,
     CAPACITOR_GROUP_PALETTE_ITEM,
     TRANSISTOR_GROUP_PALETTE_ITEM,
@@ -4095,6 +4177,52 @@ export const DI_L3_6_PALETTE = [
     CONNECTOR_GROUP_PALETTE_ITEM,
 ];
 
+/** TR.L2.9 — quiz: compare CE vs emitter-follower LED brightness with two pots. */
+export const TR_L2_9_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3',
+        labelEn: 'NPN Q3',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 4,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    WIRE_GROUP_PALETTE_ITEM,
+];
+
 /** TR.L2.10 — NPN collector load; pot abruptly switches the motor. */
 export const TR_L2_10_PALETTE = [
     {
@@ -4936,6 +5064,9 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'DI.L3.6') {
         return DI_L3_6_PALETTE;
     }
+    if (problemCode === 'TR.L2.9') {
+        return TR_L2_9_PALETTE;
+    }
     if (problemCode === 'TR.L2.10') {
         return TR_L2_10_PALETTE;
     }
@@ -5077,6 +5208,7 @@ export function supportsSimulator(problemCode) {
         problemCode === 'DI.L1.4' ||
         problemCode === 'DI.L3.5' ||
         problemCode === 'DI.L3.6' ||
+        problemCode === 'TR.L2.9' ||
         problemCode === 'TR.L2.10' ||
         problemCode === 'TR.L2.11' ||
         problemCode === 'TR.L2.12' ||
@@ -5196,6 +5328,7 @@ export function usesCircuitValidation(problemCode) {
         problemCode !== 'CP.L2.12' &&
         problemCode !== 'VR.L1.10' &&
         problemCode !== 'VR.L2.11' &&
+        problemCode !== 'TR.L2.9' &&
         problemCode !== 'DM.L4.4' &&
         problemCode !== 'DM.L3.14' &&
         problemCode !== 'DI.L3.5'

@@ -1075,6 +1075,158 @@ const VR_L211_QUIZ = {
     ],
 };
 
+const TR_L29_QUIZ = {
+    problemCode: 'TR.L2.9',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa:
+                'რა მოხდება თუ ორივე ცოციას დავაყენებთ განაპირა, ყველაზე ქვედა წერტილში და ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn:
+                'What happens if both wipers are at the bottom extreme and you turn the switch on?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ორივე შუქდიოდი აინთება',
+                    textEn: 'Both LEDs light',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ ემიტერულის აინთება',
+                    textEn: 'Only the emitter-follower LED lights',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მხოლოდ კოლექტორულის აინთება',
+                    textEn: 'Only the collector-load LED lights',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Neither LED lights',
+                },
+            ],
+            correctKey: 'დ',
+            explanationKa:
+                'არც ერთი შუქდიოდი არ აინთება, რადგან ორივე ტრანზისტორი არის დაკეტილი და დენს არ გაატარებს.',
+            explanationEn:
+                'Neither LED lights — both transistors are cut off and conduct no current.',
+        },
+        {
+            id: 'q2',
+            promptKa:
+                'რა მოხდება თუ ორივე ცოციას თანაბრად გადავაადგილებთ ცენტრში?',
+            promptEn: 'What happens if both wipers are moved equally to the center?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ემიტერული აინთება უფრო ძლიერად',
+                    textEn: 'The emitter-follower LED is brighter',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'კოლექტორული აინთება უფრო ძლიერად',
+                    textEn: 'The collector-load LED is brighter',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ორივე აინთება თანაბრად',
+                    textEn: 'Both light equally',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Neither lights',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'კოლექტორული აინთება უფრო ძლიერად: კოლექტორული ჩართვის ტრანზისტორი გაიხსნება სრულად და '
+                + 'შუქდიოდს მიაწვდის სრულ ძაბვას. ემიტერული ჩართვის ტრანზისტორი გაიხსნება ისე, რომ შუქდიოდს '
+                + 'მიაწვდის მხოლოდ ნახევარ ძაბვას.',
+            explanationEn:
+                'The collector-load LED is brighter: that transistor saturates and delivers nearly full '
+                + 'supply to the LED, while the emitter follower only passes roughly half the voltage.',
+        },
+        {
+            id: 'q3',
+            promptKa:
+                'რა მოხდება თუ ორივე ცოციას თანაბრად გადავაადგილებთ განაპირა, ყველაზე ზედა წერტილში?',
+            promptEn:
+                'What happens if both wipers are moved equally to the top extreme?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'ორივე შუქდიოდი აინთება ძლიერად',
+                    textEn: 'Both LEDs light brightly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'ემიტერული აინთება უფრო ძლიერად',
+                    textEn: 'The emitter-follower LED is brighter',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'კოლექტორული აინთება უფრო ძლიერად',
+                    textEn: 'The collector-load LED is brighter',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'ორივე შუქდიოდი აინთება სუსტად',
+                    textEn: 'Both LEDs light weakly',
+                },
+            ],
+            correctKey: 'ა',
+            explanationKa:
+                'ორივე შუქდიოდი აინთება ძლიერად: კოლექტორული ჩართვა სრულად გაიხსნება და სრულ ძაბვას მიაწვდის '
+                + 'შუქდიოდს; ემიტერული ჩართვაც ზედა წერტილში სრულ ძაბვას მიაწვდის შუქდიოდს.',
+            explanationEn:
+                'Both LEDs light brightly — the collector stage is fully on, and at the top wiper '
+                + 'position the emitter follower also delivers nearly full voltage to its LED.',
+        },
+        {
+            id: 'q4',
+            promptKa:
+                'როგორ შეიცვლება შუქდიოდების ნათება თუ ორივე ცოციას სინქრონულად გადავაადგილებთ ყველაზე ქვედა წერტილიდან ზევით?',
+            promptEn:
+                'How does brightness change if both wipers move synchronously from bottom to top?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'შუქდიოდების ნათება მოიმატებს სინქრონულად თანაბრად',
+                    textEn: 'Brightness rises equally and in sync',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'კოლექტორული ჩართვის შუქდიოდი უფრო მალე მიაღწევს მაქსიმალურ ნათებას',
+                    textEn: 'The collector-load LED reaches full brightness sooner',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ემიტერული ჩართვის შუქდიოდი უფრო მალე მიაღწევს მაქსიმალურ ნათებას',
+                    textEn: 'The emitter-follower LED reaches full brightness sooner',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'შუქდიოდების ნათება მოიკლებს სინქრონულად თანაბრად',
+                    textEn: 'Brightness falls equally and in sync',
+                },
+            ],
+            correctKey: 'ბ',
+            explanationKa:
+                'კოლექტორული ჩართვის შუქდიოდი უფრო მალე მიაღწევს მაქსიმალურ ნათებას: ბაზაზე მცირე ძაბვითაც კი '
+                + 'ტრანზისტორი გაიხსნება სრულად. ემიტერულ ჩართვაში ძაბვა იზრდება თანდათან ცოციას შესაბამისად '
+                + 'და მაქსიმუმს მხოლოდ ზედა წერტილში აღწევს.',
+            explanationEn:
+                'The collector-load LED reaches full brightness sooner — a small base voltage already '
+                + 'saturates that stage. The emitter follower tracks the wiper more gradually and peaks '
+                + 'only near the top.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
@@ -1085,6 +1237,7 @@ const QUIZZES_BY_CODE = {
     'CP.L2.12': CP_L212_QUIZ,
     'VR.L1.10': VR_L110_QUIZ,
     'VR.L2.11': VR_L211_QUIZ,
+    'TR.L2.9': TR_L29_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

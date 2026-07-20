@@ -5,6 +5,7 @@ import {
     isRelayType,
     isThreePinTriangleType,
     isTransistorType,
+    isWireType,
     parseConnectorLength,
     usesSnapOnlyCells,
 } from '../../constants/componentCatalog';
@@ -32,9 +33,31 @@ export function cellKey(row, col) {
     return `${row},${col}`;
 }
 
+export function getWireEndpoints(component) {
+    if (!component || !isWireType(component.type)) return [];
+    const endRow = component.endRow ?? component.row;
+    const endCol = component.endCol ?? component.col;
+    return [
+        { row: component.row, col: component.col },
+        { row: endRow, col: endCol },
+    ];
+}
+
 export function getComponentCells(component) {
     const rotation = component.rotation ?? 0;
     const { type, row, col } = component;
+
+    if (isWireType(type)) {
+        const ends = getWireEndpoints(component);
+        if (
+            ends.length === 2 &&
+            ends[0].row === ends[1].row &&
+            ends[0].col === ends[1].col
+        ) {
+            return [ends[0]];
+        }
+        return ends;
+    }
 
     if (usesSnapOnlyCells(type)) {
         return getTriangleCollisionOffsets(type, rotation).map(({ dr, dc }) => ({
@@ -81,6 +104,10 @@ function getTerminalOffsets(type, rotation = 0) {
         ].map(({ dr, dc }) => rotateGridPoint(dr, dc, w, h, steps));
     }
 
+    if (isWireType(type)) {
+        return [{ dr: 0, dc: 0 }];
+    }
+
     if (isTransistorType(type) || isThreePinTriangleType(type) || isRelayType(type)) {
         return getRotatedSnapOffsets(type, rotation);
     }
@@ -97,6 +124,24 @@ function getTerminalOffsets(type, rotation = 0) {
     return getRotatedSnapOffsets(type, rotation);
 }
 
+/** Board cells that are electrical terminals for this anchored component. */
+export function getTerminalPins(type, anchorRow, anchorCol, rotation = 0, component = null) {
+    if (component && isWireType(component.type)) {
+        return getWireEndpoints(component);
+    }
+    return terminalOffsetsToPins(
+        getTerminalOffsets(type, rotation),
+        anchorRow,
+        anchorCol
+    );
+}
+
+function isTerminalPin(type, row, col, anchorRow, anchorCol, rotation = 0, component = null) {
+    return getTerminalPins(type, anchorRow, anchorCol, rotation, component).some(
+        (t) => t.row === row && t.col === col
+    );
+}
+
 /** Connector span cell that is not an endpoint — may sit on another part's pin. */
 function isConnectorMiddleCell(type, row, col, anchorRow, anchorCol, rotation = 0) {
     if (parseConnectorLength(type) === null) return false;
@@ -107,21 +152,6 @@ function isConnectorMiddleCell(type, row, col, anchorRow, anchorCol, rotation = 
         rotation,
     }).some((c) => c.row === row && c.col === col);
     return onConnector && !isTerminalPin(type, row, col, anchorRow, anchorCol, rotation);
-}
-
-/** Board cells that are electrical terminals for this anchored component. */
-export function getTerminalPins(type, anchorRow, anchorCol, rotation = 0) {
-    return terminalOffsetsToPins(
-        getTerminalOffsets(type, rotation),
-        anchorRow,
-        anchorCol
-    );
-}
-
-function isTerminalPin(type, row, col, anchorRow, anchorCol, rotation = 0) {
-    return getTerminalPins(type, anchorRow, anchorCol, rotation).some(
-        (t) => t.row === row && t.col === col
-    );
 }
 
 /** Keep the same board cell under the cursor as when the drag started. */
@@ -184,12 +214,29 @@ export function canPlaceAt(
     col,
     placed,
     ignoreId = null,
-    rotation = 0
+    rotation = 0,
+    extra = null
 ) {
-    const candidate = { type, row, col, rotation };
+    const candidate = {
+        type,
+        row,
+        col,
+        rotation,
+        ...(extra && typeof extra === 'object' ? extra : {}),
+    };
     const cells = getComponentCells(candidate);
     if (cells.some((c) => !isInsideBoard(c.row, c.col))) {
         return false;
+    }
+
+    if (isWireType(type)) {
+        const ends = getWireEndpoints(candidate);
+        if (
+            ends.length < 2 ||
+            (ends[0].row === ends[1].row && ends[0].col === ends[1].col)
+        ) {
+            return false;
+        }
     }
 
     const others = placed.filter((p) => p.id !== ignoreId);
@@ -231,7 +278,8 @@ export function canPlaceAt(
                 cell.col,
                 row,
                 col,
-                rotation
+                rotation,
+                candidate
             );
             const terminalThere = isTerminalPin(
                 p.type,
@@ -239,7 +287,8 @@ export function canPlaceAt(
                 cell.col,
                 p.row,
                 p.col,
-                pRot
+                pRot,
+                p
             );
 
             if (terminalHere && terminalThere) {
@@ -280,6 +329,9 @@ export function countPlacedByType(placed, type) {
 }
 
 export function getPinNodesForComponent(component) {
+    if (isWireType(component.type)) {
+        return getWireEndpoints(component).map((p) => pinId(p.row, p.col));
+    }
     const rotation = component.rotation ?? 0;
     const offsets = getRotatedSnapOffsets(component.type, rotation);
     return offsets.map((o) =>

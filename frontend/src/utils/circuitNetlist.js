@@ -11,6 +11,7 @@ import {
     isTorchType,
     isCoverType,
     isTransistorType,
+    isWireType,
     getLedSpec,
     parseConnectorLength,
     parseTransistorKey,
@@ -21,6 +22,7 @@ import {
     getRotatedSnapOffsets,
 } from '../constants/componentRotation';
 import { pinName } from '../components/CircuitBoard/boardPlacement';
+import { getWireEndpoints } from '../components/CircuitSimulator/circuitUtils';
 
 /** Union-find over breadboard pin ids (e.g. A3, C7). */
 class UnionFind {
@@ -60,6 +62,9 @@ class UnionFind {
 
 /** Terminal pin ids for a placed part (dark dots). */
 export function getComponentTerminalPins(component) {
+    if (isWireType(component.type)) {
+        return getWireEndpoints(component).map((p) => pinName(p.row, p.col));
+    }
     const rotation = component.rotation ?? 0;
     const offsets = getRotatedSnapOffsets(component.type, rotation);
     return offsets.map((o) => pinName(component.row + o.dr, component.col + o.dc));
@@ -439,6 +444,17 @@ export function buildCircuitJson(
             continue;
         }
 
+        if (isWireType(comp.type)) {
+            const pins = getComponentTerminalPins(comp);
+            for (const pin of pins) {
+                uf.add(pin);
+            }
+            for (let i = 1; i < pins.length; i += 1) {
+                uf.union(pins[0], pins[i]);
+            }
+            continue;
+        }
+
         const pins = getComponentTerminalPins(comp);
         for (const pin of pins) {
             uf.add(pin);
@@ -503,7 +519,11 @@ export function buildCircuitJson(
     ).length;
 
     for (const comp of placed) {
-        if (isConnectorType(comp.type) || isPhotoAccessoryType(comp.type)) {
+        if (
+            isConnectorType(comp.type) ||
+            isWireType(comp.type) ||
+            isPhotoAccessoryType(comp.type)
+        ) {
             continue;
         }
 
@@ -792,11 +812,17 @@ function countPlacedByType(placed, type) {
 }
 
 export function describeCircuit(placed) {
-    const parts = placed.filter((c) => !isConnectorType(c.type));
-    const wires = placed.filter((c) => isConnectorType(c.type));
+    const parts = placed.filter(
+        (c) => !isConnectorType(c.type) && !isWireType(c.type)
+    );
+    const wires = placed.filter(
+        (c) => isConnectorType(c.type) || isWireType(c.type)
+    );
     return {
         partCount: parts.length,
         wireCount: wires.length,
-        wireLengths: wires.map((w) => parseConnectorLength(w.type)),
+        wireLengths: wires.map((w) =>
+            isWireType(w.type) ? 'free' : parseConnectorLength(w.type)
+        ),
     };
 }

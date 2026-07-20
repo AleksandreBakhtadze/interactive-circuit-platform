@@ -147,6 +147,22 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'TR.L2.9': [
+        {
+            src: '/problems/TR.L2.9/board.png',
+            altKa: 'TR.L2.9 წრედი ფირზე',
+            altEn: 'TR.L2.9 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/TR.L2.9/schematic.png',
+            altKa: 'TR.L2.9 სქემა',
+            altEn: 'TR.L2.9 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

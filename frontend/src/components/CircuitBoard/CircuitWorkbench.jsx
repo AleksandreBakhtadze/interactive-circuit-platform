@@ -34,8 +34,13 @@ import {
     getTransistorGroupItem,
     getTransistorMaxCount,
     getTransistorSpec,
+    getWireCableColor,
+    getWireGroupItem,
+    getWireMaxCount,
+    getWirePinImage,
     isResistorType,
     isPhotoAccessoryType,
+    isWireType,
     LED_SPECS,
     ledType,
     parseCapacitorKey,
@@ -49,6 +54,7 @@ import {
     TRANSISTOR_SPECS,
     transistorType,
     usesResistorTotalCap,
+    WIRE_COLOR_SPECS,
 } from '../../constants/componentCatalog';
 import {
     getRotatedFootprint,
@@ -100,6 +106,7 @@ import {
     canPlaceAt,
     countPlacedByType,
     createComponentId,
+    getWireEndpoints,
 } from '../CircuitSimulator/circuitUtils';
 import CircuitBoard from './CircuitBoard';
 import {
@@ -111,11 +118,33 @@ import {
     pointerToPin,
     getBoardStage,
 } from './boardPlacement';
+import { DOT_COL_X, DOT_ROW_Y } from './boardLayout';
 import styles from './CircuitWorkbench.module.css';
 
 const MOVE_DRAG_THRESHOLD_PX = 4;
 /** Live sim while dragging torch / cover (photoresistor light). */
 const ACCESSORY_SIM_DEBOUNCE_MS = 25;
+
+function pinToPercent(row, col) {
+    return {
+        x: (DOT_COL_X[col] ?? 0) * 100,
+        y: (DOT_ROW_Y[row] ?? 0) * 100,
+    };
+}
+
+function clientToStagePercent(clientX, clientY, stageEl) {
+    if (!stageEl) return null;
+    const rect = stageEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+    return {
+        x: ((clientX - rect.left) / rect.width) * 100,
+        y: ((clientY - rect.top) / rect.height) * 100,
+    };
+}
+
+function wireAngleDeg(from, to) {
+    return (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
+}
 
 /**
  * Keep the rotate handle at the screen top-right of a CSS-rotated part,
@@ -832,6 +861,9 @@ export default function CircuitWorkbench({ problemCode }) {
     placedRef.current = placed;
     const [paletteRotations, setPaletteRotations] = useState({});
     const [connectorLength, setConnectorLength] = useState(3);
+    const [wireColor, setWireColor] = useState('red');
+    const [wireToolArmed, setWireToolArmed] = useState(false);
+    const [wireDraft, setWireDraft] = useState(null);
     const [resistorKey, setResistorKey] = useState('100o');
     const [capacitorKey, setCapacitorKey] = useState('10uf');
     const [ledColor, setLedColor] = useState('red');
@@ -995,6 +1027,7 @@ export default function CircuitWorkbench({ problemCode }) {
             problemCode === 'VR.L3.22' ||
             problemCode === 'VR.L4.23' ||
             problemCode === 'DI.L3.6' ||
+            problemCode === 'TR.L2.9' ||
             problemCode === 'TR.L2.10' ||
             problemCode === 'TR.L2.11' ||
             problemCode === 'TR.L2.13'
@@ -1002,7 +1035,10 @@ export default function CircuitWorkbench({ problemCode }) {
             setResistorKey('1ko');
         } else if (problemCode === 'TR.L2.12') {
             setResistorKey('5ko1');
-        } else if (problemCode === 'TR.L2.14' || problemCode === 'TR.L2.16') {
+        } else if (
+            problemCode === 'TR.L2.14' ||
+            problemCode === 'TR.L2.16'
+        ) {
             setResistorKey('100o');
         } else if (problemCode === 'TR.L2.17') {
             setResistorKey('1ko');
@@ -1072,6 +1108,7 @@ export default function CircuitWorkbench({ problemCode }) {
     const [accessoryDragPoint, setAccessoryDragPoint] = useState(null);
 
     const connectorGroup = getConnectorGroupItem(palette);
+    const wireGroup = getWireGroupItem(palette);
     const resistorGroup = getResistorGroupItem(palette);
     const capacitorGroup = getCapacitorGroupItem(palette);
     const ledGroup = getLedGroupItem(palette);
@@ -1153,6 +1190,9 @@ export default function CircuitWorkbench({ problemCode }) {
             const max = getTransistorMaxCount(palette, type);
             return max - countPlacedByType(placed, type);
         }
+        if (isWireType(type)) {
+            return getWireMaxCount(palette) - countPlacedByType(placed, type);
+        }
         const def = palette?.find((p) => p.type === type);
         if (!def) return 0;
         return def.maxCount - countPlacedByType(placed, type);
@@ -1163,6 +1203,88 @@ export default function CircuitWorkbench({ problemCode }) {
     const activeCapacitorType = capacitorType(capacitorKey);
     const activeLedType = ledType(ledColor);
     const activeTransistorType = transistorType(transistorKey);
+
+    const cancelWireDraft = useCallback(() => {
+        setWireDraft(null);
+    }, []);
+
+    const disarmWireTool = useCallback(() => {
+        setWireToolArmed(false);
+        setWireDraft(null);
+    }, []);
+
+    const tryPlaceWire = useCallback(
+        (from, to, colorKey = wireColor) => {
+            if (!from || !to) return false;
+            if (from.row === to.row && from.col === to.col) {
+                setMessage(
+                    lang === 'ka'
+                        ? 'აირჩიეთ სხვა პინი მავთულის მეორე ბოლოსთვის'
+                        : 'Pick a different pin for the other end'
+                );
+                return false;
+            }
+            const max = getWireMaxCount(palette);
+            if (countPlacedByType(placed, COMPONENT_TYPES.WIRE) >= max) {
+                setMessage(
+                    lang === 'ka'
+                        ? 'მავთულების ლიმიტი ამოწურულია'
+                        : 'No more wires allowed'
+                );
+                return false;
+            }
+            if (
+                !canPlaceAt(COMPONENT_TYPES.WIRE, from.row, from.col, placed, null, 0, {
+                    endRow: to.row,
+                    endCol: to.col,
+                })
+            ) {
+                setMessage(
+                    lang === 'ka'
+                        ? 'აქ მავთულის განთავსება არ ხერხდება'
+                        : 'Cannot place wire here'
+                );
+                return false;
+            }
+
+            const id = createComponentId(COMPONENT_TYPES.WIRE);
+            setPlaced((prev) => [
+                ...prev,
+                {
+                    id,
+                    type: COMPONENT_TYPES.WIRE,
+                    row: from.row,
+                    col: from.col,
+                    endRow: to.row,
+                    endCol: to.col,
+                    color: colorKey,
+                    rotation: 0,
+                },
+            ]);
+            setMessage('');
+            return true;
+        },
+        [lang, palette, placed, wireColor]
+    );
+
+    useEffect(() => {
+        if (!wireToolArmed && !wireDraft) return undefined;
+        const onKey = (ev) => {
+            if (ev.key !== 'Escape') return;
+            if (wireDraft) {
+                cancelWireDraft();
+                setMessage(
+                    lang === 'ka'
+                        ? 'მავთულის დახატვა გაუქმდა'
+                        : 'Wire draft cancelled'
+                );
+            } else {
+                disarmWireTool();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [wireToolArmed, wireDraft, cancelWireDraft, disarmWireTool, lang]);
 
     const tryPlace = (type, row, col, rotation, ignoreId = null) => {
         if (isPhotoAccessoryType(type)) {
@@ -1368,11 +1490,49 @@ export default function CircuitWorkbench({ problemCode }) {
             return;
         }
 
+        if (wireToolArmed) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pin = pointerToPin(e.clientX, e.clientY, gridRef.current);
+            if (!pin) return;
+
+            if (!wireDraft?.from) {
+                const stage = getBoardStage(gridRef.current);
+                const pointer = clientToStagePercent(
+                    e.clientX,
+                    e.clientY,
+                    stage
+                );
+                setWireDraft({ from: pin, pointer, hoverPin: pin });
+                setMessage(
+                    lang === 'ka'
+                        ? 'აირჩიეთ მეორე პინი მავთულისთვის'
+                        : 'Click the second pin to finish the wire'
+                );
+                return;
+            }
+
+            if (tryPlaceWire(wireDraft.from, pin)) {
+                setWireDraft(null);
+                setMessage(
+                    lang === 'ka'
+                        ? 'მავთული დაემატა — დააჭირეთ შემდეგ პინს ან Esc'
+                        : 'Wire placed — click another pin or press Esc'
+                );
+            }
+            return;
+        }
+
         const partId = findPlacedPartIdAt(e.clientX, e.clientY);
         if (!partId) return;
 
         const comp = placed.find((p) => p.id === partId);
         if (!comp) return;
+
+        // Free wires: delete via right-click only (no drag-move yet).
+        if (isWireType(comp.type)) {
+            return;
+        }
 
         // Always allow drag (including switches/buttons). Clicks without a drag
         // still toggle / press via the move-session finish path.
@@ -1403,6 +1563,15 @@ export default function CircuitWorkbench({ problemCode }) {
     };
 
     const handleBoardPointerMove = (e) => {
+        if (wireDraft?.from) {
+            const stage = getBoardStage(gridRef.current);
+            const pointer = clientToStagePercent(e.clientX, e.clientY, stage);
+            const hover = pointerToPin(e.clientX, e.clientY, gridRef.current);
+            setWireDraft((prev) =>
+                prev ? { ...prev, pointer, hoverPin: hover } : null
+            );
+        }
+
         const session = moveSessionRef.current;
         if (!session) return;
 
@@ -1526,6 +1695,7 @@ export default function CircuitWorkbench({ problemCode }) {
 
         e.preventDefault();
         clearMoveSessionRef();
+        disarmWireTool();
         const rotation = getPaletteRotation(type);
         palettePointerSessionRef.current = {
             pointerId: e.pointerId,
@@ -2907,6 +3077,87 @@ export default function CircuitWorkbench({ problemCode }) {
         );
     };
 
+    const renderWireCard = () => {
+        if (!wireGroup) return null;
+
+        const left = remaining(COMPONENT_TYPES.WIRE);
+        const label = lang === 'ka' ? wireGroup.labelKa : wireGroup.labelEn;
+        const pinSrc = getWirePinImage(wireColor);
+
+        return (
+            <div
+                className={`${styles.paletteCard} ${styles.connectorCard} ${wireToolArmed ? styles.wireCardArmed : ''}`}
+            >
+                <button
+                    type="button"
+                    className={`${styles.paletteItem} ${styles.wireToolBtn} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
+                    disabled={left <= 0}
+                    onClick={() => {
+                        if (left <= 0) return;
+                        clearMoveSessionRef();
+                        setActiveDrag(null);
+                        setHoverPin(null);
+                        if (wireToolArmed) {
+                            disarmWireTool();
+                            setMessage('');
+                        } else {
+                            setWireToolArmed(true);
+                            setWireDraft(null);
+                            setMessage(
+                                lang === 'ka'
+                                    ? 'დააჭირეთ პირველ პინს, შემდეგ მეორეს'
+                                    : 'Click first pin, then the second'
+                            );
+                        }
+                    }}
+                >
+                    <span className={styles.paletteLabel}>{label}</span>
+
+                    <div className={styles.connectorLengthPicker}>
+                        <span className={styles.connectorLengthLabel}>
+                            {lang === 'ka' ? 'ფერი' : 'Color'}
+                        </span>
+                        <div className={styles.connectorLengthOptions}>
+                            {WIRE_COLOR_SPECS.map((spec) => (
+                                <button
+                                    key={spec.key}
+                                    type="button"
+                                    className={`${styles.lengthOption} ${wireColor === spec.key ? styles.lengthOptionActive : ''}`}
+                                    title={lang === 'ka' ? spec.labelKa : spec.labelEn}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setWireColor(spec.key);
+                                    }}
+                                >
+                                    {spec.pickerLabel}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={styles.palettePreview}>
+                        <img
+                            src={pinSrc}
+                            alt=""
+                            className={styles.wirePalettePin}
+                            draggable={false}
+                        />
+                    </div>
+                    <span className={styles.paletteCount}>×{left}</span>
+                    <span className={styles.wireToolHint}>
+                        {wireToolArmed
+                            ? lang === 'ka'
+                                ? 'აქტიური — Esc გასაუქმებლად'
+                                : 'Armed — Esc to cancel'
+                            : lang === 'ka'
+                              ? 'დააჭირეთ ჩასართავად'
+                              : 'Click to arm'}
+                    </span>
+                </button>
+            </div>
+        );
+    };
+
     if (!palette) return null;
 
     const previewRotation = activeDrag?.rotation ?? 0;
@@ -3001,10 +3252,18 @@ export default function CircuitWorkbench({ problemCode }) {
                                 : 'Double-click a button to lock it pressed; click again to unlock'}
                         </p>
                     )}
+                    {wireGroup && (
+                        <p className={styles.paletteHint}>
+                            {lang === 'ka'
+                                ? 'მავთული: ჩართეთ → პინი → გადაადგილება → მეორე პინი'
+                                : 'Wire: arm → pin → drag → second pin'}
+                        </p>
+                    )}
                 </div>
                 <div className={styles.paletteItems}>
                     {standardPalette.map(renderPaletteCard)}
                     {renderConnectorCard()}
+                    {renderWireCard()}
                     {renderResistorCard()}
                     {renderCapacitorCard()}
                     {renderTransistorCard()}
@@ -3015,7 +3274,7 @@ export default function CircuitWorkbench({ problemCode }) {
             <div className={styles.stage}>
             <div
                 ref={boardHostRef}
-                className={`${styles.boardHost} ${activeDrag?.id ? styles.boardHostDragging : ''}`}
+                className={`${styles.boardHost} ${activeDrag?.id ? styles.boardHostDragging : ''} ${wireToolArmed ? styles.boardHostWireTool : ''}`}
                 onPointerDownCapture={handleBoardPointerDownCapture}
                 onPointerMove={handleBoardPointerMove}
                 onPointerUp={handleBoardPointerUp}
@@ -3054,8 +3313,152 @@ export default function CircuitWorkbench({ problemCode }) {
                             ) : null}
                         </div>
                     )}
+                    <div className={styles.wireLayer} aria-hidden={!wireToolArmed}>
+                        <svg className={styles.wireSvg} aria-hidden>
+                            {placed
+                                .filter((comp) => isWireType(comp.type))
+                                .map((comp) => {
+                                    const ends = getWireEndpoints(comp);
+                                    if (ends.length < 2) return null;
+                                    const a = pinToPercent(ends[0].row, ends[0].col);
+                                    const b = pinToPercent(ends[1].row, ends[1].col);
+                                    return (
+                                        <g key={`${comp.id}-cable`}>
+                                            <line
+                                                x1={`${a.x}%`}
+                                                y1={`${a.y}%`}
+                                                x2={`${b.x}%`}
+                                                y2={`${b.y}%`}
+                                                stroke={getWireCableColor(comp.color)}
+                                                strokeWidth="5"
+                                                strokeLinecap="round"
+                                            />
+                                            <line
+                                                className={styles.wireHitStroke}
+                                                x1={`${a.x}%`}
+                                                y1={`${a.y}%`}
+                                                x2={`${b.x}%`}
+                                                y2={`${b.y}%`}
+                                                stroke="transparent"
+                                                strokeWidth="16"
+                                                strokeLinecap="round"
+                                                data-placed-part={comp.id}
+                                                onContextMenu={(e) => {
+                                                    removeComponent(comp.id, e);
+                                                }}
+                                            />
+                                        </g>
+                                    );
+                                })}
+                            {wireDraft?.from &&
+                                (() => {
+                                    const a = pinToPercent(
+                                        wireDraft.from.row,
+                                        wireDraft.from.col
+                                    );
+                                    const b = wireDraft.hoverPin
+                                        ? pinToPercent(
+                                              wireDraft.hoverPin.row,
+                                              wireDraft.hoverPin.col
+                                          )
+                                        : wireDraft.pointer;
+                                    if (!b) return null;
+                                    return (
+                                        <line
+                                            key="wire-draft"
+                                            x1={`${a.x}%`}
+                                            y1={`${a.y}%`}
+                                            x2={`${b.x}%`}
+                                            y2={`${b.y}%`}
+                                            stroke={getWireCableColor(wireColor)}
+                                            strokeWidth="4"
+                                            strokeLinecap="round"
+                                            strokeDasharray="6 4"
+                                            opacity="0.85"
+                                        />
+                                    );
+                                })()}
+                        </svg>
+                        {placed
+                            .filter((comp) => isWireType(comp.type))
+                            .map((comp) => {
+                                const ends = getWireEndpoints(comp);
+                                if (ends.length < 2) return null;
+                                const a = pinToPercent(ends[0].row, ends[0].col);
+                                const b = pinToPercent(ends[1].row, ends[1].col);
+                                const angle = wireAngleDeg(a, b);
+                                const pinSrc = getWirePinImage(comp.color);
+                                return (
+                                    <div
+                                        key={comp.id}
+                                        data-placed-part={comp.id}
+                                        className={styles.wirePlaced}
+                                        onContextMenu={(e) => {
+                                            removeComponent(comp.id, e);
+                                        }}
+                                    >
+                                        <img
+                                            src={pinSrc}
+                                            alt=""
+                                            className={styles.wirePin}
+                                            style={{
+                                                left: `${a.x}%`,
+                                                top: `${a.y}%`,
+                                                transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+                                            }}
+                                            draggable={false}
+                                        />
+                                        <img
+                                            src={pinSrc}
+                                            alt=""
+                                            className={styles.wirePin}
+                                            style={{
+                                                left: `${b.x}%`,
+                                                top: `${b.y}%`,
+                                                transform: `translate(-50%, -50%) rotate(${angle + 180}deg)`,
+                                            }}
+                                            draggable={false}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        {wireDraft?.from && (
+                            <img
+                                src={getWirePinImage(wireColor)}
+                                alt=""
+                                className={styles.wirePin}
+                                style={{
+                                    left: `${pinToPercent(wireDraft.from.row, wireDraft.from.col).x}%`,
+                                    top: `${pinToPercent(wireDraft.from.row, wireDraft.from.col).y}%`,
+                                    transform: `translate(-50%, -50%) rotate(${
+                                        wireDraft.hoverPin || wireDraft.pointer
+                                            ? wireAngleDeg(
+                                                  pinToPercent(
+                                                      wireDraft.from.row,
+                                                      wireDraft.from.col
+                                                  ),
+                                                  wireDraft.hoverPin
+                                                      ? pinToPercent(
+                                                            wireDraft.hoverPin.row,
+                                                            wireDraft.hoverPin.col
+                                                        )
+                                                      : wireDraft.pointer
+                                              )
+                                            : 0
+                                    }deg)`,
+                                    opacity: 0.9,
+                                    pointerEvents: 'none',
+                                }}
+                                draggable={false}
+                            />
+                        )}
+                    </div>
                     {placed
-                        .filter((comp) => !isPhotoAccessoryType(comp.type))
+                        .filter(
+                            (comp) =>
+                                !isPhotoAccessoryType(comp.type) &&
+                                !isWireType(comp.type)
+                        )
                         .map((comp, index) => {
                         // boardLayoutTick: wait for grid mount before measuring pins
                         void boardLayoutTick;

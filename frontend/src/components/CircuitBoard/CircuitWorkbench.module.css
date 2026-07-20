@@ -893,23 +893,10 @@
     color: #e07070;
 }
 
-/* Free two-pin cable wires */
-.wireCardArmed {
-    outline: 2px solid #c62828;
-    outline-offset: 2px;
-    border-radius: 8px;
-}
-
+/* Free two-pin cable wires — keep .paletteItem border/background like other cards */
 .wireToolBtn {
     cursor: pointer;
-    border: none;
-    background: transparent;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 6px;
+    font: inherit;
 }
 
 .wireToolHint {

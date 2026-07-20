@@ -163,6 +163,22 @@ export const PROBLEM_FIGURES = {
             captionEn: 'Schematic',
         },
     ],
+    'PR.L2.12': [
+        {
+            src: '/problems/PR.L2.12/board.png',
+            altKa: 'PR.L2.12 წრედი ფირზე',
+            altEn: 'PR.L2.12 board circuit',
+            captionKa: 'საცნობარო წრედი ფირზე',
+            captionEn: 'Reference board layout',
+        },
+        {
+            src: '/problems/PR.L2.12/schematic.png',
+            altKa: 'PR.L2.12 სქემა',
+            altEn: 'PR.L2.12 schematic',
+            captionKa: 'სქემა',
+            captionEn: 'Schematic',
+        },
+    ],
 };
 
 export function getFiguresForProblem(problemCode) {

@@ -321,6 +321,28 @@ public class CircuitValidationService {
         return objectMapper.writeValueAsString(circuit);
     }
 
+    /** Reverse every voltage source's node order (external soft-wire polarity swap). */
+    @SuppressWarnings("unchecked")
+    private String flipAllVoltageSources(String circuitJson) throws Exception {
+        Map<String, Object> circuit = objectMapper.readValue(circuitJson, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) circuit.getOrDefault("components", List.of());
+        for (Map<String, Object> component : components) {
+            if (!"voltage".equals(component.get("type"))) {
+                continue;
+            }
+            Object rawNodes = component.get("nodes");
+            if (rawNodes instanceof List<?> nodes && nodes.size() >= 2) {
+                List<Object> reversed = new ArrayList<>(nodes);
+                Object first = reversed.get(0);
+                reversed.set(0, reversed.get(1));
+                reversed.set(1, first);
+                component.put("nodes", reversed);
+            }
+        }
+        return objectMapper.writeValueAsString(circuit);
+    }
+
     private boolean specUsesTwoButtons(ProblemValidationSpec spec) {
         boolean has1 = false;
         boolean has2 = false;
@@ -490,6 +512,12 @@ public class CircuitValidationService {
                     maybeInvertPotPositions(validationCase.potPositions(), invertPots));
             caseJson = SpiceGenerator.applyLightLevels(
                     caseJson, validationCase.lightLevels());
+            // DI.L3.7: soft-wire polarity swap — flip every pack (not only the 2nd).
+            if ("DI.L3.7".equals(problemCode)
+                    && validationCase.label() != null
+                    && validationCase.label().contains("supply_reversed")) {
+                caseJson = flipAllVoltageSources(caseJson);
+            }
             Map<String, Object> simResult = validationCase.simPhase() != null
                     ? simulationService.simulateToMap(
                             caseJson, problemCode, validationCase.simPhase())

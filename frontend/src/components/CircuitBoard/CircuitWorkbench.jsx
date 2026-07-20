@@ -71,6 +71,10 @@ import {
     getLampDcBrightnessRatio,
     getBaselineRelativeLedBrightness,
     getPhotoModuleLedDimBrightness,
+    getPhotoModuleLedBrightBrightness,
+    getPhotoModuleLedContrastBrightness,
+    getPrL311SeriesLedBrightness,
+    getPrL212LedBrightness,
     getAbsoluteLedBrightness,
     getAbsoluteLampBrightness,
     getMotorSpinState,
@@ -98,6 +102,8 @@ import {
     isToggleInteractive,
     isSlideSwitchType,
     isVarResistorType,
+    lightLevelForPhotoResistor,
+    PHOTO_AMBIENT_LIGHT_LEVEL,
     supportsMotorStallToggle,
     toSpiceId,
 } from '../../utils/circuitNetlist';
@@ -122,8 +128,15 @@ import { DOT_COL_X, DOT_ROW_Y } from './boardLayout';
 import styles from './CircuitWorkbench.module.css';
 
 const MOVE_DRAG_THRESHOLD_PX = 4;
-/** Live sim while dragging torch / cover (photoresistor light). */
-const ACCESSORY_SIM_DEBOUNCE_MS = 25;
+/**
+ * Max one live sim per this interval while dragging torch / cover.
+ * (Throttle — not trailing debounce, which still fires once per pause/cell.)
+ */
+const ACCESSORY_SIM_MIN_INTERVAL_MS = 480;
+/** Quantize drag grid so tiny moves do not each schedule a sim. */
+const ACCESSORY_SIM_GRID_STEP = 0.5;
+/** Ignore accessory moves that change effective light by less than this. */
+const ACCESSORY_LIGHT_EPSILON = 0.08;
 
 function pinToPercent(row, col) {
     return {
@@ -208,6 +221,24 @@ function incompleteBoardMessage(problemCode, lang) {
         }
         if (problemCode === 'PR.L2.4') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, ფოტორეზისტორი, ლურჯი LED, 2 რეზისტორი';
+        }
+        if (problemCode === 'PR.L1.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, ფოტორეზისტორი, 2 წითელი LED, რეზისტორი (10k)';
+        }
+        if (problemCode === 'PR.L2.9') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ფოტორეზისტორი, 2 წითელი LED, 2 განსხვავებული რეზისტორი';
+        }
+        if (problemCode === 'PR.L3.10') {
+            return 'განათავსეთ: 2 კვების წყარო, ფოტორეზისტორი, წითელი და მწვანე LED, რეზისტორი';
+        }
+        if (problemCode === 'PR.L3.11') {
+            return 'განათავსეთ: 2 კვების წყარო, ფოტორეზისტორი, წითელი და მწვანე LED, რეზისტორები';
+        }
+        if (problemCode === 'PR.L2.12') {
+            return 'განათავსეთ სურათის მიხედვით: 2 კვების წყარო, ფოტორეზისტორი, წითელი და მწვანე LED, 1k და 5.1k რეზისტორები';
+        }
+        if (problemCode === 'PR.L3.6') {
+            return 'განათავსეთ: 2 კვების წყარო, ფოტორეზისტორი (+ ნებისმიერი ნაცნობი დეტალები გაზომვისთვის)';
         }
         if (problemCode === 'VR.L1.2') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, წითელი LED, 2 რეზისტორი';
@@ -476,6 +507,9 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'DI.L3.6') {
             return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, დიოდი, 2 წითელი LED, კონდენსატორი, 2 რეზისტორი';
         }
+        if (problemCode === 'DI.L3.7') {
+            return 'განათავსეთ: 2 კვების წყარო, ძრავი, დიოდები, 2 რბილი გამტარი (წითელი/შავი), დაბალი წინაღობის რეზისტორები';
+        }
         if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN Q1, ძრავი, რეზისტორი';
         }
@@ -519,6 +553,24 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'PR.L2.4') {
         return 'Place: 2 power supplies, switch, slide switch, photoresistor, blue LED, 2 resistors';
+    }
+    if (problemCode === 'PR.L1.5') {
+        return 'Place: 2 power supplies, switch, button, photoresistor, 2 red LEDs, resistor (10k)';
+    }
+    if (problemCode === 'PR.L2.9') {
+        return 'Place: 2 power supplies, switch, photoresistor, 2 red LEDs, 2 different resistors';
+    }
+    if (problemCode === 'PR.L3.10') {
+        return 'Place: 2 power supplies, photoresistor, red and green LED, resistor';
+    }
+    if (problemCode === 'PR.L3.11') {
+        return 'Place: 2 power supplies, photoresistor, red and green LED, resistors';
+    }
+    if (problemCode === 'PR.L2.12') {
+        return 'Place per figure: 2 power supplies, photoresistor, red and green LED, 1k and 5.1k resistors';
+    }
+    if (problemCode === 'PR.L3.6') {
+        return 'Place: 2 power supplies, photoresistor (+ any familiar parts for the measurement)';
     }
     if (problemCode === 'VR.L1.2') {
         return 'Place: 2 power supplies, switch, variable resistor, red LED, 2 resistors';
@@ -787,6 +839,9 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'DI.L3.6') {
         return 'Place: 2 power supplies, variable resistor, diode, 2 red LEDs, capacitor, 2 resistors';
     }
+    if (problemCode === 'DI.L3.7') {
+        return 'Place: 2 power supplies, motor, diodes, 2 soft wires (red/black), low-value resistors';
+    }
     if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
         return 'Place: 2 power supplies, switch, variable resistor, NPN Q1, motor, resistor';
     }
@@ -837,8 +892,11 @@ export default function CircuitWorkbench({ problemCode }) {
     const boardSimTimerRef = useRef(null);
     const accessorySimTimerRef = useRef(null);
     const accessoryDragAnchorRef = useRef(null);
+    const accessoryLastLightRef = useRef(null);
+    const accessoryLastSimAtRef = useRef(0);
     const photoAccessoryDragRef = useRef(null);
     const simRequestIdRef = useRef(0);
+    const runLiveSimulationRef = useRef(async () => {});
     const placedRef = useRef([]);
     const pendingClickInteractRef = useRef(null);
     const lastButtonClickAtRef = useRef({});
@@ -1754,8 +1812,9 @@ export default function CircuitWorkbench({ problemCode }) {
                     col: pt.col,
                 });
             } else {
+                // Outside the board: do not spam /simulate — restore ambient at most once.
                 scheduleAccessoryDragSimulationRef.current(null, {
-                    flush: true,
+                    leaveBoard: true,
                 });
             }
             return;
@@ -1786,10 +1845,13 @@ export default function CircuitWorkbench({ problemCode }) {
                 accessorySimTimerRef.current = null;
             }
             if (liveSimModeRef.current) {
+                // One ambient restore only if torch/cover had changed the light.
                 scheduleAccessoryDragSimulationRef.current(null, {
-                    flush: true,
+                    leaveBoard: true,
+                    force: true,
                 });
             }
+            accessoryLastLightRef.current = null;
             return;
         }
 
@@ -1911,6 +1973,7 @@ export default function CircuitWorkbench({ problemCode }) {
         photoAccessoryDragRef.current = null;
         photoLedBaselineRef.current = null;
         accessoryDragAnchorRef.current = null;
+        accessoryLastLightRef.current = null;
         if (accessorySimTimerRef.current) {
             clearTimeout(accessorySimTimerRef.current);
             accessorySimTimerRef.current = null;
@@ -2272,6 +2335,8 @@ export default function CircuitWorkbench({ problemCode }) {
                           : `Error: ${detail}`
                 );
             } finally {
+                // Always clear for the latest request; superseded requests leave
+                // simulating true so a hung/outdated torch drag cannot lock Submit.
                 if (requestId === simRequestIdRef.current) {
                     setSimulating(false);
                 }
@@ -2291,46 +2356,155 @@ export default function CircuitWorkbench({ problemCode }) {
         ]
     );
 
+    useEffect(() => {
+        runLiveSimulationRef.current = runLiveSimulation;
+    }, [runLiveSimulation]);
+
     const scheduleAccessoryDragSimulation = useCallback(
-        (floater, { flush = false } = {}) => {
+        (floater, { flush = false, leaveBoard = false, force = false } = {}) => {
             if (!liveSimModeRef.current) return;
+
+            const clearTimer = () => {
+                if (accessorySimTimerRef.current) {
+                    clearTimeout(accessorySimTimerRef.current);
+                    accessorySimTimerRef.current = null;
+                }
+            };
+
+            const runAmbient = () => {
+                photoAccessoryDragRef.current = null;
+                accessorySimTimerRef.current = null;
+                if (!liveSimModeRef.current) return;
+                accessoryLastLightRef.current = PHOTO_AMBIENT_LIGHT_LEVEL;
+                accessoryLastSimAtRef.current = Date.now();
+                runLiveSimulationRef.current(switchStatesRef.current, {
+                    live: true,
+                    simPhase: 'idle',
+                    floatingPhotoAccessories: [],
+                });
+            };
+
+            const wasAffectingLight = () => {
+                const prev = accessoryLastLightRef.current;
+                return (
+                    typeof prev === 'number' &&
+                    Math.abs(prev - PHOTO_AMBIENT_LIGHT_LEVEL) >= 0.002
+                );
+            };
+
+            // Pointer left the board (or drag ended): restore ambient at most once.
+            if (leaveBoard || (flush && !floater)) {
+                photoAccessoryDragRef.current = null;
+                clearTimer();
+                if (!force && accessoryDragAnchorRef.current === 'outside') {
+                    return;
+                }
+                if (!wasAffectingLight()) {
+                    accessoryDragAnchorRef.current = 'outside';
+                    return;
+                }
+                accessoryDragAnchorRef.current = 'outside';
+                runAmbient();
+                return;
+            }
+
+            if (flush) {
+                clearTimer();
+                photoAccessoryDragRef.current = floater;
+                accessoryLastSimAtRef.current = Date.now();
+                runLiveSimulationRef.current(switchStatesRef.current, {
+                    live: true,
+                    simPhase: 'idle',
+                    floatingPhotoAccessories: floater ? [floater] : [],
+                });
+                return;
+            }
+
+            if (!floater) {
+                return;
+            }
 
             photoAccessoryDragRef.current = floater;
 
-            const anchorKey = floater
-                ? `${floater.type}:${floater.row.toFixed(2)},${floater.col.toFixed(2)}`
-                : 'none';
-            if (!flush && accessoryDragAnchorRef.current === anchorKey) {
+            const quantize = (v) =>
+                Math.round(v / ACCESSORY_SIM_GRID_STEP) * ACCESSORY_SIM_GRID_STEP;
+            const anchorKey = `${floater.type}:${quantize(floater.row)},${quantize(floater.col)}`;
+
+            if (accessoryDragAnchorRef.current === anchorKey) {
                 return;
             }
-            accessoryDragAnchorRef.current = anchorKey;
 
-            if (accessorySimTimerRef.current) {
-                clearTimeout(accessorySimTimerRef.current);
-                accessorySimTimerRef.current = null;
+            const photo = placedRef.current.find(
+                (c) => c.type === COMPONENT_TYPES.PHOTO_RESISTOR
+            );
+            if (photo) {
+                const light = lightLevelForPhotoResistor(
+                    photo,
+                    placedRef.current,
+                    [floater]
+                );
+                // On board but far from the photoresistor: no light change — skip.
+                // Restore ambient once when leaving an active effect zone.
+                if (Math.abs(light - PHOTO_AMBIENT_LIGHT_LEVEL) < 0.002) {
+                    accessoryDragAnchorRef.current = anchorKey;
+                    if (!wasAffectingLight()) {
+                        return;
+                    }
+                    clearTimer();
+                    runAmbient();
+                    return;
+                }
+                if (
+                    typeof accessoryLastLightRef.current === 'number' &&
+                    Math.abs(light - accessoryLastLightRef.current) <
+                        ACCESSORY_LIGHT_EPSILON
+                ) {
+                    accessoryDragAnchorRef.current = anchorKey;
+                    return;
+                }
             }
+
+            accessoryDragAnchorRef.current = anchorKey;
 
             const run = () => {
                 accessorySimTimerRef.current = null;
                 if (!liveSimModeRef.current) return;
                 const active = photoAccessoryDragRef.current;
-                runLiveSimulation(switchStatesRef.current, {
+                const photoComp = placedRef.current.find(
+                    (c) => c.type === COMPONENT_TYPES.PHOTO_RESISTOR
+                );
+                if (photoComp) {
+                    accessoryLastLightRef.current = lightLevelForPhotoResistor(
+                        photoComp,
+                        placedRef.current,
+                        active ? [active] : []
+                    );
+                }
+                accessoryLastSimAtRef.current = Date.now();
+                runLiveSimulationRef.current(switchStatesRef.current, {
                     live: true,
                     simPhase: 'idle',
                     floatingPhotoAccessories: active ? [active] : [],
                 });
             };
 
-            if (flush) {
+            const elapsed = Date.now() - accessoryLastSimAtRef.current;
+            if (
+                accessoryLastSimAtRef.current === 0 ||
+                elapsed >= ACCESSORY_SIM_MIN_INTERVAL_MS
+            ) {
+                clearTimer();
                 run();
-            } else if (floater) {
-                accessorySimTimerRef.current = setTimeout(
-                    run,
-                    ACCESSORY_SIM_DEBOUNCE_MS
-                );
+                return;
             }
+
+            clearTimer();
+            accessorySimTimerRef.current = setTimeout(
+                run,
+                ACCESSORY_SIM_MIN_INTERVAL_MS - elapsed
+            );
         },
-        [runLiveSimulation]
+        []
     );
 
     useEffect(() => {
@@ -2385,10 +2559,16 @@ export default function CircuitWorkbench({ problemCode }) {
             return undefined;
         }
 
+        // Torch/cover drag owns live sim; do not pile on board-resync requests.
+        if (photoAccessoryDragRef.current) {
+            return undefined;
+        }
+
         boardSimTimerRef.current = setTimeout(() => {
             boardSimTimerRef.current = null;
+            if (photoAccessoryDragRef.current) return;
             di36LastSimPotRef.current = { ...potPositionsRef.current };
-            runLiveSimulation(switchStatesRef.current, {
+            runLiveSimulationRef.current(switchStatesRef.current, {
                 live: true,
                 simPhase: 'idle',
             });
@@ -2400,7 +2580,9 @@ export default function CircuitWorkbench({ problemCode }) {
                 boardSimTimerRef.current = null;
             }
         };
-    }, [placed, problemCode, runLiveSimulation]);
+        // Intentionally omit runLiveSimulation — identity churn was re-firing
+        // this effect on every sim response and flooding /simulate during torch drag.
+    }, [placed, problemCode]);
 
     /** Potentiometer dial: update A–B share (0…1) and re-sim while live. */
     const handlePotPositionChange = useCallback(
@@ -2649,6 +2831,7 @@ export default function CircuitWorkbench({ problemCode }) {
             potPositionsRef.current
         );
         setSubmitting(true);
+        setSimulating(false);
         setSubmitStatus(null);
         setMessage('');
 
@@ -3086,7 +3269,7 @@ export default function CircuitWorkbench({ problemCode }) {
 
         return (
             <div
-                className={`${styles.paletteCard} ${styles.connectorCard} ${wireToolArmed ? styles.wireCardArmed : ''}`}
+                className={`${styles.paletteCard} ${styles.connectorCard}`}
             >
                 <button
                     type="button"
@@ -3118,7 +3301,12 @@ export default function CircuitWorkbench({ problemCode }) {
                             {lang === 'ka' ? 'ფერი' : 'Color'}
                         </span>
                         <div className={styles.connectorLengthOptions}>
-                            {WIRE_COLOR_SPECS.map((spec) => (
+                            {(wireGroup.colors?.length
+                                ? WIRE_COLOR_SPECS.filter((s) =>
+                                      wireGroup.colors.includes(s.key)
+                                  )
+                                : WIRE_COLOR_SPECS
+                            ).map((spec) => (
                                 <button
                                     key={spec.key}
                                     type="button"
@@ -3655,12 +3843,75 @@ export default function CircuitWorkbench({ problemCode }) {
                                 frameIndex
                             );
                             isLedTranFade = brightnessRatio > 0;
-                        } else if (simOk && isLedType(comp.type) && (problemCode === 'VR.L3.19' || problemCode === 'VR.L1.20')) {
+                        } else if (simOk && isLedType(comp.type) && (problemCode === 'VR.L3.19' || problemCode === 'VR.L1.20' || problemCode === 'PR.L3.10')) {
                             brightnessRatio = getAntiparallelLedDcBrightnessRatio(
                                 simResults,
                                 spiceComponentId,
                                 frameIndex
                             );
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            problemCode === 'PR.L3.11'
+                        ) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            brightnessRatio = getPrL311SeriesLedBrightness(i);
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            problemCode === 'PR.L2.12'
+                        ) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            brightnessRatio = getPrL212LedBrightness(
+                                i,
+                                getLedSpec(comp.type)?.spiceColor ??
+                                    getLedSpec(comp.type)?.key
+                            );
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            problemCode === 'PR.L2.9'
+                        ) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            brightnessRatio =
+                                getPhotoModuleLedContrastBrightness(i);
+                            isLedTranFade = brightnessRatio > 0;
+                        } else if (
+                            simOk &&
+                            isLedType(comp.type) &&
+                            (problemCode === 'PR.L1.1' ||
+                                problemCode === 'PR.L1.5')
+                        ) {
+                            const i =
+                                getComponentCurrent(
+                                    simResults,
+                                    spiceComponentId,
+                                    { signed: true },
+                                    frameIndex
+                                ) ?? 0;
+                            brightnessRatio =
+                                getPhotoModuleLedBrightBrightness(i);
                             isLedTranFade = brightnessRatio > 0;
                         } else if (
                             simOk &&
@@ -3686,11 +3937,8 @@ export default function CircuitWorkbench({ problemCode }) {
                                     photoLedBaselineRef.current
                                 );
                             } else {
-                                brightnessRatio = getLedDcBrightnessRatio(
-                                    simResults,
-                                    spiceComponentId,
-                                    frameIndex
-                                );
+                                brightnessRatio =
+                                    getPhotoModuleLedBrightBrightness(i);
                             }
                             isLedTranFade = brightnessRatio > 0;
                         } else if (
@@ -4089,7 +4337,7 @@ export default function CircuitWorkbench({ problemCode }) {
                             type="button"
                             className={styles.submitBtn}
                             onClick={handleSubmit}
-                            disabled={submitting || simulating || placed.length === 0}
+                            disabled={submitting || placed.length === 0}
                         >
                             {submitting
                                 ? lang === 'ka'

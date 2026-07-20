@@ -759,7 +759,12 @@ public class SpiceGenerator {
         sb.append(".model DIODE_MODEL    D (IS=3e-7 N=1.12 RS=2  BV=100)\n");
         // Extra RS softens the Vf clamp so parallel unequal-LED demos share current.
         sb.append(".model LEDMODEL_RED   D (IS=9e-21 N=1.9  RS=55 BV=20)\n");
-        sb.append(".model LEDMODEL_GREEN D (IS=2e-21 N=2.0  RS=3  BV=20)\n");
+        if ("PR.L2.12".equals(problemCode)) {
+            // Higher green Vf so torch approach lights red first, then green (quiz).
+            sb.append(".model LEDMODEL_GREEN D (IS=2e-23 N=2.7 RS=18 BV=20)\n");
+        } else {
+            sb.append(".model LEDMODEL_GREEN D (IS=2e-21 N=2.0  RS=3  BV=20)\n");
+        }
         sb.append(".model LEDMODEL_BLUE  D (IS=5e-22 N=2.2  RS=4  BV=20)\n");
         // TR.L2.12 needs lower β so a ≥1k quiescent base R (e.g. 5.1k) leaves the
         // collector-load lamp clearly dim vs button-parallel 1k path. Keep BF=150
@@ -860,7 +865,7 @@ public class SpiceGenerator {
         return mapper.writeValueAsString(data);
     }
 
-    private static final double PHOTO_RESISTOR_R_MIN = 200.0;
+    private static final double PHOTO_RESISTOR_R_MIN = 40.0;
     private static final double PHOTO_RESISTOR_R_MAX = 1_000_000.0;
 
     private static double photoResistorOhmsFromLight(double light) {

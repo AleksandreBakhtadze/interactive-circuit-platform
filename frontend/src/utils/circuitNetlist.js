@@ -101,7 +101,7 @@ export function toSpiceId(id) {
 export const VAR_RESISTOR_MAX_OHMS = 10000;
 
 /** Photoresistor at maximum light (torch adjacent). */
-export const PHOTO_RESISTOR_R_MIN = 200;
+export const PHOTO_RESISTOR_R_MIN = 40;
 
 /** Photoresistor when fully covered. */
 export const PHOTO_RESISTOR_R_MAX = 1_000_000;
@@ -110,23 +110,22 @@ export const PHOTO_RESISTOR_R_MAX = 1_000_000;
 export const PHOTO_RESISTOR_R_AMBIENT = 50_000;
 
 /** Grid distance treated as “fully on” for torch / cover. */
-export const PHOTO_FULL_EFFECT_DISTANCE = 0.75;
+export const PHOTO_FULL_EFFECT_DISTANCE = 0.35;
 
 /**
  * Beyond this grid distance torch / cover have no effect (ambient light only).
  * Keeps a distant torch on the board from brightening the photoresistor.
  */
-export const PHOTO_ACCESSORY_MAX_RANGE = 2.5;
+export const PHOTO_ACCESSORY_MAX_RANGE = 3.0;
 
 /**
  * Exponent on torch proximity when mapping to light level.
- * >1 keeps mid-range torch from collapsing PR resistance (parallel-shunt tasks
- * otherwise look “off” while the torch is still a cell away).
+ * Lower = more gradual mid-range change; full only when quite close.
  */
-export const PHOTO_TORCH_LIGHT_EXPONENT = 2;
+export const PHOTO_TORCH_LIGHT_EXPONENT = 1.85;
 
 /**
- * Light level for ambient (50 kΩ) on log R curve between 200 Ω and 1 MΩ.
+ * Light level for ambient (50 kΩ) on log R curve between 40 Ω and 1 MΩ.
  */
 export const PHOTO_AMBIENT_LIGHT_LEVEL =
     1 -
@@ -425,6 +424,7 @@ export function buildCircuitJson(
     const uf = new UnionFind();
     const supplyVolts =
         problemCode === 'CP.L4.19' ||
+        problemCode === 'PR.L2.12' ||
         (typeof problemCode === 'string' &&
             (problemCode.startsWith('LR.') || problemCode.startsWith('VR.')))
             ? '3'
@@ -596,7 +596,7 @@ export function buildCircuitJson(
                     role,
                     type: 'voltage',
                     nodes,
-                    // Default packs are 6 V (CP/SW); LR.* and CP.L4.19 use 3 V packs.
+                    // Default packs are 6 V (CP/SW); LR.*/VR.*/PR.L2.12 use 3 V packs.
                     value: supplyVolts,
                 });
                 break;

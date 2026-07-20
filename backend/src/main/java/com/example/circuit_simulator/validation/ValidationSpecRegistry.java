@@ -75,6 +75,7 @@ public class ValidationSpecRegistry {
             Map.entry("DI.L2.2", diL22()),
             Map.entry("DI.L1.4", diL14()),
             Map.entry("DI.L3.6", diL36()),
+            Map.entry("DI.L3.7", diL37()),
             Map.entry("TR.L2.10", trL210()),
             Map.entry("TR.L2.11", trL211()),
             Map.entry("TR.L2.12", trL212()),
@@ -115,8 +116,12 @@ public class ValidationSpecRegistry {
             Map.entry("VR.L4.23", vrL423()),
             Map.entry("PR.L1.1", prL11()),
             Map.entry("PR.L1.2", prL12()),
+            Map.entry("PR.L1.5", prL15()),
             Map.entry("PR.L2.3", prL23()),
-            Map.entry("PR.L2.4", prL24())
+            Map.entry("PR.L2.4", prL24()),
+            Map.entry("PR.L2.9", prL29()),
+            Map.entry("PR.L3.10", prL310()),
+            Map.entry("PR.L3.11", prL311())
     );
 
     public Optional<ProblemValidationSpec> findByProblemCode(String problemCode) {
@@ -253,6 +258,41 @@ public class ValidationSpecRegistry {
                                         // Currents should be close (equalized), not still 5× apart.
                                         new ValidationCheck(
                                                 "leds", "current_ratio", "lt", 1.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DI.L3.7 — diode-steered motor on a low-R mid-rail: motor spins one way for
+     * either soft-wire polarity. Case 2 flips all voltage sources (external
+     * red/black swap); signed current must stay the same direction
+     * ({@code current_reversed_vs_prior} lt 0.5).
+     */
+    private static ProblemValidationSpec diL37() {
+        return new ProblemValidationSpec(
+                "DI.L3.7",
+                List.of(
+                        new ValidationCase(
+                                "supply_normal",
+                                "წითელი (+), შავი (−) — ძრავი ერთი მიმართულებით ტრიალებს",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "supply_reversed_same_spin",
+                                "წითელი და შავი გაცვლილი — იგივე მიმართულება",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "lt",
+                                                0.5)
                                 )
                         )
                 )
@@ -5682,6 +5722,324 @@ public class ValidationSpecRegistry {
                                 null,
                                 Map.of(),
                                 Map.of("photo_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * PR.L1.5 — two red LEDs; PR in series with one LED; button parallels the LED
+     * returns so both track light together. Button open: only the PR-branch LED
+     * follows torch/cover; the other stays roughly constant.
+     */
+    private static ProblemValidationSpec prL15() {
+        final String ambientOpen = "switch_on_button_open_ambient";
+        final String ambientPressed = "switch_on_button_pressed_ambient";
+        return new ProblemValidationSpec(
+                "PR.L1.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "lt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                ambientOpen,
+                                "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი — ორივე ანთია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00008),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "gt", 0.00008),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_max_forward_current",
+                                                "gt",
+                                                0.00008),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_min_forward_current",
+                                                "gt",
+                                                0.00005)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.352)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_torch",
+                                "ღილაკი გაშვებული — ფანრით მხოლოდ ერთი ნათება იცვლება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.00008),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "gt", 0.00008),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_max_forward_current",
+                                                "gt_ref:" + ambientOpen,
+                                                1.4),
+                                        // Still asymmetric: not fully equalized.
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "gt", 1.25)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open_cover",
+                                "ღილაკი გაშვებული — დაფარვით მხოლოდ ერთი ჩაქრება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_min_forward_current",
+                                                "lt",
+                                                0.0003),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_max_forward_current",
+                                                "gt",
+                                                0.001)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                ambientPressed,
+                                "ღილაკი დაჭერილი — ორივე ანთია, ნათება ახლოსაა",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "gt", 0.0002),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "gt", 0.0002),
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "lt", 2.0),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_max_forward_current",
+                                                "gt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_min_forward_current",
+                                                "gt",
+                                                0.0002)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.352)
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_pressed_torch",
+                                "ღილაკი დაჭერილი — ფანრით ორივე სინქრონულად იმატებს",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_min_forward_current",
+                                                "gt_ref:" + ambientPressed,
+                                                1.3),
+                                        new ValidationCheck(
+                                                "leds",
+                                                "led_max_forward_current",
+                                                "gt_ref:" + ambientPressed,
+                                                1.3),
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "lt", 2.0)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * PR.L2.9 — two LED branches with unequal series R; PR bridges the LED anodes.
+     * Ambient: unequal brightness; torch: PR ≈ short → currents nearly equalize.
+     */
+    private static ProblemValidationSpec prL29() {
+        return new ProblemValidationSpec(
+                "PR.L2.9",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთული",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "led_max_forward_current", "lt", 0.0005)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_ambient",
+                                "ჩამრთველი ჩართული — ერთი ძლიერი, მეორე სუსტი",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "led_min_forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "leds", "led_max_forward_current", "gt", 0.003),
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "gt", 3.5)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.352)
+                        ),
+                        new ValidationCase(
+                                "switch_on_torch",
+                                "ფანრით დატენა — ნათება გათანაბრდება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "led_min_forward_current", "gt", 0.002),
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "lt", 1.6)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_cover",
+                                "დაფარვა — ისევ განსხვავებული ნათება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "leds", "led_min_forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "gt", 3.5)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * PR.L3.10 — antiparallel red/green LEDs between PR–R divider tap and supply mid-rail.
+     * Ambient / cover: only red; torch: only green; never both (dead-zone in between).
+     */
+    private static ProblemValidationSpec prL310() {
+        return new ProblemValidationSpec(
+                "PR.L3.10",
+                List.of(
+                        new ValidationCase(
+                                "ambient_red_only",
+                                "ოთახის განათება — მხოლოდ წითელი",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.00025),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.0001)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.352)
+                        ),
+                        new ValidationCase(
+                                "torch_green_only",
+                                "ფანრით დანათება — მხოლოდ მწვანე",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.005),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.0001)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "cover_red_only",
+                                "დაფარვა — მხოლოდ წითელი",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.00025),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.0001)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * PR.L3.11 — series red/green LEDs with midpoint tied to PR–R divider tap.
+     * Ambient: both on; torch: red only; cover: green dominates (red may stay
+     * partially lit with low series R — same as common student 1 kΩ builds).
+     */
+    private static ProblemValidationSpec prL311() {
+        return new ProblemValidationSpec(
+                "PR.L3.11",
+                List.of(
+                        new ValidationCase(
+                                "ambient_both_on",
+                                "ოთახის განათება — ორივე ანთებულია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.00016),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.0004)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.352)
+                        ),
+                        new ValidationCase(
+                                "torch_red_only",
+                                "ფანრით დანათება — მხოლოდ წითელი",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "gt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "lt", 0.0001)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "cover_green_strong",
+                                "დაფარვა — მწვანე ძლიერი, წითელი სუსტი",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.0004),
+                                        // With ~1 kΩ series R, cover ≈ ambient (red stays
+                                        // partially lit). Require green-dominant, not red-off.
+                                        new ValidationCheck(
+                                                "leds", "current_ratio", "gt", 2.2),
+                                        new ValidationCheck(
+                                                "led_red", "forward_current", "lt", 0.004)
+                                ),
+                                null,
+                                Map.of(),
+                                Map.of("photo_resistor", 0.0)
                         )
                 )
         );

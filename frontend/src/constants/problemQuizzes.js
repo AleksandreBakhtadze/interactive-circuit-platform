@@ -1227,6 +1227,135 @@ const TR_L29_QUIZ = {
     ],
 };
 
+const PR_L212_QUIZ = {
+    problemCode: 'PR.L2.12',
+    titleKa: 'ტესტი',
+    titleEn: 'Quiz',
+    questions: [
+        {
+            id: 'q1',
+            promptKa:
+                'რა მოხდება თუ ოთახის განათებაზე ჩამრთველით ჩავრთავთ წრედს?',
+            promptEn:
+                'What happens if you turn the circuit on with the switch under room lighting?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა',
+                    textEn: 'The red LED lights up slowly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'მხოლოდ მწვანე შუქდიოდი აინთება',
+                    textEn: 'Only the green LED lights',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'ორივე შუქდიოდი აინთება',
+                    textEn: 'Both LEDs light',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Neither LED lights',
+                },
+            ],
+            correctKey: 'ე',
+            explanationKa:
+                'ჩამრთველის ჩართვის შემდეგ კვების ძაბვა გადანაწილდება მიმდევრობით ჩართულ '
+                + 'რეზისტორებზე და ფოტორეზისტორზე. ოთახის განათებაზე ფოტორეზისტორის წინაღობა '
+                + 'იმდენად მაღალია, რომ რეზისტორებზე არ მოდის შუქდიოდების ასანთებად საკმარისი ძაბვა.',
+            explanationEn:
+                'After closing the switch, supply voltage divides across the series resistors '
+                + 'and the photoresistor. At room light the photoresistor resistance is so high '
+                + 'that the LED branches do not get enough voltage to turn on.',
+        },
+        {
+            id: 'q2',
+            promptKa:
+                'როგორ შეიცვლება შუქდიოდების ნათება თუ ფოტორეზისტორს თანდათან მივუახლოვებთ ფანარს?',
+            promptEn:
+                'How do the LEDs change if you gradually bring a torch closer to the photoresistor?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'წითელი შუქდიოდი აინთება ნელა',
+                    textEn: 'The red LED lights up slowly',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'თანდათან აინთება ჯერ წითელი და შემდეგ მწვანე',
+                    textEn: 'Gradually red lights first, then green',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'ორივე შუქდიოდი აინთება ერთდროულად',
+                    textEn: 'Both LEDs light at the same time',
+                },
+                {
+                    key: 'ე',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Neither LED lights',
+                },
+            ],
+            correctKey: 'გ',
+            explanationKa:
+                'ფოტორეზისტორის წინაღობა ფანრით დანათებისას ძლიერ მცირდება. ძაბვის გამყოფში '
+                + 'ორივე მხარის რეზისტორები ერთნაირია, ამიტომ ორივე შუქდიოდს მიეწოდება მსგავსი '
+                + 'ძაბვა — ჯერ აინთება წითელი (დაბალი ანთების ძაბვა), შემდეგ მწვანე.',
+            explanationEn:
+                'Torch light sharply lowers the photoresistor resistance. The two equal resistor '
+                + 'networks then share similar voltages, so the red LED (lower Vf) turns on first, '
+                + 'then the green LED as light increases further.',
+        },
+        {
+            id: 'q3',
+            promptKa:
+                'როგორ შეიცვლება შუქდიოდების ნათება თუ ფოტორეზისტორს დავაფარებთ შავ საგანს?',
+            promptEn:
+                'How do the LEDs change if you cover the photoresistor with a black object?',
+            options: [
+                {
+                    key: 'ა',
+                    textKa: 'მხოლოდ წითელი შუქდიოდი აინთება',
+                    textEn: 'Only the red LED lights',
+                },
+                {
+                    key: 'ბ',
+                    textKa: 'მხოლოდ მწვანე შუქდიოდი აინთება',
+                    textEn: 'Only the green LED lights',
+                },
+                {
+                    key: 'გ',
+                    textKa: 'ორივე შუქდიოდი აინთება',
+                    textEn: 'Both LEDs light',
+                },
+                {
+                    key: 'დ',
+                    textKa: 'არც ერთი არ აინთება',
+                    textEn: 'Neither LED lights',
+                },
+            ],
+            correctKey: 'დ',
+            explanationKa:
+                'დაფარვისას ფოტორეზისტორის წინაღობა კიდევ უფრო იზრდება და ორივე შუქდიოდი '
+                + 'ჩამქრალი რჩება.',
+            explanationEn:
+                'Covering raises the photoresistor resistance even more, so both LEDs stay off.',
+        },
+    ],
+};
+
 const QUIZZES_BY_CODE = {
     'CP.L2.5': CP_L25_QUIZ,
     'CP.L2.6': CP_L26_QUIZ,
@@ -1238,6 +1367,7 @@ const QUIZZES_BY_CODE = {
     'VR.L1.10': VR_L110_QUIZ,
     'VR.L2.11': VR_L211_QUIZ,
     'TR.L2.9': TR_L29_QUIZ,
+    'PR.L2.12': PR_L212_QUIZ,
 };
 
 export function getQuizForProblem(problemCode) {

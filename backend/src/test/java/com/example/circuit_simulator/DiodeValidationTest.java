@@ -159,6 +159,49 @@ class DiodeValidationTest {
         assertFalse(result.isPassed());
     }
 
+    /**
+     * DI.L3.7 — equal-R mid-rail + steering diodes: motor I keeps the same sign
+     * when both supply packs are polarity-flipped (soft-wire swap).
+     */
+    private static final String DI_L37_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["VP","MIDP"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MIDP","VN"],"value":"6"},
+                {"id":"r1","role":"resistor_1","type":"resistor","nodes":["VP","MID"],"value":"20"},
+                {"id":"r2","role":"resistor_2","type":"resistor","nodes":["MID","VN"],"value":"20"},
+                {"id":"d1","role":"diode_1","type":"led","nodes":["VP","MP"],"color":"plain"},
+                {"id":"d2","role":"diode_2","type":"led","nodes":["VN","MP"],"color":"plain"},
+                {"id":"motor","role":"motor_1","type":"motor","nodes":["MP","MID"]}
+              ]
+            }
+            """;
+
+    @Test
+    void diL37ReferenceCircuitPasses() throws Exception {
+        ValidationResultDTO result = validationService.validate("DI.L3.7", DI_L37_CIRCUIT);
+
+        assertTrue(result.isPassed(), describeFailures(result));
+        assertEquals(2, result.getCases().size());
+    }
+
+    @Test
+    void diL37RejectsDirectMotorAcrossRails() throws Exception {
+        String direct = """
+                {
+                  "components": [
+                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["VP","MIDP"],"value":"6"},
+                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MIDP","VN"],"value":"6"},
+                    {"id":"motor","role":"motor_1","type":"motor","nodes":["VP","VN"]}
+                  ]
+                }
+                """;
+
+        ValidationResultDTO result = validationService.validate("DI.L3.7", direct);
+
+        assertFalse(result.isPassed());
+    }
+
     private static String describeFailures(ValidationResultDTO result) {
         if (result.isPassed()) {
             return "";

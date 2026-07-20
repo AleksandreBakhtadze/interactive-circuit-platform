@@ -479,7 +479,7 @@ export function getLedDcBrightnessRatio(results, spiceComponentId, frameIndex = 
 }
 
 /**
- * VR.L3.19 / VR.L1.20 antiparallel LEDs: currents stay tiny until near Vf.
+ * VR.L3.19 / VR.L1.20 / PR.L3.10 LEDs: currents stay tiny until near Vf.
  * Glow only when forward-biased (signed V > 0). Combine sub-Vf voltage hint
  * with forward current for a smooth ramp into full conduction.
  */
@@ -534,6 +534,45 @@ export function getAntiparallelLedDcBrightnessRatio(
     }
 
     return Math.max(fromCurrent, fromVoltage);
+}
+
+/**
+ * PR.L2.12 quiz: ambient off; torch approach — red first, then green.
+ * Green needs a higher current to read as lit (matches higher green Vf).
+ */
+export function getPrL212LedBrightness(current, color) {
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
+    const isGreen = color === 'green';
+    const litMin = isGreen ? 0.0002 : 0.0001;
+    const fullCurrent = isGreen ? 0.00055 : 0.0007;
+    if (abs < litMin) {
+        return 0;
+    }
+    const t = Math.max(
+        0,
+        Math.min(1, (abs - litMin) / (fullCurrent - litMin))
+    );
+    return 0.28 + 0.72 * Math.pow(t, 0.7);
+}
+
+/**
+ * PR.L3.11 series LEDs: ambient ~2–6 mA must leave headroom so torch (~9 mA)
+ * visibly brightens the winning LED and dims the other (antiparallel curve
+ * saturates by ~1 mA and hides that change).
+ */
+export function getPrL311SeriesLedBrightness(current) {
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
+    const litMin = 0.00012;
+    const fullCurrent = 0.01;
+    if (abs < litMin) {
+        return 0;
+    }
+    const t = Math.max(
+        0,
+        Math.min(1, (abs - litMin) / (fullCurrent - litMin))
+    );
+    // ~2 mA → ~0.42; ~6 mA → ~0.72; ≥10 mA → full.
+    return 0.18 + 0.82 * Math.pow(t, 0.75);
 }
 
 /**
@@ -689,6 +728,50 @@ export function getAbsoluteLedBrightness(current, opts = {}) {
     );
     // ~2 mA → ~0.68; ~10 mA → 1 (still a clear step between 5.1 kΩ and 1 kΩ).
     return 0.42 + 0.58 * Math.pow(t, 0.55);
+}
+
+/**
+ * PR.L2.9: ambient ~1 mA vs ~9 mA must look unequal; torch (both ≥ ~2.5 mA)
+ * should look nearly equally bright even if currents are not identical.
+ */
+export function getPhotoModuleLedContrastBrightness(current) {
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
+    const litMin = 0.00035;
+    const equalBand = 0.0024;
+    const fullCurrent = 0.008;
+    if (abs < litMin) {
+        return 0;
+    }
+    if (abs >= equalBand) {
+        // Torch equalization band: both LEDs read as similarly bright.
+        const u = Math.max(
+            0,
+            Math.min(1, (abs - equalBand) / (fullCurrent - equalBand))
+        );
+        return 0.88 + 0.12 * Math.pow(u, 0.6);
+    }
+    const t = (abs - litMin) / (equalBand - litMin);
+    // Ambient weak branch (~1 mA) stays clearly dimmer than the strong branch.
+    return 0.2 + 0.55 * Math.pow(t, 0.85);
+}
+
+/**
+ * PR.L1.1 / L1.5 series-PR brighten: full glow only at high forward current
+ * (torch nearly on the photoresistor → R ≈ 200 Ω). Mid-range torch stays dimmer.
+ */
+export function getPhotoModuleLedBrightBrightness(current) {
+    const abs = typeof current === 'number' ? Math.abs(current) : 0;
+    const litMin = 0.00008;
+    const fullCurrent = 0.014;
+    if (abs < litMin) {
+        return 0;
+    }
+    const t = Math.max(
+        0,
+        Math.min(1, (abs - litMin) / (fullCurrent - litMin))
+    );
+    // Ambient ~0.2 mA → faint; ~3–4 mA mid → ~half; ≥14 mA close torch → full.
+    return 0.22 + 0.78 * Math.pow(t, 0.8);
 }
 
 /**

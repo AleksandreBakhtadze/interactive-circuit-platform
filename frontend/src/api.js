@@ -7,13 +7,15 @@ export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
  * @param {'idle'|'pressed'|'discharge'} [simPhase] — live interaction phase (CP chapter:
  *   button for L1.x; switch toggle for L2.3)
  * @param {Record<string, number>} [priorPotPositions] — DI.L3.6: pot roles before the step
+ * @param {Record<string, string>} [priorSwitchStates] — TFB.L3.4: prior latch-driving switch states
  * @returns {Promise<{ nodes?: object, components?: object, error?: string }>}
  */
 export async function simulateCircuit(
     circuitJson,
     problemCode,
     simPhase,
-    priorPotPositions
+    priorPotPositions,
+    priorSwitchStates
 ) {
     const res = await fetch(`${API_BASE}/circuits/simulate`, {
         method: 'POST',
@@ -23,6 +25,7 @@ export async function simulateCircuit(
             problemCode: problemCode ?? undefined,
             simPhase: simPhase ?? undefined,
             priorPotPositions: priorPotPositions ?? undefined,
+            priorSwitchStates: priorSwitchStates ?? undefined,
         }),
     });
 

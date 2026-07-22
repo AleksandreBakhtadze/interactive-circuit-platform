@@ -202,6 +202,51 @@ class DiodeValidationTest {
         assertFalse(result.isPassed());
     }
 
+    /**
+     * DI.L4.8 — full bridge (2 diodes + 2 red LEDs as diodes): green stays lit
+     * when both packs are polarity-flipped.
+     */
+    private static final String DI_L48_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["AC1","MID"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","AC2"],"value":"6"},
+                {"id":"d1","role":"diode_1","type":"led","nodes":["AC1","OUTP"],"color":"plain"},
+                {"id":"d2","role":"diode_2","type":"led","nodes":["AC2","OUTP"],"color":"plain"},
+                {"id":"rled1","role":"led_1","type":"led","nodes":["OUTN","AC1"],"color":"red"},
+                {"id":"rled2","role":"led_2","type":"led","nodes":["OUTN","AC2"],"color":"red"},
+                {"id":"gled","role":"led_3","type":"led","nodes":["OUTP","RG"],"color":"green"},
+                {"id":"r1","role":"resistor_1","type":"resistor","nodes":["RG","OUTN"],"value":"1000"}
+              ]
+            }
+            """;
+
+    @Test
+    void diL48ReferenceCircuitPasses() throws Exception {
+        ValidationResultDTO result = validationService.validate("DI.L4.8", DI_L48_CIRCUIT);
+
+        assertTrue(result.isPassed(), describeFailures(result));
+        assertEquals(2, result.getCases().size());
+    }
+
+    @Test
+    void diL48RejectsGreenAcrossRails() throws Exception {
+        String direct = """
+                {
+                  "components": [
+                    {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["AC1","MID"],"value":"6"},
+                    {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","AC2"],"value":"6"},
+                    {"id":"gled","role":"led_1","type":"led","nodes":["AC1","RG"],"color":"green"},
+                    {"id":"r1","role":"resistor_1","type":"resistor","nodes":["RG","AC2"],"value":"1000"}
+                  ]
+                }
+                """;
+
+        ValidationResultDTO result = validationService.validate("DI.L4.8", direct);
+
+        assertFalse(result.isPassed());
+    }
+
     private static String describeFailures(ValidationResultDTO result) {
         if (result.isPassed()) {
             return "";

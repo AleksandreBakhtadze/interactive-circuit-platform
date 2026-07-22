@@ -920,7 +920,8 @@
 .wireLayer {
     position: absolute;
     inset: 0;
-    z-index: 12;
+    /* Above all placed parts; layer itself is pass-through (only stroke hits). */
+    z-index: 100;
     pointer-events: none;
 }
 
@@ -950,9 +951,10 @@
     height: auto;
     aspect-ratio: 1;
     object-fit: contain;
-    pointer-events: auto;
+    /* Visual only — do not steal button/switch clicks underneath. */
+    pointer-events: none;
     user-select: none;
-    z-index: 13;
+    z-index: 101;
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 

@@ -76,6 +76,7 @@ public class ValidationSpecRegistry {
             Map.entry("DI.L1.4", diL14()),
             Map.entry("DI.L3.6", diL36()),
             Map.entry("DI.L3.7", diL37()),
+            Map.entry("DI.L4.8", diL48()),
             Map.entry("TR.L2.10", trL210()),
             Map.entry("TR.L2.11", trL211()),
             Map.entry("TR.L2.12", trL212()),
@@ -87,6 +88,22 @@ public class ValidationSpecRegistry {
             Map.entry("TCP.L1.2", tcpL12()),
             Map.entry("TCP.L1.3", tcpL13()),
             Map.entry("TCP.L1.4", tcpL14()),
+            Map.entry("TCP.L3.5", tcpL35()),
+            Map.entry("DTR.L2.4", dtrL24()),
+            Map.entry("DTR.L2.5", dtrL25()),
+            Map.entry("DTR.L2.6", dtrL26()),
+            Map.entry("DTR.L2.11", dtrL211()),
+            Map.entry("DTR.L2.12", dtrL212()),
+            Map.entry("TFB.L1.1", tfbL11()),
+            Map.entry("TFB.L1.2", tfbL12()),
+            Map.entry("TFB.L2.5", tfbL25()),
+            Map.entry("TFB.L3.3", tfbL33()),
+            Map.entry("TFB.L3.4", tfbL34()),
+            Map.entry("TDM.L1.7", tdmL17()),
+            Map.entry("TDM.L2.3", tdmL23()),
+            Map.entry("TDM.L2.4", tdmL24()),
+            Map.entry("TDM.L2.8", tdmL28()),
+            Map.entry("TDM.L3.5", tdmL35()),
             Map.entry("DM.L1.1", dmL11()),
             Map.entry("DM.L2.2", dmL22()),
             Map.entry("DM.L2.3", dmL23()),
@@ -258,6 +275,36 @@ public class ValidationSpecRegistry {
                                         // Currents should be close (equalized), not still 5× apart.
                                         new ValidationCheck(
                                                 "leds", "current_ratio", "lt", 1.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * DI.L4.8 — diode bridge (2 diodes + 2 red LEDs as diodes) keeps green LED
+     * forward-biased for either soft-wire polarity. Case 2 flips all packs.
+     */
+    private static ProblemValidationSpec diL48() {
+        return new ProblemValidationSpec(
+                "DI.L4.8",
+                List.of(
+                        new ValidationCase(
+                                "supply_normal",
+                                "წითელი (+), შავი (−) — მწვანე შუქდიოდი ანთია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "supply_reversed_green_on",
+                                "წითელი და შავი გაცვლილი — მწვანე ისევ ანთია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_green", "forward_current", "gt", 0.001)
                                 )
                         )
                 )
@@ -875,6 +922,700 @@ public class ValidationSpecRegistry {
     }
 
     /**
+     * TCP.L3.5 — series capacitor into BJT base: DC hold (button open or closed) keeps
+     * the lamp off; rapid button taps (simPhase {@code tapping}) couple enough base
+     * current for the lamp to light.
+     */
+    private static ProblemValidationSpec tcpL35() {
+        return new ProblemValidationSpec(
+                "TCP.L3.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_held_stays_off",
+                                "ღილაკი დაჭერილია მუდმივად — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "rapid_tapping_lights",
+                                "ღილაკზე სწრაფი პერიოდული დაჭერა — ნათურა ანთია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        // Sparse capacitive pulses: peak shows coupling; DC-held-off
+                                        // already proved there is no steady base drive.
+                                        new ValidationCheck(
+                                                "lamp", "tran_current_abs_peak", "gt", 0.04)
+                                ),
+                                "tapping"
+                        )
+                )
+        );
+    }
+
+    /**
+     * DTR.L2.4 — Darlington emitter-follower + 1 µF: press spins motor; release holds
+     * ≥10 s then fades (no resistors — high β + EF keeps base current tiny).
+     */
+    private static ProblemValidationSpec dtrL24() {
+        return new ProblemValidationSpec(
+                "DTR.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ძრავი არ ტრიალებს",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_button_open",
+                                "ჩამრთველი ჩართულია — ძრავი არ ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_spins",
+                                "ღილაკი დაჭერილია — ძრავი ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.08)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_hold_10s_then_stop",
+                                "ღილაკის გაშვების შემდეგ ძრავი ≥10 წმ ტრიალებს და ჩერდება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_at_10",
+                                                "gt",
+                                                0.015),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.005)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * DTR.L2.5 — CE Darlington: high-R bias for slow idle; button + 10 µF + lower R for
+     * fast spin; release returns to slow (kit: 510 kΩ rail→base, 10 kΩ boost).
+     */
+    private static ProblemValidationSpec dtrL25() {
+        return new ProblemValidationSpec(
+                "DTR.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ძრავი გაჩერებულია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_slow",
+                                "ჩამრთველი ჩართულია — ძრავი ძალიან ნელა ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.008),
+                                        new ValidationCheck("motor_1", "current", "lt", 0.08)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_fast",
+                                "ღილაკი დაჭერილია — ძრავი სწრაფად ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.15)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_then_slow",
+                                "აშვების შემდეგ სიჩქარე იკლებს და ნელა რჩება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.15),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "gt",
+                                                0.008),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.08)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * DTR.L2.6 — CE Darlington + 10 µF + ~1 MΩ base R (2×510 kΩ): idle off; press fast;
+     * release holds ≥15 s then drops (CE snaps down; EF stays too high at end).
+     */
+    private static ProblemValidationSpec dtrL26() {
+        return new ProblemValidationSpec(
+                "DTR.L2.6",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ძრავი გაჩერებულია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_off",
+                                "ჩამრთველი ჩართულია — ძრავი არ ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_fast",
+                                "ღილაკი დაჭერილია — ძრავი სწრაფად ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.15)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_hold_15s_then_stop",
+                                "აშვების შემდეგ ≥15 წმ სწრაფი ბრუნი, შემდეგ სწრაფად ჩერდება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.15),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_at_15",
+                                                "gt",
+                                                0.10),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.05)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * DTR.L2.11 — CE Darlington lamp; C+button ‖ B–E; charge via 2×100 kΩ.
+     * Switch on → lamp on; press → instant off; release → on after ~2 s.
+     */
+    private static ProblemValidationSpec dtrL211() {
+        return new ProblemValidationSpec(
+                "DTR.L2.11",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_lamp_on",
+                                "ჩამრთველი ჩართულია — ნათურა ანთია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_pressed_off",
+                                "ღილაკი დაჭერილია — ნათურა მყისიერად ჩაქრა",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "release_delayed_on",
+                                "აშვების შემდეგ ნათურა ≥2 წმ-ში ანთდება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "lt",
+                                                0.01),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_at_1",
+                                                "lt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "gt",
+                                                0.05)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * DTR.L2.12 — CE delayed-on: button→100k→C→100k→base; release hold then fade.
+     * Timing flexible (~2–5 s on); Darlington β tuned so this kit topology works.
+     */
+    private static ProblemValidationSpec dtrL212() {
+        return new ProblemValidationSpec(
+                "DTR.L2.12",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "switch_on_lamp_off",
+                                "ჩამრთველი ჩართულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "press_delayed_on",
+                                "ღილაკის დაჭერა — ნათურა შეყოვნებით ანთდება",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "lt",
+                                                0.02),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_early",
+                                                "lt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "gt",
+                                                0.05)
+                                ),
+                                "pressed"
+                        ),
+                        new ValidationCase(
+                                "release_hold_then_fade",
+                                "აშვების შემდეგ ნათურა რჩება ანთებული და თანდათან ქრება",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_start",
+                                                "gt",
+                                                0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "tran_current_abs_end",
+                                                "lt",
+                                                0.05)
+                                ),
+                                "discharge"
+                        )
+                )
+        );
+    }
+
+    /**
+     * TFB.L1.1 — CE Darlington lamp; pot divider → 1 kΩ → base.
+     * Off at one end; abrupt brighten toward the other (on/off thresholds nearly coincide).
+     */
+    private static ProblemValidationSpec tfbL11() {
+        return new ProblemValidationSpec(
+                "TFB.L1.1",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_off",
+                                "ჩამრთველი ჩართულია, ცოცია ნაპირზე — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_mid_on",
+                                "ცოცია შუა ზონაში — ნათურა უკვე ძლიერად ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_max",
+                                "ცოცია ბოლოში — ნათურა მაქსიმალურად ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior",
+                                                "lt",
+                                                1.4)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TFB.L1.2 — NPN CE drives PNP high-side; lamp on PNP collector.
+     * Same pot behavior as L1.1; base↑ → PNP collector↑ (non-inverting overall).
+     */
+    private static ProblemValidationSpec tfbL12() {
+        return new ProblemValidationSpec(
+                "TFB.L1.2",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_off",
+                                "ჩამრთველი ჩართულია, ცოცია ნაპირზე — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_mid_on",
+                                "ცოცია შუა ზონაში — ნათურა უკვე ძლიერად ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_max",
+                                "ცოცია ბოლოში — ნათურა მაქსიმალურად ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior",
+                                                "lt",
+                                                1.4)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TFB.L2.5 — two NPN inverting pair; intrinsic supply-sag positive feedback.
+     * Lamp ON at the off-extreme wiper end; VBE rise snaps lamp OFF (reverse of L1.2).
+     */
+    private static ProblemValidationSpec tfbL25() {
+        return new ProblemValidationSpec(
+                "TFB.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_on",
+                                "ჩამრთველი ჩართულია, ცოცია ნაპირზე — ნათურა ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "rising_near_on_stays_on",
+                                "ცოცია ქვემოდან ოდნავ ასწიეთ — ნათურა ჯერ ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.05),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "rising_snap_off",
+                                "ცოცია შუაში ქვემოდან — ნათურა მყისიერად სრულად ჩაქრება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.5),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "falling_near_off_stays_off",
+                                "ცოცია ზემოდან იგივე ზონაში — უკუკავშირი ნათურას ჩამქრალს ტოვებს",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.95),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "falling_on",
+                                "ცოცია ისევ ნაპირზე — ნათურა მყისიერად აინთება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.0),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TFB.L3.3 — L1.2 complementary pair plus 1 kΩ positive feedback (NPN base ↔
+     * PNP collector / lamp). Discrete snap on/off; structural feedback check in
+     * CircuitValidationService. Hysteresis cases use prior-pot settle.
+     */
+    private static ProblemValidationSpec tfbL33() {
+        return new ProblemValidationSpec(
+                "TFB.L3.3",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "switch_on_pot_off",
+                                "ჩამრთველი ჩართულია, ცოცია ნაპირზე — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "rising_near_off_stays_off",
+                                "ცოცია ქვემოდან ოდნავ ასწიეთ — ნათურა ჯერ ჩამქრალია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.05),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "rising_snap_on",
+                                "ცოცია შუაში ქვემოდან — ნათურა მყისიერად სრულად ანთია",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                Map.of("variable_resistor", 0.5),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "falling_near_off_stays_on",
+                                "ცოცია ზემოდან იგივე ზონაში — უკუკავშირი ნათურას ანთებულს ტოვებს",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior",
+                                                "lt",
+                                                1.4)
+                                ),
+                                Map.of("variable_resistor", 0.05),
+                                Map.of("variable_resistor", 1.0)
+                        ),
+                        new ValidationCase(
+                                "falling_off",
+                                "ცოცია ისევ ნაპირზე — ნათურა მყისიერად ჩაქრება",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.0),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TFB.L3.4 — TFB.L3.3 latch held in the hysteresis band; button_1 forces ON,
+     * button_2 forces OFF, and the lamp must hold after the button is released.
+     */
+    private static ProblemValidationSpec tfbL34() {
+        return new ProblemValidationSpec(
+                "TFB.L3.4",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open", "button_1", "open", "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.05)
+                        ),
+                        new ValidationCase(
+                                "power_on_idle_off",
+                                "ჩამრთველი ჩართულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                Map.of("variable_resistor", 0.05)
+                        ),
+                        new ValidationCase(
+                                "press_set_on",
+                                "პირველ ღილაკზე დაჭერა — ნათურა ანთია",
+                                Map.of("switch", "closed", "button_1", "closed", "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05)
+                                ),
+                                null,
+                                Map.of("variable_resistor", 0.05),
+                                Map.of(),
+                                Map.of(),
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "open")
+                        ),
+                        new ValidationCase(
+                                "release_after_set_stays_on",
+                                "პირველი ღილაკის გაშვება — ნათურა ანთებული რჩება",
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "gt", 0.05),
+                                        new ValidationCheck(
+                                                "lamp",
+                                                "current_vs_prior",
+                                                "lt",
+                                                1.4)
+                                ),
+                                null,
+                                Map.of("variable_resistor", 0.05),
+                                Map.of(),
+                                Map.of(),
+                                Map.of("switch", "closed", "button_1", "closed", "button_2", "open")
+                        ),
+                        new ValidationCase(
+                                "press_reset_off",
+                                "მეორე ღილაკზე დაჭერა — ნათურა ქრება",
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                null,
+                                Map.of("variable_resistor", 0.05),
+                                Map.of(),
+                                Map.of(),
+                                Map.of("switch", "closed", "button_1", "closed", "button_2", "open")
+                        ),
+                        new ValidationCase(
+                                "release_after_reset_stays_off",
+                                "მეორე ღილაკის გაშვება — ნათურა ჩამქრალი რჩება",
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("lamp", "current", "lt", 0.01)
+                                ),
+                                null,
+                                Map.of("variable_resistor", 0.05),
+                                Map.of(),
+                                Map.of(),
+                                Map.of("switch", "closed", "button_1", "open", "button_2", "closed")
+                        )
+                )
+        );
+    }
+
+    /**
      * TCP.L1.4 — slow RC charge of dual 470 µF (high R_charge); lamp brightens gradually
      * on press, then fades faster on release (lower R_base bleed).
      */
@@ -1093,6 +1834,213 @@ public class ValidationSpecRegistry {
                                 Map.of("switch", "closed", "button_1", "closed"),
                                 List.of(
                                         new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TDM.L1.7 — complementary NPN+PNP emitter follower (half-bridge) driven by a pot
+     * across dual-rail supplies; motor from emitters to mid-rail. Center → stop;
+     * ends → opposite spin directions with |I| rising toward the rails.
+     */
+    private static ProblemValidationSpec tdmL17() {
+        return new ProblemValidationSpec(
+                "TDM.L1.7",
+                List.of(
+                        new ValidationCase(
+                                "pot_center_stop",
+                                "ცოცია ცენტრში — ძრავი გაჩერებულია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                ),
+                                Map.of("variable_resistor", 0.5)
+                        ),
+                        new ValidationCase(
+                                "pot_one_end_spin",
+                                "ცოცია ერთ ნაპირზე — ძრავი ტრიალებს",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "pot_other_end_reversed",
+                                "ცოცია მეორე ნაპირზე — მიმართულება შეცვლილია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TDM.L2.8 — L1.7 half-bridge with CE NPN + 1 kΩ pull-up between pot and the
+     * complementary bases so direction flips abruptly over a small wiper travel.
+     */
+    private static ProblemValidationSpec tdmL28() {
+        return new ProblemValidationSpec(
+                "TDM.L2.8",
+                List.of(
+                        new ValidationCase(
+                                "pot_one_end_spin",
+                                "ცოცია ერთ ნაპირზე — ძრავი ტრიალებს",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                ),
+                                Map.of("variable_resistor", 0.0)
+                        ),
+                        new ValidationCase(
+                                "pot_other_end_reversed",
+                                "ცოცია მეორე ნაპირზე — მიმართულება შეცვლილია",
+                                Map.of(),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                ),
+                                Map.of("variable_resistor", 1.0)
+                        )
+                )
+        );
+    }
+
+    /**
+     * TDM.L2.3 — transistor H-bridge half (NPN–PNP / Darlington) + center tap
+     * reverses motor like DM.L2.6, without a relay or resistive half-rail.
+     */
+    private static ProblemValidationSpec tdmL23() {
+        return new ProblemValidationSpec(
+                "TDM.L2.3",
+                List.of(
+                        new ValidationCase(
+                                "slide_left",
+                                "გადამრთველი A–B — ძრავი ტრიალებს",
+                                Map.of("switch", "closed", "slide_switch", "left"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "slide_right_reversed",
+                                "გადამრთველი A–C — ბრუნვის მიმართულება შეცვლილია",
+                                Map.of("switch", "closed", "slide_switch", "right"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TDM.L2.4 — two-button reverse: idle stop; each button max spin opposite ways;
+     * both pressed → stop. Master switch forced closed (submit sends switch open).
+     */
+    private static ProblemValidationSpec tdmL24() {
+        return new ProblemValidationSpec(
+                "TDM.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "idle_stop",
+                                "ჩამრთველი ჩართულია, ღილაკები აშვებული — ძრავი გაჩერებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.001)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button1_spin",
+                                "პირველი ღილაკი — ძრავი ტრიალებს",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button2_reversed",
+                                "მეორე ღილაკი — მიმართულება შეცვლილია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "open",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
+                                )
+                        ),
+                        new ValidationCase(
+                                "both_stop",
+                                "ორივე ღილაკი — ძრავი გაჩერებულია",
+                                Map.of(
+                                        "switch", "closed",
+                                        "button_1", "closed",
+                                        "button_2", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "lt", 0.02)
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * TDM.L3.5 — one-button reverse: switch on → max spin one way; press → reverse max;
+     * release → original direction. Master switch forced closed (submit sends switch open).
+     */
+    private static ProblemValidationSpec tdmL35() {
+        return new ProblemValidationSpec(
+                "TDM.L3.5",
+                List.of(
+                        new ValidationCase(
+                                "idle_spin",
+                                "ჩამრთველი ჩართულია, ღილაკი აშვებული — ძრავი ტრიალებს",
+                                Map.of("switch", "closed", "button_1", "open"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04)
+                                )
+                        ),
+                        new ValidationCase(
+                                "button_reversed",
+                                "ღილაკი — ბრუნვის მიმართულება შეცვლილია",
+                                Map.of("switch", "closed", "button_1", "closed"),
+                                List.of(
+                                        new ValidationCheck("motor_1", "current", "gt", 0.04),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "current_reversed_vs_prior",
+                                                "gt",
+                                                0.5)
                                 )
                         )
                 )

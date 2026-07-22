@@ -38,6 +38,9 @@ public class CircuitValidationService {
     /** Whether the lamp was lit in the previous case (SW.L3.6 3-way toggle). */
     private final ThreadLocal<Boolean> lastLampLit = new ThreadLocal<>();
 
+    /** TFB.L3.3: latch-off extreme at wiper 1.0 (remap validation pot positions). */
+    private boolean tfbL33PotOffAtHigh = false;
+
     /** SW.L3.11: saw red exclusive (Vf clamp) on any press case so far. */
     private final ThreadLocal<Boolean> sawExclusiveRed = new ThreadLocal<>();
 
@@ -107,6 +110,44 @@ public class CircuitValidationService {
                     .build();
         }
 
+        if (("TFB.L3.3".equals(problemCode) || "TFB.L3.4".equals(problemCode))
+                && !hasTfbL33PositiveFeedback(components)) {
+            return ValidationResultDTO.builder()
+                    .passed(false)
+                    .message(
+                            "Add a 1 kΩ positive-feedback resistor between the NPN base "
+                                    + "and the PNP collector (lamp node).")
+                    .messageKa(
+                            "დაამატეთ 1 kΩ დადებითი უკუკავშირის რეზისტორი NPN-ის ბაზასა "
+                                    + "და PNP-ის კოლექტორს (ნათურის კვანძს) შორის.")
+                    .cases(List.of())
+                    .build();
+        }
+
+        tfbL33PotOffAtHigh = false;
+        if ("TFB.L2.5".equals(problemCode)
+                || "TFB.L3.3".equals(problemCode)
+                || "TFB.L3.4".equals(problemCode)) {
+            tfbL33PotOffAtHigh =
+                    simulationService.detectPotOffAtHighEnd(circuitJson, problemCode);
+            simulationService.setPotOffAtHighEndForValidation(tfbL33PotOffAtHigh);
+        }
+        try {
+            return validateCasesAfterStructuralChecks(
+                    spec, circuitJson, problemCode, roleToId, components);
+        } finally {
+            simulationService.setPotOffAtHighEndForValidation(null);
+            tfbL33PotOffAtHigh = false;
+        }
+    }
+
+    private ValidationResultDTO validateCasesAfterStructuralChecks(
+            ProblemValidationSpec spec,
+            String circuitJson,
+            String problemCode,
+            Map<String, String> roleToId,
+            List<Map<String, Object>> components)
+            throws Exception {
         List<String> floatingSupplies = findFloatingVoltageSources(components);
         if (!floatingSupplies.isEmpty()) {
             return ValidationResultDTO.builder()
@@ -187,7 +228,8 @@ public class CircuitValidationService {
             }
         }
         // Pot B↔C / wiper orientation — try inverted positions if needed (VR.L1.2).
-        if (!chosen.allPassed() && specUsesPotPositions(spec)) {
+        // TFB.L3.3 detects the off extreme up front; skip a second invert pass.
+        if (!chosen.allPassed() && specUsesPotPositions(spec) && !tfbL33PotOffAtHigh) {
             CaseEvaluation inverted =
                     evaluateCases(
                             spec, circuitJson, problemCode, roleToId, components, false, true);
@@ -498,6 +540,8 @@ public class CircuitValidationService {
         Map<String, Double> observedMetrics = new HashMap<>();
         boolean allPassed = true;
 
+        boolean potOffRemap = tfbL33PotOffAtHigh && remapPotWhenOffAtHigh(problemCode);
+
         for (ValidationCase validationCase : spec.cases()) {
             Map<String, String> states =
                     maybeInvertLoadSlide(
@@ -509,19 +553,37 @@ public class CircuitValidationService {
             String caseJson = SpiceGenerator.applySwitchStates(circuitJson, states);
             caseJson = SpiceGenerator.applyPotPositions(
                     caseJson,
-                    maybeInvertPotPositions(validationCase.potPositions(), invertPots));
+                    maybeInvertPotPositions(
+                            validationCase.potPositions(), invertPots || potOffRemap));
             caseJson = SpiceGenerator.applyLightLevels(
                     caseJson, validationCase.lightLevels());
-            // DI.L3.7: soft-wire polarity swap — flip every pack (not only the 2nd).
-            if ("DI.L3.7".equals(problemCode)
+            // Soft-wire polarity swap — flip every pack (not only the 2nd).
+            if (("DI.L3.7".equals(problemCode) || "DI.L4.8".equals(problemCode))
                     && validationCase.label() != null
                     && validationCase.label().contains("supply_reversed")) {
                 caseJson = flipAllVoltageSources(caseJson);
             }
+            Map<String, String> priorSwitchStates =
+                    maybeSwapSlideStates(
+                            maybeSwapButtonStates(validationCase.priorSwitchStates(), swapButtons),
+                            swapSlides);
             Map<String, Object> simResult = validationCase.simPhase() != null
                     ? simulationService.simulateToMap(
-                            caseJson, problemCode, validationCase.simPhase())
-                    : simulationService.simulateToMap(caseJson, problemCode);
+                            caseJson,
+                            problemCode,
+                            validationCase.simPhase(),
+                            maybeInvertPotPositions(
+                                    validationCase.priorPotPositions(),
+                                    invertPots || potOffRemap),
+                            priorSwitchStates)
+                    : simulationService.simulateToMap(
+                            caseJson,
+                            problemCode,
+                            null,
+                            maybeInvertPotPositions(
+                                    validationCase.priorPotPositions(),
+                                    invertPots || potOffRemap),
+                            priorSwitchStates);
 
             if (simResult.containsKey("error")) {
                 allPassed = false;
@@ -680,6 +742,15 @@ public class CircuitValidationService {
                     }
                 } else {
                     sb.append("• ").append(label);
+                    if (ka) {
+                        sb.append(" — შემოწმება ვერ გაიარა (")
+                                .append(check.getMetric())
+                                .append(')');
+                    } else {
+                        sb.append(" — check failed (")
+                                .append(check.getMetric())
+                                .append(')');
+                    }
                 }
             }
         }
@@ -728,6 +799,86 @@ public class CircuitValidationService {
             }
         }
         return missing;
+    }
+
+    /** L3.3/L3.4 spec places OFF at wiper 0; remap when the circuit's off end is at 1.0. */
+    private static boolean remapPotWhenOffAtHigh(String problemCode) {
+        return "TFB.L3.3".equals(problemCode) || "TFB.L3.4".equals(problemCode);
+    }
+
+    /**
+     * TFB.L3.3 — positive feedback: a 1 kΩ path must connect the lamp / PNP collector
+     * node to the NPN base (directly or via merged nets / series resistors).
+     */
+    @SuppressWarnings("unchecked")
+    private boolean hasTfbL33PositiveFeedback(List<Map<String, Object>> components) {
+        Set<String> lampNodes = new HashSet<>();
+        Set<String> npnBases = new HashSet<>();
+        Set<String> potWiperNodes = new HashSet<>();
+        Map<String, Set<String>> resistorGraph = new HashMap<>();
+
+        for (Map<String, Object> comp : components) {
+            Object rawNodes = comp.get("nodes");
+            if (!(rawNodes instanceof List<?> nodeList) || nodeList.isEmpty()) {
+                continue;
+            }
+            List<String> nodes = new ArrayList<>();
+            for (Object n : nodeList) {
+                if (n != null) {
+                    nodes.add(n.toString());
+                }
+            }
+            String type = (String) comp.get("type");
+            if ("lamp".equals(type)) {
+                lampNodes.addAll(nodes);
+            } else if ("variable_resistor".equals(type) && nodes.size() >= 1) {
+                // For TFB.L3.3 the pot wiper is tied to the NPN base node in the
+                // intended topology. Using the wiper node as the "base" reference
+                // makes the feedback wiring check robust to transistor pin-order
+                // differences caused by rotation/snapping.
+                potWiperNodes.add(nodes.get(0));
+            } else if ("transistor".equals(type)) {
+                String subtype = (String) comp.get("subtype");
+                if (subtype != null && subtype.startsWith("npn")) {
+                    npnBases.add(nodes.get(0));
+                }
+            } else if ("resistor".equals(type) && nodes.size() >= 2) {
+                String a = nodes.get(0);
+                String b = nodes.get(1);
+                resistorGraph.computeIfAbsent(a, key -> new HashSet<>()).add(b);
+                resistorGraph.computeIfAbsent(b, key -> new HashSet<>()).add(a);
+            }
+        }
+        lampNodes.remove("0");
+        npnBases.remove("0");
+        potWiperNodes.remove("0");
+        if (lampNodes.isEmpty() || npnBases.isEmpty()) {
+            return false;
+        }
+
+        // "Base" candidates: the netlist base pin for NPN plus the pot wiper
+        // (which is the pedagogical intended base connection for TFB.L3.3).
+        Set<String> baseCandidates = new HashSet<>(npnBases);
+        baseCandidates.addAll(potWiperNodes);
+
+        for (String start : lampNodes) {
+            Set<String> visited = new HashSet<>();
+            ArrayDeque<String> queue = new ArrayDeque<>();
+            queue.add(start);
+            visited.add(start);
+            while (!queue.isEmpty()) {
+                String node = queue.removeFirst();
+                if (baseCandidates.contains(node)) {
+                    return true;
+                }
+                for (String next : resistorGraph.getOrDefault(node, Set.of())) {
+                    if (visited.add(next)) {
+                        queue.add(next);
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -1218,6 +1369,18 @@ public class CircuitValidationService {
             case "tran_current_abs_end" -> Math.abs(series.get(series.size() - 1));
             case "tran_current_abs_early" ->
                     Math.abs(readTranCurrentAtTime(simResult, spiceId, 0.1));
+            case "tran_current_abs_at_10" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 10.0));
+            case "tran_current_abs_at_15" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 15.0));
+            case "tran_current_abs_at_1" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 1.0));
+            case "tran_current_abs_at_2" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 2.0));
+            case "tran_current_abs_at_3" ->
+                    Math.abs(readTranCurrentAtTime(simResult, spiceId, 3.0));
+            case "tran_current_abs_avg" ->
+                    series.stream().mapToDouble(Math::abs).average().orElse(0.0);
             case "tran_current_abs_fall" ->
                     Math.abs(series.get(0)) - Math.abs(series.get(series.size() - 1));
             case "tran_current_abs_peak" -> {

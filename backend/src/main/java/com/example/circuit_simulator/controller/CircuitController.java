@@ -41,7 +41,8 @@ public class CircuitController {
                 dto.getCircuitData(),
                 dto.getProblemCode(),
                 dto.getSimPhase(),
-                dto.getPriorPotPositions());
+                dto.getPriorPotPositions(),
+                dto.getPriorSwitchStates());
 
         // Create circuit entity
         Circuit circuit = Circuit.builder()

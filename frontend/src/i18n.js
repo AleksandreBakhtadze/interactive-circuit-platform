@@ -1,6 +1,7 @@
 export const translations = {
     ka: {
         nav_challenges: 'ამოცანები',
+        nav_kit: 'ნაკრები',
         nav_register: 'რეგისტრაცია',
         nav_login: 'შესვლა',
 
@@ -9,6 +10,14 @@ export const translations = {
         hero_accent: 'პრაქტიკით.',
         hero_sub: 'უსაფრთხო სასწავლო ნაკრები მოზარდებისთვის — ფერადი დეტალები, სიმბოლოები დაფებზე და წკაპებით აწყობა. აქვეა კურსი და სავარჯიშო ამოცანები, რომლითაც წრედების აგებას, ანალიზს და გამართვას ივარჯიშებ.',
         hero_cta: 'იხილე ამოცანები',
+        hero_cta_kit: 'ნაკრების დეტალები',
+
+        kit_eyebrow: 'ელექტრონიკის სასწავლო ნაკრები',
+        kit_title: 'ნაკრების დეტალების',
+        kit_title_accent: 'ჩამონათვალი',
+        kit_sub: 'ყველა დეტალი ერთ ადგილას — სამუშაო დაფა, გამტარები, რეზისტორები, კონდენსატორები, ნახევარგამტარები და დატვირთვები.',
+        kit_jump_wires: 'გამტარები',
+        kit_toc_label: 'კატეგორიები',
 
         about_label: 'ვისთვის არის',
         about_body: 'ნაკრები სპეციალურად მოსწავლეებისთვისაა დამუშავებული: უსაფრთხო, გასაგები და პრაქტიკაზე ორიენტირებული. ერთგვაროვანი დეტალები ერთი ფერის დაფებზეა (რეზისტორები ყვითელზე, კონდენსატორები მწვანეზე და სხვა), სიმბოლოები და მახასიათებლები პირდაპირ დეტალზე ჩანს, ხოლო წკაპებით შეერთება წრედის აწყობა-დაშლას მარტივს და სახალისოს ხდის. კურსის მიზანია, რომ დამოუკიდებლად შეძლო სქემის მოფიქრება, აგება და ხარვეზების პოვნა.',
@@ -87,6 +96,7 @@ export const translations = {
     },
     en: {
         nav_challenges: 'Challenges',
+        nav_kit: 'Kit',
         nav_register: 'Register',
         nav_login: 'Login',
 
@@ -95,6 +105,14 @@ export const translations = {
         hero_accent: 'by building.',
         hero_sub: 'A safe learning kit for teenagers — colour-coded parts with symbols on the boards, snap-together wiring, plus a course and exercises for building, reading, and fixing circuits.',
         hero_cta: 'Browse challenges',
+        hero_cta_kit: 'Kit parts list',
+
+        kit_eyebrow: 'Electronics learning kit',
+        kit_title: 'Kit parts',
+        kit_title_accent: 'inventory',
+        kit_sub: 'Everything in one place — baseboard, conductors, resistors, capacitors, semiconductors, and loads.',
+        kit_jump_wires: 'Conductors',
+        kit_toc_label: 'Categories',
 
         about_label: 'Who it’s for',
         about_body: 'The kit was made for students: safe, clear, and hands-on. Matching parts sit on the same colour boards (resistors yellow, capacitors green, and so on), with symbols and ratings printed on them. Snaps make assembly and teardown easy. The course aims for real independence — invent a circuit, draw it, build it, and find the faults yourself.',

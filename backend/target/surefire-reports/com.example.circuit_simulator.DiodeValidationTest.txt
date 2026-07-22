@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.circuit_simulator.DiodeValidationTest
 -------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.176 s -- in com.example.circuit_simulator.DiodeValidationTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.199 s -- in com.example.circuit_simulator.DiodeValidationTest

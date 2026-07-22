@@ -510,6 +510,9 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'DI.L3.7') {
             return 'განათავსეთ: 2 კვების წყარო, ძრავი, დიოდები, 2 რბილი გამტარი (წითელი/შავი), დაბალი წინაღობის რეზისტორები';
         }
+        if (problemCode === 'DI.L4.8') {
+            return 'განათავსეთ: 2 კვების წყარო, 2 დიოდი, 1 მწვანე და 2 წითელი LED, 1 რეზისტორი, 2 რბილი გამტარი';
+        }
         if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN Q1, ძრავი, რეზისტორი';
         }
@@ -530,6 +533,51 @@ function incompleteBoardMessage(problemCode, lang) {
         }
         if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q1, ნათურა, 2×470µF კონდენსატორი, რეზისტორები';
+        }
+        if (problemCode === 'TCP.L3.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q1, ნათურა, კონდენსატორი (სერიულად ბაზაზე), რეზისტორი (დიოდი სურვილისამებრ)';
+        }
+        if (problemCode === 'DTR.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q3 (დარლინგტონი), ძრავი, 1 µF კონდენსატორი';
+        }
+        if (problemCode === 'DTR.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q3 (დარლინგტონი), ძრავი, 10 µF, მინიმუმ 1 რეზისტორი (მაგ. 510k; 10k ან ცვლადი სურვილისამებრ)';
+        }
+        if (problemCode === 'DTR.L2.6') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q3 (დარლინგტონი), ძრავი, 10 µF, 2×510k (≈1 MΩ ბაზაზე)';
+        }
+        if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, NPN Q3 (დარლინგტონი), ნათურა, 100 µF, 2×100k';
+        }
+        if (problemCode === 'TFB.L1.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN Q3 (დარლინგტონი), ნათურა, 1k';
+        }
+        if (problemCode === 'TFB.L1.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN, PNP, ნათურა, 2×1k';
+        }
+        if (problemCode === 'TFB.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, 2×NPN, ნათურა, 2×1k';
+        }
+        if (problemCode === 'TFB.L3.3') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, NPN, PNP, ნათურა, 3×1k (რბილი გამტარები სურვილისამებრ)';
+        }
+        if (problemCode === 'TFB.L3.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, NPN, PNP, ნათურა, 3×1k (ცვლადი რეზისტორი და რბილი გამტარები სურვილისამებრ)';
+        }
+        if (problemCode === 'TDM.L1.7') {
+            return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, NPN, PNP, ძრავი';
+        }
+        if (problemCode === 'TDM.L2.8') {
+            return 'განათავსეთ: 2 კვების წყარო, ცვლადი რეზისტორი, 2×NPN, PNP, ძრავი, 1×1k';
+        }
+        if (problemCode === 'TDM.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, გადამრთველი, 2×NPN, PNP, ძრავი, 2×1k (რბილი გამტარები სურვილისამებრ)';
+        }
+        if (problemCode === 'TDM.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2 ღილაკი, 2×NPN, 2×PNP, ძრავი, 2×1k (რბილი გამტარები სურვილისამებრ)';
+        }
+        if (problemCode === 'TDM.L3.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2×NPN, 2×PNP, NPN Q3 (დარლინგტონი), ძრავი, 3×1k (რბილი გამტარები სურვილისამებრ)';
         }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
@@ -842,6 +890,9 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'DI.L3.7') {
         return 'Place: 2 power supplies, motor, diodes, 2 soft wires (red/black), low-value resistors';
     }
+    if (problemCode === 'DI.L4.8') {
+        return 'Place: 2 power supplies, 2 diodes, 1 green and 2 red LEDs, 1 resistor, 2 soft wires';
+    }
     if (problemCode === 'TR.L2.10' || problemCode === 'TR.L2.11') {
         return 'Place: 2 power supplies, switch, variable resistor, NPN Q1, motor, resistor';
     }
@@ -862,6 +913,51 @@ function incompleteBoardMessage(problemCode, lang) {
     }
     if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
         return 'Place: 2 power supplies, switch, button, NPN Q1, lamp, 2×470µF capacitors, resistors';
+    }
+    if (problemCode === 'TCP.L3.5') {
+        return 'Place: 2 power supplies, switch, button, NPN Q1, lamp, series base capacitor, resistor (diode optional)';
+    }
+    if (problemCode === 'DTR.L2.4') {
+        return 'Place: 2 power supplies, switch, button, NPN Q3 (Darlington), motor, 1 µF capacitor';
+    }
+    if (problemCode === 'DTR.L2.5') {
+        return 'Place: 2 power supplies, switch, button, NPN Q3 (Darlington), motor, 10 µF, at least 1 resistor (e.g. 510k; 10k or pot optional)';
+    }
+    if (problemCode === 'DTR.L2.6') {
+        return 'Place: 2 power supplies, switch, button, NPN Q3 (Darlington), motor, 10 µF, 2×510k (≈1 MΩ to base)';
+    }
+    if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
+        return 'Place: 2 power supplies, switch, button, NPN Q3 (Darlington), lamp, 100 µF, 2×100k';
+    }
+    if (problemCode === 'TFB.L1.1') {
+        return 'Place: 2 power supplies, switch, variable resistor, NPN Q3 (Darlington), lamp, 1k';
+    }
+    if (problemCode === 'TFB.L1.2') {
+        return 'Place: 2 power supplies, switch, variable resistor, NPN, PNP, lamp, 2×1k';
+    }
+    if (problemCode === 'TFB.L2.5') {
+        return 'Place: 2 power supplies, switch, variable resistor, 2×NPN, lamp, 2×1k';
+    }
+    if (problemCode === 'TFB.L3.3') {
+        return 'Place: 2 power supplies, switch, variable resistor, NPN, PNP, lamp, 3×1k (soft wires optional)';
+    }
+    if (problemCode === 'TFB.L3.4') {
+        return 'Place: 2 power supplies, switch, 2 buttons, NPN, PNP, lamp, 3×1k (variable resistor and soft wires optional)';
+    }
+    if (problemCode === 'TDM.L1.7') {
+        return 'Place: 2 power supplies, variable resistor, NPN, PNP, motor';
+    }
+    if (problemCode === 'TDM.L2.8') {
+        return 'Place: 2 power supplies, variable resistor, 2×NPN, PNP, motor, 1×1k';
+    }
+    if (problemCode === 'TDM.L2.3') {
+        return 'Place: 2 power supplies, switch, slide switch, 2×NPN, PNP, motor, 2×1k (soft wires optional)';
+    }
+    if (problemCode === 'TDM.L2.4') {
+        return 'Place: 2 power supplies, switch, 2 buttons, 2×NPN, 2×PNP, motor, 2×1k (soft wires optional)';
+    }
+    if (problemCode === 'TDM.L3.5') {
+        return 'Place: 2 power supplies, switch, button, 2×NPN, 2×PNP, NPN Q3 (Darlington), motor, 3×1k (soft wires optional)';
     }
     return 'Place: power supply, button, lamp';
 }
@@ -1054,6 +1150,14 @@ export default function CircuitWorkbench({ problemCode }) {
             setCapacitorKey('100uf');
         } else if (problemCode === 'TCP.L1.3' || problemCode === 'TCP.L1.4') {
             setCapacitorKey('470uf');
+        } else if (problemCode === 'TCP.L3.5') {
+            setCapacitorKey('100uf');
+        } else if (problemCode === 'DTR.L2.4') {
+            setCapacitorKey('1uf');
+        } else if (problemCode === 'DTR.L2.5' || problemCode === 'DTR.L2.6') {
+            setCapacitorKey('10uf');
+        } else if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
+            setCapacitorKey('100uf');
         } else {
             setCapacitorKey('10uf');
         }
@@ -1065,6 +1169,18 @@ export default function CircuitWorkbench({ problemCode }) {
             setResistorKey('1ko');
         } else if (problemCode === 'TCP.L1.4') {
             setResistorKey('5ko1');
+        } else if (problemCode === 'TCP.L3.5') {
+            setResistorKey('1ko');
+        } else if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
+            setResistorKey('100ko');
+        } else if (
+            problemCode === 'TFB.L1.1' ||
+            problemCode === 'TFB.L1.2' ||
+            problemCode === 'TFB.L2.5' ||
+            problemCode === 'TFB.L3.3' ||
+            problemCode === 'TFB.L3.4'
+        ) {
+            setResistorKey('1ko');
         } else if (
             problemCode === 'VR.L1.1' ||
             problemCode === 'VR.L1.2' ||
@@ -2085,21 +2201,29 @@ export default function CircuitWorkbench({ problemCode }) {
                     : times[times.length - 1];
             const fullDuration = options.fullDuration === true;
             const readableCrossfade = options.readableCrossfade === true;
-            const playUntilSec = keepLastFrame
-                ? fullDuration
-                    ? simStopSec
-                    : (getTransientSettleTime(result) ?? simStopSec)
-                : simStopSec;
+            const flashEdge = options.flashEdge === true;
+            // TCP.L3.5: only scrub the bright capacitive spike (~60 ms), then snap to the
+            // settled dark end — playing the full 0.5 s decay looks like “hold stays lit”.
+            const playUntilSec = flashEdge
+                ? Math.min(0.06, simStopSec)
+                : keepLastFrame
+                  ? fullDuration
+                      ? simStopSec
+                      : (getTransientSettleTime(result) ?? simStopSec)
+                  : simStopSec;
             // Stretch the active transition across a readable wall-clock fade
             // (RC settles in tens of ms; playing the full 4s stop makes fade look instant).
             // L2.7 polarity: play settle window in ~2–2.5 s (not a full 4 s wait).
-            const durationMs = keepLastFrame
-                ? fullDuration
-                    ? Math.max(3500, simStopSec * 1000)
-                    : readableCrossfade
-                      ? Math.max(2000, Math.min(2600, playUntilSec * 1100))
-                      : Math.max(2800, Math.min(5000, playUntilSec * 12000))
-                : Math.max(3000, simStopSec * 1000);
+            // TCP.L3.5: brief flash (~150 ms wall), then dark while button remains held.
+            const durationMs = flashEdge
+                ? Math.max(120, Math.min(200, playUntilSec * 2800))
+                : keepLastFrame
+                  ? fullDuration
+                      ? Math.max(3500, simStopSec * 1000)
+                      : readableCrossfade
+                        ? Math.max(2000, Math.min(2600, playUntilSec * 1100))
+                        : Math.max(2800, Math.min(5000, playUntilSec * 12000))
+                  : Math.max(3000, simStopSec * 1000);
             const start = performance.now();
             setTranFrame(0);
 
@@ -2119,6 +2243,10 @@ export default function CircuitWorkbench({ problemCode }) {
                         finishCrossfadeAnimation(result);
                     } else if (phase === 'discharge') {
                         finishTranAnimation();
+                    } else if (flashEdge) {
+                        // Settled dark end of the edge .tran (button may still be held).
+                        setLedTranAnimPhase(null);
+                        setTranFrame(times.length - 1);
                     } else {
                         setLedTranAnimPhase(null);
                         setTranFrame(times.length - 1);
@@ -2144,6 +2272,7 @@ export default function CircuitWorkbench({ problemCode }) {
             const isLive = options.live ?? liveSimMode;
             const simPhase = options.simPhase ?? 'idle';
             const priorPotPositions = options.priorPotPositions;
+            const priorSwitchStates = options.priorSwitchStates;
             const boardPlaced = options.placedOverride ?? placed;
             const floatingPhotoAccessories =
                 options.floatingPhotoAccessories ??
@@ -2177,7 +2306,8 @@ export default function CircuitWorkbench({ problemCode }) {
                     circuitJson,
                     problemCode,
                     phase,
-                    priorPotPositions
+                    priorPotPositions,
+                    priorSwitchStates
                 );
                 const result = normalizeSimulationResults(raw);
 
@@ -2291,7 +2421,12 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'TCP.L1.1' ||
                                 problemCode === 'TCP.L1.2' ||
                                 problemCode === 'TCP.L1.3' ||
-                                problemCode === 'TCP.L1.4',
+                                problemCode === 'TCP.L1.4' ||
+                                problemCode === 'DTR.L2.4' ||
+                                problemCode === 'DTR.L2.5' ||
+                                problemCode === 'DTR.L2.6' ||
+                                problemCode === 'DTR.L2.11' ||
+                                problemCode === 'DTR.L2.12',
                             fullDuration:
                                 (crossfade &&
                                     usesMasterSwitchSimulation(problemCode) &&
@@ -2302,11 +2437,18 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'TCP.L1.1' ||
                                 problemCode === 'TCP.L1.2' ||
                                 problemCode === 'TCP.L1.3' ||
-                                problemCode === 'TCP.L1.4',
+                                problemCode === 'TCP.L1.4' ||
+                                problemCode === 'DTR.L2.4' ||
+                                problemCode === 'DTR.L2.5' ||
+                                problemCode === 'DTR.L2.6' ||
+                                problemCode === 'DTR.L2.11' ||
+                                problemCode === 'DTR.L2.12',
                             // DI.L3.6: ~2–2.5 s fade so live pot-drag steps stay readable
                             // when each move cancels/restarts the prior .tran.
                             readableCrossfade:
                                 parallelPolarity || problemCode === 'DI.L3.6',
+                            // TCP.L3.5: brief capacitive flash (~200 ms), not a 3–4 s RC play.
+                            flashEdge: problemCode === 'TCP.L3.5',
                         });
                     } else {
                         cancelTranAnimation();
@@ -2598,7 +2740,8 @@ export default function CircuitWorkbench({ problemCode }) {
 
             // DI.L3.6: live updates while dragging (like VR). Dim → prior-pot
             // .tran so the hold LED fades; brighten → sync DC.
-            if (problemCode === 'DI.L3.6') {
+            // TFB.L3.3 / TFB.L2.5: always pass prior pot so snap/hysteresis settle works.
+            if (problemCode === 'DI.L3.6' || problemCode === 'TFB.L3.3' || problemCode === 'TFB.L2.5') {
                 const run = () => {
                     potSimTimerRef.current = null;
                     if (!liveSimModeRef.current) return;
@@ -2607,11 +2750,20 @@ export default function CircuitWorkbench({ problemCode }) {
                     const prior =
                         di36LastSimPotRef.current[compId] ??
                         DEFAULT_POT_POSITION;
-                    const dimming = current > prior + 0.015;
                     di36LastSimPotRef.current = {
                         ...di36LastSimPotRef.current,
                         [compId]: current,
                     };
+                    if (problemCode === 'TFB.L3.3' || problemCode === 'TFB.L2.5') {
+                        runLiveSimulation(switchStatesRef.current, {
+                            simPhase: 'idle',
+                            priorPotPositions: {
+                                variable_resistor: prior,
+                            },
+                        });
+                        return;
+                    }
+                    const dimming = current > prior + 0.015;
                     if (dimming) {
                         runLiveSimulation(switchStatesRef.current, {
                             simPhase: 'discharge',
@@ -2665,12 +2817,18 @@ export default function CircuitWorkbench({ problemCode }) {
 
         heldButtonIdRef.current = comp.id;
 
+        const priorSwitchStates =
+            problemCode === 'TFB.L3.4' ? switchStatesRef.current : undefined;
+
         const nextStates = {
             ...switchStatesRef.current,
             [comp.id]: 'closed',
         };
         commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, { simPhase: 'pressed' });
+        await runLiveSimulation(nextStates, {
+            simPhase: 'pressed',
+            priorSwitchStates,
+        });
     };
 
     const releaseMomentaryButton = async (comp, { allowLock = true } = {}) => {
@@ -2695,8 +2853,18 @@ export default function CircuitWorkbench({ problemCode }) {
             ...switchStatesRef.current,
             [comp.id]: 'open',
         };
+        const priorSwitchStates =
+            problemCode === 'TFB.L3.4'
+                ? {
+                      ...switchStatesRef.current,
+                      [comp.id]: 'closed',
+                  }
+                : undefined;
         commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
+        await runLiveSimulation(nextStates, {
+            simPhase: 'discharge',
+            priorSwitchStates,
+        });
     };
 
     const unlockMomentaryButton = async (comp) => {
@@ -2710,7 +2878,16 @@ export default function CircuitWorkbench({ problemCode }) {
             [comp.id]: 'open',
         };
         commitSwitchStates(nextStates);
-        await runLiveSimulation(nextStates, { simPhase: 'discharge' });
+        await runLiveSimulation(nextStates, {
+            simPhase: 'discharge',
+            priorSwitchStates:
+                problemCode === 'TFB.L3.4'
+                    ? {
+                          ...switchStatesRef.current,
+                          [comp.id]: 'closed',
+                      }
+                    : undefined,
+        });
     };
 
     /** Click (no drag): toggle switches / motor stall. */
@@ -3029,7 +3206,12 @@ export default function CircuitWorkbench({ problemCode }) {
                             {lang === 'ka' ? 'მნიშვნელობა' : 'Value'}
                         </span>
                         <div className={styles.connectorLengthOptions}>
-                            {CAPACITOR_SPECS.map((spec) => (
+                            {(capacitorGroup.keys
+                                ? CAPACITOR_SPECS.filter((spec) =>
+                                      capacitorGroup.keys.includes(spec.key)
+                                  )
+                                : CAPACITOR_SPECS
+                            ).map((spec) => (
                                 <button
                                     key={spec.key}
                                     type="button"
@@ -3475,7 +3657,7 @@ export default function CircuitWorkbench({ problemCode }) {
                     {previewCss && activeDrag && (
                         <div
                             className={`${isPhotoAccessoryType(activeDrag.type) ? styles.accessoryPreview : styles.dropPreview} ${previewIsTorch ? styles.dropPreviewTorch : ''} ${previewIsCover ? styles.dropPreviewCover : ''}`}
-                            style={{ ...previewCss, zIndex: 25 }}
+                            style={{ ...previewCss, zIndex: 110 }}
                             aria-hidden
                         >
                             {getComponentImage(activeDrag.type) ? (
@@ -3995,10 +4177,20 @@ export default function CircuitWorkbench({ problemCode }) {
 
                         const interactive =
                             liveSimMode && isInteractivePart(comp.type, problemCode);
+                        const controlsOnTop =
+                            isMomentaryInteractive(comp.type) ||
+                            isToggleInteractive(comp.type) ||
+                            isVarResistorType(comp.type);
 
+                        // Buttons above transistors; soft wires stay visually on top
+                        // (z-index 100) with pass-through hits except the thin stroke.
                         const boxStyle = {
                             ...partStyleToCss(partStyle),
-                            zIndex: 10 + index,
+                            zIndex: controlsOnTop
+                                ? 40
+                                : interactive
+                                  ? 30
+                                  : 10 + index,
                         };
 
                         // Keep the fade overlay for the whole tran, even at opacity 0.

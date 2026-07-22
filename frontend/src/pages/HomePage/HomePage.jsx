@@ -46,7 +46,10 @@ export default function HomePage() {
                         <span className={styles.accent}>{t.hero_accent}</span>
                     </h1>
                     <p className={styles.sub}>{t.hero_sub}</p>
-                    <Link to="/challenges" className={styles.cta}>{t.hero_cta}</Link>
+                    <div className={styles.ctaRow}>
+                        <Link to="/challenges" className={styles.cta}>{t.hero_cta}</Link>
+                        <Link to="/kit" className={styles.ctaSecondary}>{t.hero_cta_kit}</Link>
+                    </div>
                 </div>
             </section>
 
@@ -92,15 +95,21 @@ export default function HomePage() {
                             <p className={styles.taskDesc}>{t.task1_desc}</p>
                         </div>
                         <div className={styles.taskCard}>
-                            <span className={styles.taskTag}>{t.task2_tag}</span>
+                            <span className={`${styles.taskTag} ${styles.taskTagPractice}`}>
+                                {t.task2_tag}
+                            </span>
                             <p className={styles.taskDesc}>{t.task2_desc}</p>
                         </div>
                         <div className={styles.taskCard}>
-                            <span className={styles.taskTag}>{t.task3_tag}</span>
+                            <span className={`${styles.taskTag} ${styles.taskTagAdvanced}`}>
+                                {t.task3_tag}
+                            </span>
                             <p className={styles.taskDesc}>{t.task3_desc}</p>
                         </div>
                         <div className={styles.taskCard}>
-                            <span className={styles.taskTag}>{t.task4_tag}</span>
+                            <span className={`${styles.taskTag} ${styles.taskTagTest}`}>
+                                {t.task4_tag}
+                            </span>
                             <p className={styles.taskDesc}>{t.task4_desc}</p>
                         </div>
                     </div>

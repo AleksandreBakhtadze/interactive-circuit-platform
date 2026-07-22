@@ -174,12 +174,12 @@ export function getMotorSpinState(
     };
 }
 
-function isLampLit(results, spiceComponentId, voltage) {
-    const current = getComponentCurrent(results, spiceComponentId);
+function isLampLit(results, spiceComponentId, voltage, frameIndex = 0) {
+    const current = getComponentCurrent(results, spiceComponentId, {}, frameIndex);
     const v =
         typeof voltage === 'number'
             ? Math.abs(voltage)
-            : Math.abs(getComponentVoltage(results, spiceComponentId) ?? 0);
+            : Math.abs(getComponentVoltage(results, spiceComponentId, frameIndex) ?? 0);
     // Match getLampDcBrightnessRatio: tiny IR drop (~mV) must not flip the ON image.
     if (typeof current === 'number' && current > 0.005) return true;
     if (typeof current === 'number') return false;
@@ -344,7 +344,7 @@ export function getPlacedComponentImage(type, opts = {}) {
         if (dischargeFading) {
             return ON_IMAGES[type] ?? base;
         }
-        if (liveSimMode && simOk && isLampLit(simResults, spiceId, voltage)) {
+        if (liveSimMode && simOk && isLampLit(simResults, spiceId, voltage, tranFrameIndex)) {
             return ON_IMAGES[type] ?? base;
         }
         return base;

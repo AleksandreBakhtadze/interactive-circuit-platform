@@ -70,7 +70,8 @@ const CAPACITOR_ART_SNAPS = Object.fromEntries(
     CAPACITOR_SPECS.map((s) => [capacitorType(s.key), RESISTOR_ART_SNAP])
 );
 
-/** Vertical transistor (217×326): collector top, base left, emitter bottom (2×3). */
+/** Vertical transistor (217×326): top/bottom + base left (2×3).
+ * NPN: collector top, emitter bottom. PNP SVG: emitter arrow on top pin. */
 const TRIANGLE_ART_VERTICAL = {
     svgWidth: 217,
     svgHeight: 326,

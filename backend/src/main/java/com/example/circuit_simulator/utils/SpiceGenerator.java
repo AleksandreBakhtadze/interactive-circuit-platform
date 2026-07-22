@@ -189,10 +189,7 @@ public class SpiceGenerator {
                             .append(value).append("\n");
                     break;
                 case "motor":
-                    sb.append("R_").append(id).append(" ")
-                            .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" ")
-                            .append(motorResistanceOhms(comp)).append("\n");
+                    appendMotor(sb, id, nodes, comp);
                     break;
                 case "slide_switch":
 
@@ -299,6 +296,12 @@ public class SpiceGenerator {
      */
     public static TranSpiceBuild generateTranSpice(String json, TranScenario scenario)
             throws Exception {
+        return generateTranSpice(json, scenario, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static TranSpiceBuild generateTranSpice(
+            String json, TranScenario scenario, String problemCode) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> data = mapper.readValue(json, Map.class);
 
@@ -366,10 +369,7 @@ public class SpiceGenerator {
                         .append(value).append("\n");
 
                 case "motor" -> {
-                    sb.append("R_").append(id).append(" ")
-                            .append(nodes.get(0)).append(" ")
-                            .append(nodes.get(1)).append(" ")
-                            .append(motorResistanceOhms(comp)).append("\n");
+                    appendMotor(sb, id, nodes, comp);
                     probes.add(new TranProbe(id, "current",
                             "@r_" + id.toLowerCase() + "[i]"));
                 }
@@ -390,7 +390,7 @@ public class SpiceGenerator {
                     .append(" ").append(node).append(" 0 1e12\n");
         }
 
-        appendModels(sb);
+        appendModels(sb, problemCode);
         sb.append(".model SW_BTN SW(Ron=1e-5 Roff=1e12 Vt=2.5 Vh=-0.5)\n");
         // Required for @d_<id>[id] / @r_<id>[i] in wrdata during .tran (DC netlist already sets this).
         sb.append(".options savecurrents\n");
@@ -564,7 +564,15 @@ public class SpiceGenerator {
             String json,
             Map<String, Double> nodeVoltages,
             TranScenario scenario) throws Exception {
-        TranSpiceBuild build = generateTranSpice(json, scenario);
+        return generateChargeTranSpice(json, nodeVoltages, scenario, null);
+    }
+
+    public static TranSpiceBuild generateChargeTranSpice(
+            String json,
+            Map<String, Double> nodeVoltages,
+            TranScenario scenario,
+            String problemCode) throws Exception {
+        TranSpiceBuild build = generateTranSpice(json, scenario, problemCode);
         String icBlock = buildInitialConditions(json, nodeVoltages);
         String netlist = build.netlist().replace(
                 "\n.control\n",
@@ -579,7 +587,15 @@ public class SpiceGenerator {
             String json,
             Map<String, Double> nodeVoltages,
             TranScenario scenario) throws Exception {
-        TranSpiceBuild build = generateTranSpice(json, scenario);
+        return generateDischargeTranSpice(json, nodeVoltages, scenario, null);
+    }
+
+    public static TranSpiceBuild generateDischargeTranSpice(
+            String json,
+            Map<String, Double> nodeVoltages,
+            TranScenario scenario,
+            String problemCode) throws Exception {
+        TranSpiceBuild build = generateTranSpice(json, scenario, problemCode);
         String icBlock = buildInitialConditions(json, nodeVoltages);
         String netlist = build.netlist().replace(
                 "\n.control\n",
@@ -639,7 +655,27 @@ public class SpiceGenerator {
         sb.append("Vctrl_").append(id).append(" ")
                 .append(ctrlNode).append(" 0 ");
 
-        if (scenario.pulsesRole(role)) {
+        if (scenario.periodicRole(role)) {
+            // Square taps: pressStart = period, pressEnd = on-time (seconds).
+            double period = scenario.pressStart() > 0 ? scenario.pressStart() : 0.2;
+            double onTime = scenario.pressEnd() > 0 ? scenario.pressEnd() : period * 0.4;
+            StringBuilder pwl = new StringBuilder("PWL(0 0");
+            double t = 0.0;
+            while (t < scenario.stop() - 1e-9) {
+                double tOn = t + 0.002;
+                double tOff = Math.min(t + onTime, scenario.stop());
+                double tNext = Math.min(t + period, scenario.stop());
+                pwl.append(String.format(Locale.US,
+                        " %.6f 0 %.6f 6 %.6f 6 %.6f 0",
+                        tOn, tOn + 1e-4, tOff, tOff + 1e-4));
+                t = tNext;
+                if (period <= 1e-9) {
+                    break;
+                }
+            }
+            pwl.append(String.format(Locale.US, " %.6f 0)\n", scenario.stop()));
+            sb.append(pwl);
+        } else if (scenario.pulsesRole(role)) {
             sb.append(String.format(Locale.US,
                     "PWL(0 0 %.6f 0 %.6f 6 %.6f 6 %.6f 0 %.6f 0)\n",
                     scenario.pressStart(),
@@ -649,6 +685,12 @@ public class SpiceGenerator {
                     scenario.stop()));
         } else if ("switch".equals(role)) {
             // CP.L2.5 master SPST — follow JSON state; do not force closed on idle/charge/discharge.
+            if ("closed".equals(switchState)) {
+                sb.append(String.format(Locale.US, "PWL(0 6 %.6f 6)\n", scenario.stop()));
+            } else {
+                sb.append(String.format(Locale.US, "PWL(0 0 %.6f 0)\n", scenario.stop()));
+            }
+        } else if (scenario.switchTimeline() == TranScenario.SwitchTimeline.STATIC) {
             if ("closed".equals(switchState)) {
                 sb.append(String.format(Locale.US, "PWL(0 6 %.6f 6)\n", scenario.stop()));
             } else {
@@ -776,8 +818,26 @@ public class SpiceGenerator {
         sb.append(".model PNP_MODEL PNP (IS=1e-14 BF=")
                 .append(bf)
                 .append(" VAF=100 IKF=0.3 RC=0.1)\n");
-        sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
-        sb.append(".model PNP_DARLINGTON PNP (IS=1e-14 BF=5000 VAF=100 IKF=0.3 RC=0.1)\n");
+        // Kit Darlington (Q3/Q4): β 3000–10000 → default BF=10000.
+        // DTR.L2.5 / L2.12: lower β for slow-idle / RC-delay pedagogy.
+        // DTR.L2.4 / L2.6: elevated β so 1 µF EF hold still meets multi-second checks.
+        int darlingtonBf;
+        if ("DTR.L2.5".equals(problemCode)) {
+            darlingtonBf = 800;
+        } else if ("DTR.L2.12".equals(problemCode)) {
+            darlingtonBf = 2000;
+        } else if ("DTR.L2.4".equals(problemCode) || "DTR.L2.6".equals(problemCode)) {
+            // EF / high-R hold demos need β above the kit band for multi-second release.
+            darlingtonBf = 100000;
+        } else {
+            darlingtonBf = 10000; // kit NPN/PNP Darlington Q3/Q4: 3000–10000
+        }
+        sb.append(".model NPN_DARLINGTON NPN (IS=1e-14 BF=")
+                .append(darlingtonBf)
+                .append(" VAF=100 IKF=0.3 RC=0.1)\n");
+        sb.append(".model PNP_DARLINGTON PNP (IS=1e-14 BF=")
+                .append(darlingtonBf)
+                .append(" VAF=100 IKF=0.3 RC=0.1)\n");
     }
 
     public static String setSwitchState(String json, String state) throws Exception {
@@ -865,6 +925,33 @@ public class SpiceGenerator {
         return mapper.writeValueAsString(data);
     }
 
+    /** Read wiper position (0..1) for the first pot with the given role. */
+    @SuppressWarnings("unchecked")
+    public static double readPotPosition(String json, String role) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return 0.5;
+        }
+        for (Map<String, Object> comp : components) {
+            if (!"variable_resistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String compRole = (String) comp.get("role");
+            if (role != null && !role.equals(compRole)) {
+                continue;
+            }
+            Object posObj = comp.get("position");
+            if (posObj != null) {
+                return Double.parseDouble(posObj.toString());
+            }
+            return 0.5;
+        }
+        return 0.5;
+    }
+
     private static final double PHOTO_RESISTOR_R_MIN = 40.0;
     private static final double PHOTO_RESISTOR_R_MAX = 1_000_000.0;
 
@@ -943,6 +1030,14 @@ public class SpiceGenerator {
      * Stalled ≈2 Ω so V_motor drops below green Vf even with a 20 Ω sense resistor
      * (L3.11 green ‖ motor); running stays high so the red sense LED stays off.
      */
+    private static void appendMotor(
+            StringBuilder sb, String id, java.util.List<String> nodes, Map<String, Object> comp) {
+        sb.append("R_").append(id).append(" ")
+                .append(nodes.get(0)).append(" ")
+                .append(nodes.get(1)).append(" ")
+                .append(motorResistanceOhms(comp)).append("\n");
+    }
+
     private static String motorResistanceOhms(Map<String, Object> comp) {
         Object state = comp.get("state");
         if ("stalled".equals(state)) {

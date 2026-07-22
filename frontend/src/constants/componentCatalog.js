@@ -217,15 +217,17 @@ export function getCapacitorSpec(typeOrKey) {
 /** 3×3 — top/bottom on one column, third pin from the middle row. */
 export const THREE_PIN_FOOTPRINT = { w: 3, h: 3 };
 
-/** Vertical transistor (npn/pnp): collector top, base left, emitter bottom (2×3).
- * Matches Snap Circuits Q1 spacing (C and E two rows apart) and the tall SVG. */
+/** Vertical transistor (npn/pnp): shared footprint — top/bottom holes.
+ * NPN art: collector top, emitter bottom. PNP art: emitter arrow on top pin;
+ * circuitNetlist swaps C/E for PNP so SPICE matches the symbol. */
 export const TRANSISTOR_TRIANGLE_FOOTPRINT = { w: 2, h: 3 };
 
-/** Order matches SpiceGenerator: nodes[0]=base, [1]=collector, [2]=emitter. */
+/** Order matches SpiceGenerator: nodes[0]=base, [1]=collector, [2]=emitter
+ * (after PNP C/E swap in circuitNetlist). */
 export const THREE_PIN_SNAP_VERTICAL = [
     { dr: 1, dc: 0 }, // base (middle left)
-    { dr: 0, dc: 1 }, // collector (top right)
-    { dr: 2, dc: 1 }, // emitter (bottom right)
+    { dr: 0, dc: 1 }, // NPN collector / PNP emitter hole (top right)
+    { dr: 2, dc: 1 }, // NPN emitter / PNP collector hole (bottom right)
 ];
 
 /** Horizontal triangle SVG (326×217): top/bottom at dc=2, base at dc=0. */
@@ -274,16 +276,25 @@ export const TRANSISTOR_SPECS = [
         key: 'q3',
         file: 'npn-q3.svg',
         pickerLabel: 'Q3',
-        labelEn: 'NPN Q3',
-        labelKa: 'NPN Q3',
+        labelEn: 'NPN Q3 (Darlington)',
+        labelKa: 'NPN Q3 (დარლინგტონი)',
         orientation: 'vertical',
     },
     {
         key: 'q4',
         file: 'pnp-q4.svg',
         pickerLabel: 'Q4',
-        labelEn: 'PNP Q4',
-        labelKa: 'PNP Q4',
+        labelEn: 'PNP Q4 (Darlington)',
+        labelKa: 'PNP Q4 (დარლინგტონი)',
+        orientation: 'vertical',
+    },
+    /** @deprecated Prefer q3 — kept so older drafts with transistor_qd still load. */
+    {
+        key: 'qd',
+        file: 'npn-q3.svg',
+        pickerLabel: 'Q3',
+        labelEn: 'NPN Q3 (Darlington)',
+        labelKa: 'NPN Q3 (დარლინგტონი)',
         orientation: 'vertical',
     },
 ];
@@ -4535,6 +4546,47 @@ export const DI_L3_7_PALETTE = [
     },
 ];
 
+/**
+ * DI.L4.8 — diode bridge (2 diodes + 2 red LEDs as diodes); green stays lit
+ * for either soft-wire polarity. One resistor only.
+ */
+export const DI_L4_8_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 2,
+    },
+    {
+        type: ledType('green'),
+        labelKa: 'LED მწვანე',
+        labelEn: 'LED Green',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        colors: ['red', 'lightRed', 'black'],
+    },
+];
+
 /** TR.L2.9 — quiz: compare CE vs emitter-follower LED brightness with two pots. */
 export const TR_L2_9_PALETTE = [
     {
@@ -4563,8 +4615,8 @@ export const TR_L2_9_PALETTE = [
     },
     {
         type: transistorType('q3'),
-        labelKa: 'NPN Q3',
-        labelEn: 'NPN Q3',
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
         maxCount: 1,
     },
     {
@@ -4816,8 +4868,8 @@ export const TR_L2_16_PALETTE = [
     },
     {
         type: transistorType('q3'),
-        labelKa: 'NPN Q3',
-        labelEn: 'NPN Q3',
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
         maxCount: 1,
     },
     {
@@ -4873,8 +4925,8 @@ export const TR_L2_17_PALETTE = [
     },
     {
         type: transistorType('q3'),
-        labelKa: 'NPN Q3',
-        labelEn: 'NPN Q3',
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
         maxCount: 1,
     },
     {
@@ -5084,6 +5136,794 @@ export const TCP_L1_4_PALETTE = [
         maxCount: 4,
     },
     CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TCP.L3.5 — series-C into BJT base; lamp lights only while button is tapped rapidly.
+ * Diode optional (DC restore); familiar kit parts allowed.
+ */
+export const TCP_L3_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        type: ledType('red'),
+        labelKa: 'LED წითელი',
+        labelEn: 'LED Red',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 6,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DTR.L2.4 — Darlington EF + 1 µF motor hold (~10 s); no resistors.
+ */
+export const DTR_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+        keys: ['1uf'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DTR.L2.5 — CE slow idle via high-R bias; button + 10 µF boost.
+ */
+export const DTR_L2_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი',
+        labelEn: 'Variable Resistor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+        keys: ['10uf'],
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 4,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DTR.L2.6 — CE + 10 µF + high base R (2×510 kΩ ≈ 1 MΩ); ≥15 s hold then stop.
+ */
+export const DTR_L2_6_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+        keys: ['10uf'],
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 4,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DTR.L2.11 — CE lamp; C+button ‖ B–E; 2×100 kΩ charge delay ~2 s on release.
+ */
+export const DTR_L2_11_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+        keys: ['100uf'],
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['100ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * DTR.L2.12 — CE delayed-on (button→100k→C mid→100k→base); hold/fade on release.
+ */
+export const DTR_L2_12_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 1,
+        keys: ['100uf'],
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['100ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TFB.L1.1 — CE Darlington lamp; pot divider → 1 kΩ → base.
+ */
+export const TFB_L1_1_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TFB.L1.2 — NPN CE drives PNP high-side lamp; pot divider; 2×1 kΩ.
+ */
+export const TFB_L1_2_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TFB.L2.5 — two NPN inverting pair; intrinsic supply-sag snap (reverse of L1.2).
+ */
+export const TFB_L2_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TFB.L3.3 — L1.2 topology + 1 kΩ positive feedback (NPN base ↔ PNP collector).
+ */
+export const TFB_L3_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        colors: ['red', 'lightRed', 'black'],
+    },
+];
+
+/**
+ * TFB.L3.4 — TFB.L3.3 latch plus two buttons for set/reset.
+ */
+export const TFB_L3_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        colors: ['red', 'lightRed', 'black'],
+    },
+];
+
+/**
+ * TDM.L1.7 — pot-driven complementary NPN+PNP emitter follower (half-bridge);
+ * dual-rail mid tap; no master switch.
+ */
+export const TDM_L1_7_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TDM.L2.8 — L1.7 half-bridge + CE NPN and 1 kΩ for abrupt pot reverse.
+ */
+export const TDM_L2_8_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 1,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+];
+
+/**
+ * TDM.L2.3 — reverse DC motor with NPN–PNP pair (2×NPN + PNP) + SPDT; 2×1 kΩ.
+ */
+export const TDM_L2_3_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი',
+        labelEn: 'Slide Switch',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        colors: ['red', 'lightRed', 'black'],
+    },
+];
+
+/**
+ * TDM.L2.4 — two-button H-bridge reverse (2×NPN + 2×PNP); 2×1 kΩ; soft wires optional.
+ */
+export const TDM_L2_4_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 2,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        colors: ['red', 'lightRed', 'black'],
+    },
+];
+
+/**
+ * TDM.L3.5 — one-button H-bridge reverse (2×NPN + 2×PNP + NPN Darlington);
+ * 3×1 kΩ (base series R for Darlington); soft wires optional.
+ */
+export const TDM_L3_5_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 1,
+    },
+    {
+        type: transistorType('q1'),
+        labelKa: 'NPN Q1',
+        labelEn: 'NPN Q1',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q2'),
+        labelKa: 'PNP Q2',
+        labelEn: 'PNP Q2',
+        maxCount: 2,
+    },
+    {
+        type: transistorType('q3'),
+        labelKa: 'NPN Q3 (დარლინგტონი)',
+        labelEn: 'NPN Q3 (Darlington)',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        keys: ['1ko'],
+    },
+    CONNECTOR_GROUP_PALETTE_ITEM,
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 3,
+        colors: ['red', 'lightRed', 'black'],
+    },
 ];
 
 /**
@@ -5443,6 +6283,9 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'DI.L3.7') {
         return DI_L3_7_PALETTE;
     }
+    if (problemCode === 'DI.L4.8') {
+        return DI_L4_8_PALETTE;
+    }
     if (problemCode === 'TR.L2.9') {
         return TR_L2_9_PALETTE;
     }
@@ -5478,6 +6321,54 @@ export function getPaletteForProblem(problemCode) {
     }
     if (problemCode === 'TCP.L1.4') {
         return TCP_L1_4_PALETTE;
+    }
+    if (problemCode === 'TCP.L3.5') {
+        return TCP_L3_5_PALETTE;
+    }
+    if (problemCode === 'DTR.L2.4') {
+        return DTR_L2_4_PALETTE;
+    }
+    if (problemCode === 'DTR.L2.5') {
+        return DTR_L2_5_PALETTE;
+    }
+    if (problemCode === 'DTR.L2.6') {
+        return DTR_L2_6_PALETTE;
+    }
+    if (problemCode === 'DTR.L2.11') {
+        return DTR_L2_11_PALETTE;
+    }
+    if (problemCode === 'DTR.L2.12') {
+        return DTR_L2_12_PALETTE;
+    }
+    if (problemCode === 'TFB.L1.1') {
+        return TFB_L1_1_PALETTE;
+    }
+    if (problemCode === 'TFB.L1.2') {
+        return TFB_L1_2_PALETTE;
+    }
+    if (problemCode === 'TFB.L2.5') {
+        return TFB_L2_5_PALETTE;
+    }
+    if (problemCode === 'TFB.L3.3') {
+        return TFB_L3_3_PALETTE;
+    }
+    if (problemCode === 'TFB.L3.4') {
+        return TFB_L3_4_PALETTE;
+    }
+    if (problemCode === 'TDM.L1.7') {
+        return TDM_L1_7_PALETTE;
+    }
+    if (problemCode === 'TDM.L2.8') {
+        return TDM_L2_8_PALETTE;
+    }
+    if (problemCode === 'TDM.L2.3') {
+        return TDM_L2_3_PALETTE;
+    }
+    if (problemCode === 'TDM.L2.4') {
+        return TDM_L2_4_PALETTE;
+    }
+    if (problemCode === 'TDM.L3.5') {
+        return TDM_L3_5_PALETTE;
     }
     return null;
 }
@@ -5594,6 +6485,7 @@ export function supportsSimulator(problemCode) {
         problemCode === 'DI.L3.5' ||
         problemCode === 'DI.L3.6' ||
         problemCode === 'DI.L3.7' ||
+        problemCode === 'DI.L4.8' ||
         problemCode === 'TR.L2.9' ||
         problemCode === 'TR.L2.10' ||
         problemCode === 'TR.L2.11' ||
@@ -5605,7 +6497,23 @@ export function supportsSimulator(problemCode) {
         problemCode === 'TCP.L1.1' ||
         problemCode === 'TCP.L1.2' ||
         problemCode === 'TCP.L1.3' ||
-        problemCode === 'TCP.L1.4'
+        problemCode === 'TCP.L1.4' ||
+        problemCode === 'TCP.L3.5' ||
+        problemCode === 'DTR.L2.4' ||
+        problemCode === 'DTR.L2.5' ||
+        problemCode === 'DTR.L2.6' ||
+        problemCode === 'DTR.L2.11' ||
+        problemCode === 'DTR.L2.12' ||
+        problemCode === 'TFB.L1.1' ||
+        problemCode === 'TFB.L1.2' ||
+        problemCode === 'TFB.L2.5' ||
+        problemCode === 'TFB.L3.3' ||
+        problemCode === 'TFB.L3.4' ||
+        problemCode === 'TDM.L1.7' ||
+        problemCode === 'TDM.L2.3' ||
+        problemCode === 'TDM.L2.4' ||
+        problemCode === 'TDM.L2.8' ||
+        problemCode === 'TDM.L3.5'
     );
 }
 
@@ -5630,7 +6538,13 @@ export function usesTransientSimulation(problemCode) {
         problemCode === 'TCP.L1.1' ||
         problemCode === 'TCP.L1.2' ||
         problemCode === 'TCP.L1.3' ||
-        problemCode === 'TCP.L1.4'
+        problemCode === 'TCP.L1.4' ||
+        problemCode === 'TCP.L3.5' ||
+        problemCode === 'DTR.L2.4' ||
+        problemCode === 'DTR.L2.5' ||
+        problemCode === 'DTR.L2.6' ||
+        problemCode === 'DTR.L2.11' ||
+        problemCode === 'DTR.L2.12'
     );
 }
 
@@ -5642,7 +6556,8 @@ export function usesSlowChargeSimulation(problemCode) {
         problemCode === 'CP.L2.13' ||
         problemCode === 'CP.L2.14' ||
         problemCode === 'CP.L2.15' ||
-        problemCode === 'TCP.L1.4'
+        problemCode === 'TCP.L1.4' ||
+        problemCode === 'DTR.L2.12'
     );
 }
 
@@ -5681,7 +6596,13 @@ export function usesMasterSwitchSimulation(problemCode) {
         problemCode === 'TCP.L1.1' ||
         problemCode === 'TCP.L1.2' ||
         problemCode === 'TCP.L1.3' ||
-        problemCode === 'TCP.L1.4'
+        problemCode === 'TCP.L1.4' ||
+        problemCode === 'TCP.L3.5' ||
+        problemCode === 'DTR.L2.4' ||
+        problemCode === 'DTR.L2.5' ||
+        problemCode === 'DTR.L2.6' ||
+        problemCode === 'DTR.L2.11' ||
+        problemCode === 'DTR.L2.12'
     );
 }
 
@@ -6505,6 +7426,14 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
         { type: COMPONENT_TYPES.WIRE, maxCount: 2 },
     ],
+    'DI.L4.8': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.DIODE, maxCount: 2 },
+        { type: ledType('green'), maxCount: 1 },
+        { type: ledType('red'), maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.WIRE, maxCount: 2 },
+    ],
     'TR.L2.10': [
         { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
         { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
@@ -6600,6 +7529,145 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: transistorType('q1'), maxCount: 1 },
         { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
         { type: 'capacitor', maxCount: 2 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'TCP.L3.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'DTR.L2.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+    ],
+    'DTR.L2.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'DTR.L2.6': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'DTR.L2.11': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'DTR.L2.12': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: 'capacitor', maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TFB.L1.1': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'TFB.L1.2': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TFB.L2.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 2 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TFB.L3.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'TFB.L3.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
+    ],
+    'TDM.L1.7': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 1 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+    ],
+    'TDM.L2.8': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 2 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 1 },
+    ],
+    'TDM.L2.3': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.SLIDE_SWITCH, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 2 },
+        { type: transistorType('q2'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TDM.L2.4': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 2 },
+        { type: transistorType('q1'), maxCount: 2 },
+        { type: transistorType('q2'), maxCount: 2 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
+        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
+    ],
+    'TDM.L3.5': [
+        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
+        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
+        { type: COMPONENT_TYPES.BUTTON, maxCount: 1 },
+        { type: transistorType('q1'), maxCount: 2 },
+        { type: transistorType('q2'), maxCount: 2 },
+        { type: transistorType('q3'), maxCount: 1 },
+        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
     ],
 };

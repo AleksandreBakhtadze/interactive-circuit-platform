@@ -20,5 +20,9 @@ public enum SimPhase {
      * CP.L1.x / CP.L2.4: button released discharge;
      * CP.L2.3: slide switch just moved to left — crossfade from prior right ICs.
      */
-    discharge
+    discharge,
+    /**
+     * TCP.L3.5 validation: periodic button PWL (rapid taps) for capacitive base drive.
+     */
+    tapping
 }

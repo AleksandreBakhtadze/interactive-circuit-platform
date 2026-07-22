@@ -158,6 +158,42 @@ class TcpValidationTest {
         assertFalse(result.isPassed());
     }
 
+    /**
+     * TCP.L3.5 — series C into base + reverse diode; DC hold off; rapid taps light lamp.
+     */
+    private static final String TCP_L35_CIRCUIT = """
+            {
+              "components": [
+                {"id":"ps1","role":"power_supply_1","type":"voltage","nodes":["FULL","MID"],"value":"6"},
+                {"id":"ps2","role":"power_supply_2","type":"voltage","nodes":["MID","0"],"value":"6"},
+                {"id":"switch","role":"switch","type":"switch","nodes":["FULL","VCC"],"state":"open"},
+                {"id":"rlim","role":"resistor_1","type":"resistor","nodes":["VCC","BTN"],"value":"1000"},
+                {"id":"btn","role":"button_1","type":"switch","nodes":["BTN","CAP"],"state":"open"},
+                {"id":"cap","role":"capacitor_1","type":"capacitor","nodes":["CAP","BASE"],"value":"100u"},
+                {"id":"dio","role":"diode_1","type":"led","nodes":["BASE","CAP"],"color":"plain"},
+                {"id":"rb","role":"resistor_2","type":"resistor","nodes":["BASE","0"],"value":"10000"},
+                {"id":"q1","role":"transistor_1","type":"transistor","nodes":["BASE","COLL","0"],"subtype":"npn"},
+                {"id":"lamp","role":"lamp","type":"lamp","nodes":["VCC","COLL"]}
+              ]
+            }
+            """;
+
+    @Test
+    void tcpL35ReferenceCircuitPasses() throws Exception {
+        ValidationResultDTO result = validationService.validate("TCP.L3.5", TCP_L35_CIRCUIT);
+
+        assertTrue(result.isPassed(), describeFailures(result));
+        assertEquals(4, result.getCases().size());
+    }
+
+    @Test
+    void tcpL35RejectsDcHoldOnTopology() throws Exception {
+        // L1.4-style: capacitor to ground — button held keeps lamp on (fails L3.5).
+        ValidationResultDTO result = validationService.validate("TCP.L3.5", TCP_L14_CIRCUIT);
+
+        assertFalse(result.isPassed());
+    }
+
     private static String describeFailures(ValidationResultDTO result) {
         if (result.isPassed()) {
             return "";

@@ -30,6 +30,9 @@ export default function Navbar() {
             <Link to="/challenges" className={`${styles.navLink} ${location.pathname.startsWith('/challenges') ? styles.active : ''}`}>
               {t.nav_challenges}
             </Link>
+            <Link to="/kit" className={`${styles.navLink} ${location.pathname === '/kit' ? styles.active : ''}`}>
+              {t.nav_kit}
+            </Link>
 
             {user ? (
                 <>

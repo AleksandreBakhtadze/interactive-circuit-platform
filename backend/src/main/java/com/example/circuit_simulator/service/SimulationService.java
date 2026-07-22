@@ -28,6 +28,91 @@ public class SimulationService {
 
     private final ObjectMapper objectMapper;
 
+    /** TFB.L3.3: whether the pot off extreme is at wiper position 1.0 (per request). */
+    private final ThreadLocal<Boolean> potOffAtHighEnd = new ThreadLocal<>();
+
+    public void setPotOffAtHighEndForValidation(Boolean value) {
+        if (value == null) {
+            potOffAtHighEnd.remove();
+        } else {
+            potOffAtHighEnd.set(value);
+        }
+    }
+
+    /**
+     * TFB.L3.3: which track end is the latch-off extreme (0.0 vs 1.0 wiper position).
+     */
+    public boolean detectPotOffAtHighEnd(String circuitJson, String problemCode)
+            throws Exception {
+        String closed =
+                SpiceGenerator.applySwitchStates(circuitJson, Map.of("switch", "closed"));
+        String atLow = SpiceGenerator.applyPotPositions(
+                closed, Map.of("variable_resistor", 0.0));
+        String atHigh = SpiceGenerator.applyPotPositions(
+                closed, Map.of("variable_resistor", 1.0));
+        double iLow = readLampCurrentAbs(simulateHysteresisSettle(atLow, problemCode, 0.0, true));
+        double iHigh = readLampCurrentAbs(simulateHysteresisSettle(atHigh, problemCode, 1.0, true));
+        return iLow > iHigh;
+    }
+
+    private Map<String, Object> simulateHysteresisSettle(
+            String circuitJson,
+            String problemCode,
+            double priorPot,
+            boolean bootstrapOffPrior) throws Exception {
+        return runPotHysteresisSettleToDcMap(
+                circuitJson,
+                Map.of("variable_resistor", priorPot),
+                problemCode,
+                bootstrapOffPrior);
+    }
+
+    private boolean resolvePotOffAtHighEnd(String circuitJson, String problemCode)
+            throws Exception {
+        Boolean cached = potOffAtHighEnd.get();
+        if (cached != null) {
+            return cached;
+        }
+        if (!AnalysisModes.usesPotHysteresis(problemCode)) {
+            return false;
+        }
+        boolean detected = detectPotOffAtHighEnd(circuitJson, problemCode);
+        potOffAtHighEnd.set(detected);
+        return detected;
+    }
+
+    /**
+     * Seed ICs from switch-open DC only when the target wiper is at the latch-off
+     * extreme and the case does not supply a directed prior (prior equals target).
+     */
+    private boolean shouldBootstrapOffPrior(
+            double priorPot, double targetPot, boolean offAtHigh) {
+        boolean atOffExtreme =
+                offAtHigh ? targetPot >= 1.0 - 1e-9 : targetPot <= 1e-9;
+        boolean noDirectedPrior = Math.abs(priorPot - targetPot) < 1e-9;
+        return atOffExtreme && noDirectedPrior;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static double readLampCurrentAbs(Map<String, Object> sim) {
+        Map<String, Double> nodes = (Map<String, Double>) sim.getOrDefault("nodes", Map.of());
+        for (Map.Entry<String, Double> entry : nodes.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            if (key.contains("lamp") && key.contains("[i]")) {
+                return Math.abs(entry.getValue());
+            }
+        }
+        Map<String, Object> components =
+                (Map<String, Object>) sim.getOrDefault("components", Map.of());
+        for (Map.Entry<String, Object> entry : components.entrySet()) {
+            if (entry.getKey().toLowerCase().contains("lamp")
+                    && entry.getValue() instanceof Number n) {
+                return Math.abs(n.doubleValue());
+            }
+        }
+        return 0.0;
+    }
+
     public String simulate(String circuitJson) {
         return simulate(circuitJson, null);
     }
@@ -45,9 +130,23 @@ public class SimulationService {
             String problemCode,
             String simPhase,
             Map<String, Double> priorPotPositions) {
+        return simulate(circuitJson, problemCode, simPhase, priorPotPositions, null);
+    }
+
+    public String simulate(
+            String circuitJson,
+            String problemCode,
+            String simPhase,
+            Map<String, Double> priorPotPositions,
+            Map<String, String> priorSwitchStates) {
         try {
             return objectMapper.writeValueAsString(
-                    simulateToMap(circuitJson, problemCode, simPhase, priorPotPositions));
+                    simulateToMap(
+                            circuitJson,
+                            problemCode,
+                            simPhase,
+                            priorPotPositions,
+                            priorSwitchStates));
         } catch (Exception e) {
             return "{ \"error\": \"" + escapeJson(e.getMessage()) + "\" }";
         }
@@ -55,19 +154,19 @@ public class SimulationService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(String circuitJson) throws Exception {
-        return simulateToMap(circuitJson, null, null, null);
+        return simulateToMap(circuitJson, null, null, null, null);
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(String circuitJson, String problemCode)
             throws Exception {
-        return simulateToMap(circuitJson, problemCode, null, null);
+        return simulateToMap(circuitJson, problemCode, null, null, null);
     }
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> simulateToMap(
             String circuitJson, String problemCode, String simPhaseName) throws Exception {
-        return simulateToMap(circuitJson, problemCode, simPhaseName, null);
+        return simulateToMap(circuitJson, problemCode, simPhaseName, null, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -76,9 +175,58 @@ public class SimulationService {
             String problemCode,
             String simPhaseName,
             Map<String, Double> priorPotPositions) throws Exception {
+        return simulateToMap(circuitJson, problemCode, simPhaseName, priorPotPositions, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> simulateToMap(
+            String circuitJson,
+            String problemCode,
+            String simPhaseName,
+            Map<String, Double> priorPotPositions,
+            Map<String, String> priorSwitchStates) throws Exception {
         try {
             circuitJson = SpiceGenerator.normalizeSeriesSupplyPolarity(circuitJson);
             SpiceGenerator.assertSimulatableSupplies(circuitJson);
+            if (AnalysisModes.usesButtonLatchSettle(problemCode)
+                    && priorSwitchStates != null
+                    && !priorSwitchStates.isEmpty()) {
+                Map<String, Object> settled = runButtonLatchSettleToDcMap(
+                        circuitJson, priorSwitchStates, problemCode);
+                if (!settled.containsKey("error")) {
+                    return settled;
+                }
+            }
+            if (AnalysisModes.usesPotHysteresis(problemCode)
+                    && !isMasterSwitchOpen(circuitJson)) {
+                double targetPot =
+                        SpiceGenerator.readPotPosition(circuitJson, "variable_resistor");
+                boolean offAtHigh = resolvePotOffAtHighEnd(circuitJson, problemCode);
+                Map<String, Double> priors = priorPotPositions;
+                if (priors == null || priors.isEmpty()) {
+                    priors = Map.of("variable_resistor", targetPot);
+                    Map<String, Object> settled = runPotHysteresisSettleToDcMap(
+                            circuitJson,
+                            priors,
+                            problemCode,
+                            shouldBootstrapOffPrior(targetPot, targetPot, offAtHigh));
+                    if (!settled.containsKey("error")) {
+                        return settled;
+                    }
+                } else {
+                    double priorPot =
+                            priors.getOrDefault("variable_resistor", targetPot);
+                    Map<String, Object> settled = runPotHysteresisSettleToDcMap(
+                            circuitJson,
+                            priors,
+                            problemCode,
+                            shouldBootstrapOffPrior(priorPot, targetPot, offAtHigh));
+                    if (!settled.containsKey("error")) {
+                        return settled;
+                    }
+                }
+                // Rare ngspice miss near the snap edge — fall back to independent OP.
+            }
             if (AnalysisModes.usesTransient(problemCode)) {
                 SimPhase phase = parseSimPhase(simPhaseName);
                 if (AnalysisModes.usesSwitchCrossfade(problemCode)) {
@@ -90,7 +238,7 @@ public class SimulationService {
                                 && phase == SimPhase.discharge) {
                             return runMasterOffDischargeTran(circuitJson);
                         }
-                        return runDcToMap(circuitJson);
+                        return runDcToMap(circuitJson, problemCode);
                     }
                     return switch (phase) {
                         case idle -> runSwitchIdlePowerOnTran(circuitJson);
@@ -100,24 +248,31 @@ public class SimulationService {
                         case discharge -> AnalysisModes.usesParallelCapPolarity(problemCode)
                                 ? runParallelCapPolarityFlip(circuitJson, false)
                                 : runSwitchCrossfadeToOpen(circuitJson);
+                        case tapping -> runDcToMap(circuitJson, problemCode);
                     };
                 }
                 // CP.L2.14: master SPST + button slow brighten/fade (no slide crossfade).
                 if (AnalysisModes.usesMasterSwitch(problemCode)
                         && isMasterSwitchOpen(circuitJson)) {
-                    return runDcToMap(circuitJson);
+                    return runDcToMap(circuitJson, problemCode);
                 }
                 return switch (phase) {
-                    case idle -> runDcToMap(circuitJson);
+                    case idle -> runDcToMap(circuitJson, problemCode);
                     // TCP.L1.3: charge .tran so instant-on (low R_charge) can be
                     // distinguished from slow-charge topologies in validation.
-                    case pressed -> AnalysisModes.usesSlowCharge(problemCode)
-                                    || "TCP.L1.3".equals(problemCode)
-                            ? runChargeTranToMap(circuitJson)
-                            : runDcToMap(circuitJson);
+                    // TCP.L3.5: short edge .tran (flash); validation uses tapping.
+                    case pressed -> AnalysisModes.usesButtonTapTrain(problemCode)
+                            ? runButtonEdgePressTranToMap(circuitJson)
+                            : AnalysisModes.usesSlowCharge(problemCode)
+                                            || "TCP.L1.3".equals(problemCode)
+                                    ? runChargeTranToMap(circuitJson, problemCode)
+                                    : runDcToMap(circuitJson, problemCode);
+                    case tapping -> runButtonTapTrainToMap(circuitJson);
                     case discharge -> AnalysisModes.usesPotStepDischarge(problemCode)
                             ? runPotStepDischargeTranToMap(circuitJson, priorPotPositions)
-                            : runDischargeTranToMap(circuitJson, problemCode);
+                            : AnalysisModes.usesButtonTapTrain(problemCode)
+                                    ? runButtonEdgeReleaseTranToMap(circuitJson)
+                                    : runDischargeTranToMap(circuitJson, problemCode);
                 };
             }
 
@@ -145,17 +300,70 @@ public class SimulationService {
     }
 
     private Map<String, Object> runChargeTranToMap(String circuitJson) throws Exception {
+        return runChargeTranToMap(circuitJson, null);
+    }
+
+    private Map<String, Object> runChargeTranToMap(String circuitJson, String problemCode)
+            throws Exception {
         // Frontend sends button closed during pressed phase; ICs must come from
         // the uncharged idle state (button open), not the pressed steady state.
         String idleJson = SpiceGenerator.applySwitchStates(
                 circuitJson, Map.of("button_1", "open"));
+        Map<String, Double> idleNodes = runDcAndParse(idleJson, problemCode);
+        TranScenario scenario = "DTR.L2.12".equals(problemCode)
+                ? TranScenario.delayedCharge()
+                : TranScenario.charge();
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        idleNodes,
+                        scenario,
+                        problemCode));
+    }
+
+    /**
+     * TCP.L3.5: ICs from button-open DC, then periodic button PWL so capacitive
+     * base coupling can light the lamp only while tapping.
+     */
+    private Map<String, Object> runButtonTapTrainToMap(String circuitJson) throws Exception {
+        String idleJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("button_1", "open", "switch", "closed"));
         Map<String, Double> idleNodes = runDcAndParse(idleJson);
         return simulateTranToMap(
                 circuitJson,
                 SpiceGenerator.generateChargeTranSpice(
                         circuitJson,
                         idleNodes,
-                        TranScenario.charge()));
+                        TranScenario.buttonTapTrain()));
+    }
+
+    /** TCP.L3.5 live press: short closed-button edge from button-open ICs. */
+    private Map<String, Object> runButtonEdgePressTranToMap(String circuitJson)
+            throws Exception {
+        String idleJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("button_1", "open", "switch", "closed"));
+        Map<String, Double> idleNodes = runDcAndParse(idleJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        idleNodes,
+                        TranScenario.buttonEdgePress()));
+    }
+
+    /** TCP.L3.5 live release: short open-button edge from button-closed ICs. */
+    private Map<String, Object> runButtonEdgeReleaseTranToMap(String circuitJson)
+            throws Exception {
+        String chargedJson = SpiceGenerator.applySwitchStates(
+                circuitJson, Map.of("button_1", "closed", "switch", "closed"));
+        Map<String, Double> chargedNodes = runDcAndParse(chargedJson);
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateDischargeTranSpice(
+                        circuitJson,
+                        chargedNodes,
+                        TranScenario.buttonEdgeRelease()));
     }
 
     private Map<String, Object> runDischargeTranToMap(String circuitJson) throws Exception {
@@ -169,13 +377,16 @@ public class SimulationService {
         Map<String, Double> chargedNodes = runDcAndParse(chargedJson, problemCode);
         TranScenario scenario = AnalysisModes.usesLongHoldDischarge(problemCode)
                 ? TranScenario.longHoldDischarge()
-                : TranScenario.discharge();
+                : AnalysisModes.usesDelayedReclaimDischarge(problemCode)
+                        ? TranScenario.delayedReclaimDischarge()
+                        : TranScenario.discharge();
         return simulateTranToMap(
                 circuitJson,
                 SpiceGenerator.generateDischargeTranSpice(
                         circuitJson,
                         chargedNodes,
-                        scenario));
+                        scenario,
+                        problemCode));
     }
 
     /**
@@ -197,6 +408,103 @@ public class SimulationService {
                         circuitJson,
                         chargedNodes,
                         TranScenario.discharge()));
+    }
+
+    /**
+     * TFB.L3.3: DC at the prior pot, then a short closed .tran at the new pot with
+     * those ICs. Collapses to a DC-shaped result so the live lamp snaps with the
+     * positive-feedback latch instead of independent OP solutions in the dim band.
+     *
+     * @param bootstrapOffPrior when true, ICs come from switch-open DC at the prior
+     *        pot so the latch starts in a known-off state (bistable .op can otherwise
+     *        land on the ON branch at the off extreme).
+     */
+    private Map<String, Object> runPotHysteresisSettleToDcMap(
+            String circuitJson,
+            Map<String, Double> priorPotPositions,
+            String problemCode,
+            boolean bootstrapOffPrior) throws Exception {
+        Map<String, Double> priorNodes;
+        if (bootstrapOffPrior) {
+            String openJson = SpiceGenerator.applySwitchStates(
+                    circuitJson, Map.of("switch", "open"));
+            openJson = SpiceGenerator.applyPotPositions(openJson, priorPotPositions);
+            priorNodes = runDcAndParse(openJson, problemCode);
+        } else {
+            String priorJson =
+                    SpiceGenerator.applyPotPositions(circuitJson, priorPotPositions);
+            priorNodes = runDcAndParse(priorJson, problemCode);
+        }
+        Map<String, Object> tran = simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        priorNodes,
+                        TranScenario.potSettle(),
+                        problemCode));
+        return collapseTranEndToDc(tran);
+    }
+
+    /**
+     * TFB.L3.4: DC at the prior button/switch state, then a short settle .tran at
+     * the current state so the latch can hold after button release.
+     */
+    private Map<String, Object> runButtonLatchSettleToDcMap(
+            String circuitJson,
+            Map<String, String> priorSwitchStates,
+            String problemCode) throws Exception {
+        String priorJson = SpiceGenerator.applySwitchStates(circuitJson, priorSwitchStates);
+        Map<String, Double> priorNodes = runDcAndParse(priorJson, problemCode);
+        Map<String, Object> tran = simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateChargeTranSpice(
+                        circuitJson,
+                        priorNodes,
+                        TranScenario.switchSettle(),
+                        problemCode));
+        return collapseTranEndToDc(tran);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> collapseTranEndToDc(Map<String, Object> tranResult) {
+        if (tranResult.containsKey("error")) {
+            return tranResult;
+        }
+        Map<String, Object> seriesComponents =
+                (Map<String, Object>) tranResult.getOrDefault("components", Map.of());
+        Map<String, Object> components = new HashMap<>();
+        Map<String, Double> nodes = new HashMap<>();
+
+        for (Map.Entry<String, Object> entry : seriesComponents.entrySet()) {
+            String id = entry.getKey();
+            if (!(entry.getValue() instanceof Map<?, ?> metricsRaw)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, List<Double>> metrics = (Map<String, List<Double>>) metricsRaw;
+            List<Double> voltages = metrics.get("voltage");
+            List<Double> currents = metrics.get("current");
+            List<Double> forward = metrics.get("forward_current");
+            if (voltages != null && !voltages.isEmpty()) {
+                components.put(id, voltages.get(voltages.size() - 1));
+            }
+            if (currents != null && !currents.isEmpty()) {
+                double i = currents.get(currents.size() - 1);
+                nodes.put("@r_" + id.toLowerCase() + "[i]", i);
+                components.putIfAbsent(id, i);
+            }
+            if (forward != null && !forward.isEmpty()) {
+                double i = forward.get(forward.size() - 1);
+                nodes.put("@d_" + id.toLowerCase() + "[id]", i);
+                components.putIfAbsent(id, i);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("analysis", "dc");
+        result.put("nodes", nodes);
+        result.put("components", components);
+        return result;
     }
 
     /**

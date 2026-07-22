@@ -150,7 +150,10 @@ const BOARD_TYPE_TO_ROLE = {
 
 function transistorSubtype(type) {
     const key = parseTransistorKey(type);
-    if (key === 'q2' || key === 'q4') return 'pnp';
+    // Kit: Q1/Q2 β≈100–200; Q3/Q4 Darlington pairs β≈3000–10000.
+    if (key === 'q3' || key === 'qd') return 'npn_darlington';
+    if (key === 'q4') return 'pnp_darlington';
+    if (key === 'q2') return 'pnp';
     return 'npn';
 }
 
@@ -708,13 +711,20 @@ export function buildCircuitJson(
 
             default:
                 if (isTransistorType(comp.type)) {
-                    // Pin order matches THREE_PIN_SNAP_VERTICAL / SpiceGenerator.
+                    // Pin order matches THREE_PIN_SNAP_VERTICAL / SpiceGenerator:
+                    // [base, collector, emitter]. PNP SVGs draw the emitter arrow on
+                    // the top pin (same hole as NPN collector), so swap C/E for PNP.
+                    const subtype = transistorSubtype(comp.type);
+                    let transistorNodes = nodes;
+                    if (subtype === 'pnp' || subtype === 'pnp_darlington') {
+                        transistorNodes = [nodes[0], nodes[2], nodes[1]];
+                    }
                     components.push({
                         id,
                         role,
                         type: 'transistor',
-                        subtype: transistorSubtype(comp.type),
-                        nodes,
+                        subtype,
+                        nodes: transistorNodes,
                     });
                 } else if (isResistorType(comp.type)) {
                     const spec = getResistorSpec(comp.type);

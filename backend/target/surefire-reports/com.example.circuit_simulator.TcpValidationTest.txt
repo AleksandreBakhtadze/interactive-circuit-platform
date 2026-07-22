@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.example.circuit_simulator.TcpValidationTest
 -------------------------------------------------------------------------------
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.90 s -- in com.example.circuit_simulator.TcpValidationTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.488 s -- in com.example.circuit_simulator.TcpValidationTest

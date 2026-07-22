@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.example.circuit_simulator.TfbL33PotOrientationTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.642 s -- in com.example.circuit_simulator.TfbL33PotOrientationTest

@@ -21,6 +21,8 @@ public class CircuitDTO {
      * (validation).
      */
     private java.util.Map<String, Double> priorPotPositions;
+    /** TFB.L3.4 live latch: prior button/switch states before release. */
+    private java.util.Map<String, String> priorSwitchStates;
     private String circuitData;  // Keep as String for JSON input
     private String simulationResults;
 

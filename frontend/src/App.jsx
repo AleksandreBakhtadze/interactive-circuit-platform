@@ -3,6 +3,7 @@ import { LangProvider } from './context/LangContext';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar/Navbar';
 import HomePage from './pages/HomePage/HomePage';
+import KitPage from './pages/KitPage/KitPage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import AccountPage from './pages/AccountPage/AccountPage';
@@ -18,6 +19,7 @@ function App() {
                     <Navbar />
                     <Routes>
                         <Route path="/" element={<HomePage />} />
+                        <Route path="/kit" element={<KitPage />} />
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/account" element={<AccountPage />} />

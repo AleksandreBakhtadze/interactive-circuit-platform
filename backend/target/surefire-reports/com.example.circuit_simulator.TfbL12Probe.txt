@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.example.circuit_simulator.TfbL12Probe
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 22.13 s -- in com.example.circuit_simulator.TfbL12Probe

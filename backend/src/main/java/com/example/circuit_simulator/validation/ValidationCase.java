@@ -10,7 +10,9 @@ public record ValidationCase(
         List<ValidationCheck> checks,
         String simPhase,
         Map<String, Double> potPositions,
-        Map<String, Double> lightLevels
+        Map<String, Double> lightLevels,
+        Map<String, Double> priorPotPositions,
+        Map<String, String> priorSwitchStates
 ) {
     /** DC steady-state case (default for ST problems). */
     public ValidationCase(
@@ -18,7 +20,7 @@ public record ValidationCase(
             String labelKa,
             Map<String, String> switchStates,
             List<ValidationCheck> checks) {
-        this(label, labelKa, switchStates, checks, null, Map.of(), Map.of());
+        this(label, labelKa, switchStates, checks, null, Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     /** Transient / phased case without pot overrides. */
@@ -28,7 +30,7 @@ public record ValidationCase(
             Map<String, String> switchStates,
             List<ValidationCheck> checks,
             String simPhase) {
-        this(label, labelKa, switchStates, checks, simPhase, Map.of(), Map.of());
+        this(label, labelKa, switchStates, checks, simPhase, Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     /** DC case with potentiometer wiper positions (role → 0..1). */
@@ -38,7 +40,7 @@ public record ValidationCase(
             Map<String, String> switchStates,
             List<ValidationCheck> checks,
             Map<String, Double> potPositions) {
-        this(label, labelKa, switchStates, checks, null, potPositions, Map.of());
+        this(label, labelKa, switchStates, checks, null, potPositions, Map.of(), Map.of(), Map.of());
     }
 
     /** Transient case with potentiometer wiper positions. */
@@ -49,6 +51,48 @@ public record ValidationCase(
             List<ValidationCheck> checks,
             String simPhase,
             Map<String, Double> potPositions) {
-        this(label, labelKa, switchStates, checks, simPhase, potPositions, Map.of());
+        this(label, labelKa, switchStates, checks, simPhase, potPositions, Map.of(), Map.of(), Map.of());
     }
+
+    /** Case with pot and photoresistor light levels (no prior pot). */
+    public ValidationCase(
+            String label,
+            String labelKa,
+            Map<String, String> switchStates,
+            List<ValidationCheck> checks,
+            String simPhase,
+            Map<String, Double> potPositions,
+            Map<String, Double> lightLevels) {
+        this(
+                label,
+                labelKa,
+                switchStates,
+                checks,
+                simPhase,
+                potPositions,
+                lightLevels != null ? lightLevels : Map.of(),
+                Map.of(),
+                Map.of());
+    }
+
+    /** DC / settle case with target pot and prior pot (hysteresis / latch). */
+    public ValidationCase(
+            String label,
+            String labelKa,
+            Map<String, String> switchStates,
+            List<ValidationCheck> checks,
+            Map<String, Double> potPositions,
+            Map<String, Double> priorPotPositions) {
+        this(
+                label,
+                labelKa,
+                switchStates,
+                checks,
+                null,
+                potPositions,
+                Map.of(),
+                priorPotPositions != null ? priorPotPositions : Map.of(),
+                Map.of());
+    }
+
 }

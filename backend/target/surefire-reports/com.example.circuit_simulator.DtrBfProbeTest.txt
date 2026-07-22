@@ -1,0 +1,11 @@
+-------------------------------------------------------------------------------
+Test set: com.example.circuit_simulator.DtrBfProbeTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 8.182 s <<< FAILURE! -- in com.example.circuit_simulator.DtrBfProbeTest
+com.example.circuit_simulator.DtrBfProbeTest.probe -- Time elapsed: 0.603 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "java.util.Map.entrySet()" because "nodes" is null
+	at com.example.circuit_simulator.DtrBfProbeTest.probe(DtrBfProbeTest.java:34)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

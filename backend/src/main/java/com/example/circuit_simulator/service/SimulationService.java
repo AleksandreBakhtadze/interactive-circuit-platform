@@ -52,7 +52,19 @@ public class SimulationService {
                 closed, Map.of("variable_resistor", 1.0));
         double iLow = readLampCurrentAbs(simulateHysteresisSettle(atLow, problemCode, 0.0, true));
         double iHigh = readLampCurrentAbs(simulateHysteresisSettle(atHigh, problemCode, 1.0, true));
-        return iLow > iHigh;
+        // Require a clear OFF vs ON contrast so a sticky latch (both ends lit)
+        // does not flip the orientation map and break the off cases.
+        boolean lowLit = iLow > 0.05;
+        boolean highLit = iHigh > 0.05;
+        boolean lowDark = iLow < 0.01;
+        boolean highDark = iHigh < 0.01;
+        if (lowLit && highDark) {
+            return true;
+        }
+        if (highLit && lowDark) {
+            return false;
+        }
+        return iLow > iHigh * 1.5 + 0.01;
     }
 
     private Map<String, Object> simulateHysteresisSettle(
@@ -252,9 +264,14 @@ public class SimulationService {
                     };
                 }
                 // CP.L2.14: master SPST + button slow brighten/fade (no slide crossfade).
+                // GEN.L2.x: master open → dark DC; closed + idle → free-run oscillator .tran.
                 if (AnalysisModes.usesMasterSwitch(problemCode)
                         && isMasterSwitchOpen(circuitJson)) {
                     return runDcToMap(circuitJson, problemCode);
+                }
+                if (AnalysisModes.usesFreeRunOscillator(problemCode)
+                        && phase == SimPhase.idle) {
+                    return runFreeRunOscillatorTran(circuitJson, problemCode);
                 }
                 return switch (phase) {
                     case idle -> runDcToMap(circuitJson, problemCode);
@@ -518,6 +535,27 @@ public class SimulationService {
                 SpiceGenerator.generateTranSpice(
                         circuitJson,
                         TranScenario.idlePowerOn()));
+    }
+
+    /**
+     * GEN.L2.x: master closed — long UIC .tran so a free-running multivibrator
+     * can blink the lamp without a button timeline.
+     */
+    private Map<String, Object> runFreeRunOscillatorTran(
+            String circuitJson, String problemCode) throws Exception {
+        TranScenario scenario;
+        if ("GEN.L2.2".equals(problemCode) || "GEN.L2.4".equals(problemCode)) {
+            scenario = TranScenario.freeRunSlowOscillator();
+        } else if ("GEN.L2.3".equals(problemCode)) {
+            scenario = TranScenario.freeRunMediumOscillator();
+        } else if ("GEN.L2.5".equals(problemCode)) {
+            scenario = TranScenario.freeRunMotorOscillator();
+        } else {
+            scenario = TranScenario.freeRunFastOscillator();
+        }
+        return simulateTranToMap(
+                circuitJson,
+                SpiceGenerator.generateTranSpice(circuitJson, scenario, problemCode));
     }
 
     /**

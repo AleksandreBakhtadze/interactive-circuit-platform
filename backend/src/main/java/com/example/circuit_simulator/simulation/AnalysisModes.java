@@ -30,7 +30,23 @@ public final class AnalysisModes {
                 || "DTR.L2.5".equals(problemCode)
                 || "DTR.L2.6".equals(problemCode)
                 || "DTR.L2.11".equals(problemCode)
-                || "DTR.L2.12".equals(problemCode);
+                || "DTR.L2.12".equals(problemCode)
+                || "GEN.L2.1".equals(problemCode)
+                || "GEN.L2.2".equals(problemCode)
+                || "GEN.L2.3".equals(problemCode)
+                || "GEN.L2.4".equals(problemCode)
+                || "GEN.L2.5".equals(problemCode);
+    }
+
+    /**
+     * GEN.L2.x — free-running oscillator; master closed → long UIC .tran (no button).
+     */
+    public static boolean usesFreeRunOscillator(String problemCode) {
+        return "GEN.L2.1".equals(problemCode)
+                || "GEN.L2.2".equals(problemCode)
+                || "GEN.L2.3".equals(problemCode)
+                || "GEN.L2.4".equals(problemCode)
+                || "GEN.L2.5".equals(problemCode);
     }
 
     /**
@@ -144,7 +160,12 @@ public final class AnalysisModes {
                 || "DTR.L2.5".equals(problemCode)
                 || "DTR.L2.6".equals(problemCode)
                 || "DTR.L2.11".equals(problemCode)
-                || "DTR.L2.12".equals(problemCode);
+                || "DTR.L2.12".equals(problemCode)
+                || "GEN.L2.1".equals(problemCode)
+                || "GEN.L2.2".equals(problemCode)
+                || "GEN.L2.3".equals(problemCode)
+                || "GEN.L2.4".equals(problemCode)
+                || "GEN.L2.5".equals(problemCode);
     }
 
     /**

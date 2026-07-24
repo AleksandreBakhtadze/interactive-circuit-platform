@@ -124,6 +124,49 @@ public class CircuitValidationService {
                     .build();
         }
 
+        // Pot pin A is the wiper. If the NPN base is on B or C instead, treat that
+        // pin as the wiper so a divider (not a rheostat) is simulated.
+        if ("TFB.L3.3".equals(problemCode) || "TFB.L3.4".equals(problemCode)) {
+            circuitJson = SpiceGenerator.remapPotWiperOntoNpnBase(circuitJson);
+            Map<String, Object> remapped = objectMapper.readValue(circuitJson, Map.class);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> remappedComponents =
+                    (List<Map<String, Object>>) remapped.get("components");
+            if (remappedComponents != null) {
+                components = remappedComponents;
+                roleToId = indexRoles(components);
+            }
+        }
+
+        if ("GEN.L2.1".equals(problemCode) && !hasNpnAndPnp(components)) {
+            return ValidationResultDTO.builder()
+                    .passed(false)
+                    .message("This challenge needs both an NPN and a PNP transistor.")
+                    .messageKa("ამ ამოცანისთვის საჭიროა როგორც NPN, ასევე PNP ტრანზისტორი.")
+                    .cases(List.of())
+                    .build();
+        }
+        if (("GEN.L2.2".equals(problemCode)
+                        || "GEN.L2.3".equals(problemCode)
+                        || "GEN.L2.4".equals(problemCode)
+                        || "GEN.L2.5".equals(problemCode))
+                && countNpn(components) < 2) {
+            return ValidationResultDTO.builder()
+                    .passed(false)
+                    .message("This challenge needs two NPN transistors.")
+                    .messageKa("ამ ამოცანისთვის საჭიროა ორი NPN ტრანზისტორი.")
+                    .cases(List.of())
+                    .build();
+        }
+        if ("GEN.L2.5".equals(problemCode) && !hasMotor(components)) {
+            return ValidationResultDTO.builder()
+                    .passed(false)
+                    .message("This challenge needs a DC motor.")
+                    .messageKa("ამ ამოცანისთვის საჭიროა ძრავი.")
+                    .cases(List.of())
+                    .build();
+        }
+
         tfbL33PotOffAtHigh = false;
         if ("TFB.L2.5".equals(problemCode)
                 || "TFB.L3.3".equals(problemCode)
@@ -179,6 +222,99 @@ public class CircuitValidationService {
                 chosen = swapped;
             }
         }
+
+        // GEN.L2.x: free-run bias is pot-sensitive — try several wiper settings
+        // (and the inverted track) so a correct topology is not rejected for a
+        // slightly off live pot position.
+        if (!chosen.allPassed()
+                && ("GEN.L2.1".equals(problemCode)
+                        || "GEN.L2.2".equals(problemCode)
+                        || "GEN.L2.3".equals(problemCode)
+                        || "GEN.L2.4".equals(problemCode))
+                && circuitHasPot(components)) {
+            for (double pos :
+                    new double[] {
+                        0.05, 0.06, 0.08, 0.1, 0.12, 0.15, 0.2, 0.25, 0.31, 0.35, 0.4, 0.45, 0.5
+                    }) {
+                for (double tryPos : new double[] {pos, 1.0 - pos}) {
+                    String tuned =
+                            SpiceGenerator.applyUniformPotPosition(circuitJson, tryPos);
+                    CaseEvaluation attempt =
+                            evaluateCases(
+                                    spec,
+                                    tuned,
+                                    problemCode,
+                                    roleToId,
+                                    components,
+                                    false,
+                                    false);
+                    if (attempt.allPassed()) {
+                        chosen = attempt;
+                        break;
+                    }
+                }
+                if (chosen.allPassed()) {
+                    break;
+                }
+            }
+        }
+
+        // TFB.L3.3 / L3.4: pot B↔C orientation is free. Always try both latch-off
+        // extremes (wiper 0 and wiper 1). The detect-based remap alone is not enough —
+        // a previous "opposite" retry used invertPots with the flag cleared, which
+        // applied the same 1−p map again and never tested the other end.
+        if (!chosen.allPassed() && remapPotWhenOffAtHigh(problemCode)) {
+            boolean savedFlag = tfbL33PotOffAtHigh;
+            try {
+                // Explicitly try the orientation we have not already used as primary.
+                boolean tryHighOff = !savedFlag;
+                tfbL33PotOffAtHigh = tryHighOff;
+                simulationService.setPotOffAtHighEndForValidation(tryHighOff);
+                CaseEvaluation other =
+                        evaluateCases(
+                                spec, circuitJson, problemCode, roleToId, components, false, false);
+                if (other.allPassed()) {
+                    chosen = other;
+                } else if (specUsesTwoButtons(spec)) {
+                    CaseEvaluation otherSwapped =
+                            evaluateCases(
+                                    spec,
+                                    circuitJson,
+                                    problemCode,
+                                    roleToId,
+                                    components,
+                                    true,
+                                    false);
+                    if (otherSwapped.allPassed()) {
+                        chosen = otherSwapped;
+                    }
+                }
+            } finally {
+                tfbL33PotOffAtHigh = savedFlag;
+                simulationService.setPotOffAtHighEndForValidation(savedFlag);
+            }
+        }
+
+        // Pot B↔C / wiper orientation — try inverted positions if needed (VR.L1.2 etc.).
+        // Skip for TFB.L3.3/L3.4 — handled above (invertPots ≡ off-at-high remap).
+        if (!chosen.allPassed()
+                && specUsesPotPositions(spec)
+                && !remapPotWhenOffAtHigh(problemCode)) {
+            CaseEvaluation inverted =
+                    evaluateCases(
+                            spec, circuitJson, problemCode, roleToId, components, false, true);
+            if (inverted.allPassed()) {
+                chosen = inverted;
+            } else if (specUsesTwoButtons(spec)) {
+                CaseEvaluation invertedSwapped =
+                        evaluateCases(
+                                spec, circuitJson, problemCode, roleToId, components, true, true);
+                if (invertedSwapped.allPassed()) {
+                    chosen = invertedSwapped;
+                }
+            }
+        }
+
         // DM.L2.13: voltage vs load SPDT — either placement order OK;
         // also retry inverted lamp/motor throw on the load SPDT.
         if (!chosen.allPassed() && "DM.L2.13".equals(problemCode)) {
@@ -224,23 +360,6 @@ public class CircuitValidationService {
                     if (both.allPassed()) {
                         chosen = both;
                     }
-                }
-            }
-        }
-        // Pot B↔C / wiper orientation — try inverted positions if needed (VR.L1.2).
-        // TFB.L3.3 detects the off extreme up front; skip a second invert pass.
-        if (!chosen.allPassed() && specUsesPotPositions(spec) && !tfbL33PotOffAtHigh) {
-            CaseEvaluation inverted =
-                    evaluateCases(
-                            spec, circuitJson, problemCode, roleToId, components, false, true);
-            if (inverted.allPassed()) {
-                chosen = inverted;
-            } else if (specUsesTwoButtons(spec)) {
-                CaseEvaluation invertedSwapped =
-                        evaluateCases(
-                                spec, circuitJson, problemCode, roleToId, components, true, true);
-                if (invertedSwapped.allPassed()) {
-                    chosen = invertedSwapped;
                 }
             }
         }
@@ -402,6 +521,15 @@ public class CircuitValidationService {
     private boolean specUsesPotPositions(ProblemValidationSpec spec) {
         for (ValidationCase c : spec.cases()) {
             if (c.potPositions() != null && !c.potPositions().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean circuitHasPot(List<Map<String, Object>> components) {
+        for (Map<String, Object> comp : components) {
+            if ("variable_resistor".equals(comp.get("type"))) {
                 return true;
             }
         }
@@ -1388,6 +1516,14 @@ public class CircuitValidationService {
                 lastMotorSignedExtremum.set(signedExtremum(series));
                 yield peak;
             }
+            case "tran_current_abs_min" ->
+                    series.stream().mapToDouble(Math::abs).min().orElse(0.0);
+            // Rising edges across ~20 mA (GEN free-run blink detection).
+            case "tran_toggle_count" -> countAbsThresholdCrossings(series, 0.02);
+            // LED blink: rising edges across ~0.5 mA.
+            case "tran_led_toggle_count" -> countAbsThresholdCrossings(series, 0.0005);
+            // Motor reverse within one free-run window.
+            case "tran_sign_flip_count" -> countSignFlips(series, 0.01);
             case "tran_current_flip_sign" -> {
                 double ext = signedExtremum(series);
                 Double prev = lastMotorSignedExtremum.get();
@@ -1517,6 +1653,83 @@ public class CircuitValidationService {
             }
         }
         return best;
+    }
+
+    /** Count rising crossings of |I| through {@code threshold} (blink / oscillation). */
+    private static double countAbsThresholdCrossings(List<Double> series, double threshold) {
+        if (series.size() < 2 || threshold <= 0) {
+            return 0.0;
+        }
+        int count = 0;
+        boolean above = Math.abs(series.get(0)) >= threshold;
+        for (int i = 1; i < series.size(); i++) {
+            boolean nowAbove = Math.abs(series.get(i)) >= threshold;
+            if (nowAbove && !above) {
+                count++;
+            }
+            above = nowAbove;
+        }
+        return count;
+    }
+
+    /** Count polarity flips of a signed series (motor reverse oscillator). */
+    private static double countSignFlips(List<Double> series, double deadband) {
+        if (series.size() < 2 || deadband <= 0) {
+            return 0.0;
+        }
+        int flips = 0;
+        int lastSign = 0;
+        for (double v : series) {
+            int sign = v > deadband ? 1 : (v < -deadband ? -1 : 0);
+            if (sign == 0) {
+                continue;
+            }
+            if (lastSign != 0 && sign != lastSign) {
+                flips++;
+            }
+            lastSign = sign;
+        }
+        return flips;
+    }
+
+    private static boolean hasMotor(List<Map<String, Object>> components) {
+        for (Map<String, Object> comp : components) {
+            if ("motor".equals(comp.get("type"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasNpnAndPnp(List<Map<String, Object>> components) {
+        boolean npn = false;
+        boolean pnp = false;
+        for (Map<String, Object> comp : components) {
+            if (!"transistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String subtype = String.valueOf(comp.get("subtype")).toLowerCase();
+            if (subtype.startsWith("npn")) {
+                npn = true;
+            } else if (subtype.startsWith("pnp")) {
+                pnp = true;
+            }
+        }
+        return npn && pnp;
+    }
+
+    private static int countNpn(List<Map<String, Object>> components) {
+        int n = 0;
+        for (Map<String, Object> comp : components) {
+            if (!"transistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String subtype = String.valueOf(comp.get("subtype")).toLowerCase();
+            if (subtype.startsWith("npn")) {
+                n++;
+            }
+        }
+        return n;
     }
 
     @SuppressWarnings("unchecked")

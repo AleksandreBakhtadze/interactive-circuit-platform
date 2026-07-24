@@ -55,7 +55,6 @@ export default function ChallengesPage() {
     return (
         <main className={styles.main}>
             <div className={styles.header}>
-                <span className={styles.eyebrow}>CircuitLab</span>
                 <h1 className={styles.title}>
                     {lang === 'ka' ? 'თავები' : 'Chapters'}
                 </h1>
@@ -71,7 +70,6 @@ export default function ChallengesPage() {
                     const total = Number(ch.problemCount) || 0;
                     const solved = Number(ch.solvedCount) || 0;
                     const meta = getChapterMeta(ch.code);
-                    const diff = meta.difficultyInfo;
                     const title = lang === 'ka' ? ch.titleKa : ch.titleEn;
 
                     return (
@@ -88,16 +86,6 @@ export default function ChallengesPage() {
                             <div className={styles.cardTop}>
                                 <span className={styles.iconTile}>
                                     <ChapterIcon name={meta.icon} color={meta.accent} />
-                                </span>
-                                <span
-                                    className={styles.diffBadge}
-                                    style={{
-                                        color: diff.color,
-                                        borderColor: `${diff.color}55`,
-                                        background: `${diff.color}18`,
-                                    }}
-                                >
-                                    {lang === 'ka' ? diff.ka : diff.en}
                                 </span>
                             </div>
 

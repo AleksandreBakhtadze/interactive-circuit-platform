@@ -105,7 +105,7 @@ export default function AccountPage() {
                         {initial}
                     </div>
                     <div className={styles.heroText}>
-                        <span className={styles.eyebrow}>CircuitLab</span>
+                        <span className={styles.eyebrow}>MazyConnect</span>
                         <h1 className={styles.heroName}>{user.username}</h1>
                         <p className={styles.heroSub}>
                             {lang === 'ka'

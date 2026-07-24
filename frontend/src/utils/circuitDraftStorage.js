@@ -1,5 +1,5 @@
 const DRAFT_VERSION = 1;
-const DRAFT_PREFIX = 'circuitlab:draft:v1:';
+const DRAFT_PREFIX = 'mazyconnect:draft:v1:';
 
 function storageKey(userId, problemCode) {
     const user = userId != null && userId !== '' ? String(userId) : 'guest';
@@ -17,6 +17,28 @@ function isValidPlacedItem(item) {
     );
 }
 
+/** Normalize a placed part for draft restore (keep wire endpoints + color). */
+function normalizePlacedItem(item) {
+    const part = {
+        id: item.id,
+        type: item.type,
+        row: item.row,
+        col: item.col,
+        rotation: Number.isFinite(item.rotation) ? item.rotation : 0,
+    };
+    // Soft wires: both pins + color must survive leave/return autosave.
+    if (item.type === 'wire') {
+        if (Number.isFinite(item.endRow) && Number.isFinite(item.endCol)) {
+            part.endRow = item.endRow;
+            part.endCol = item.endCol;
+        }
+        if (typeof item.color === 'string' && item.color) {
+            part.color = item.color;
+        }
+    }
+    return part;
+}
+
 /**
  * Load a saved board layout for a challenge, or null if none / invalid.
  * @returns {{ placed: object[], potPositions: Record<string, number>, switchStates: Record<string, string> } | null}
@@ -29,13 +51,9 @@ export function loadCircuitDraft(userId, problemCode) {
         const parsed = JSON.parse(raw);
         if (!parsed || parsed.v !== DRAFT_VERSION) return null;
         if (!Array.isArray(parsed.placed)) return null;
-        const placed = parsed.placed.filter(isValidPlacedItem).map((item) => ({
-            id: item.id,
-            type: item.type,
-            row: item.row,
-            col: item.col,
-            rotation: Number.isFinite(item.rotation) ? item.rotation : 0,
-        }));
+        const placed = parsed.placed
+            .filter(isValidPlacedItem)
+            .map(normalizePlacedItem);
         const potPositions =
             parsed.potPositions && typeof parsed.potPositions === 'object'
                 ? parsed.potPositions

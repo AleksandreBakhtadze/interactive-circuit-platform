@@ -579,6 +579,21 @@ function incompleteBoardMessage(problemCode, lang) {
         if (problemCode === 'TDM.L3.5') {
             return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, ღილაკი, 2×NPN, 2×PNP, NPN Q3 (დარლინგტონი), ძრავი, 3×1k (რბილი გამტარები სურვილისამებრ)';
         }
+        if (problemCode === 'GEN.L2.1') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, NPN, PNP, ნათურა, კონდენსატორი (100µF), რეზისტორები (ცვლადი სურვილისამებრ)';
+        }
+        if (problemCode === 'GEN.L2.2') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2×NPN, ნათურა, კონდენსატორი (100µF/470µF), რეზისტორები (ცვლადი სურვილისამებრ)';
+        }
+        if (problemCode === 'GEN.L2.3') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2×NPN, 2×წითელი LED, 10µF კონდენსატორი, რეზისტორები (ცვლადი სურვილისამებრ)';
+        }
+        if (problemCode === 'GEN.L2.4') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2×NPN, 2×წითელი LED, 2×100µF, 2×100Ω, 2×1k, 2×5k1, 2×ცვლადი რეზისტორი';
+        }
+        if (problemCode === 'GEN.L2.5') {
+            return 'განათავსეთ: 2 კვების წყარო, ჩამრთველი, 2×NPN, ძრავი, კონდენსატორები (470µF), რეზისტორები (20Ω/100Ω/5k1)';
+        }
         return 'განათავსეთ: კვების წყარო, ღილაკი, ნათურა';
     }
     if (problemCode === 'ST.L1.2') {
@@ -959,6 +974,21 @@ function incompleteBoardMessage(problemCode, lang) {
     if (problemCode === 'TDM.L3.5') {
         return 'Place: 2 power supplies, switch, button, 2×NPN, 2×PNP, NPN Q3 (Darlington), motor, 3×1k (soft wires optional)';
     }
+    if (problemCode === 'GEN.L2.1') {
+        return 'Place: 2 power supplies, switch, NPN, PNP, lamp, capacitor (100µF), resistors (variable resistor optional)';
+    }
+    if (problemCode === 'GEN.L2.2') {
+        return 'Place: 2 power supplies, switch, 2×NPN, lamp, capacitor (100µF/470µF), resistors (variable resistor optional)';
+    }
+    if (problemCode === 'GEN.L2.3') {
+        return 'Place: 2 power supplies, switch, 2×NPN, 2×red LED, 10µF capacitor, resistors (variable resistor optional)';
+    }
+    if (problemCode === 'GEN.L2.4') {
+        return 'Place: 2 power supplies, switch, 2×NPN, 2×red LED, 2×100µF, 2×100Ω, 2×1k, 2×5k1, 2×variable resistor';
+    }
+    if (problemCode === 'GEN.L2.5') {
+        return 'Place: 2 power supplies, switch, 2×NPN, motor, capacitors (470µF), resistors (20Ω/100Ω/5k1)';
+    }
     return 'Place: power supply, button, lamp';
 }
 
@@ -1158,6 +1188,16 @@ export default function CircuitWorkbench({ problemCode }) {
             setCapacitorKey('10uf');
         } else if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
             setCapacitorKey('100uf');
+        } else if (problemCode === 'GEN.L2.1') {
+            setCapacitorKey('100uf');
+        } else if (problemCode === 'GEN.L2.2') {
+            setCapacitorKey('470uf');
+        } else if (problemCode === 'GEN.L2.3') {
+            setCapacitorKey('10uf');
+        } else if (problemCode === 'GEN.L2.4') {
+            setCapacitorKey('100uf');
+        } else if (problemCode === 'GEN.L2.5') {
+            setCapacitorKey('470uf');
         } else {
             setCapacitorKey('10uf');
         }
@@ -1173,6 +1213,14 @@ export default function CircuitWorkbench({ problemCode }) {
             setResistorKey('1ko');
         } else if (problemCode === 'DTR.L2.11' || problemCode === 'DTR.L2.12') {
             setResistorKey('100ko');
+        } else if (problemCode === 'GEN.L2.1' || problemCode === 'GEN.L2.2') {
+            setResistorKey('10ko');
+        } else if (problemCode === 'GEN.L2.3') {
+            setResistorKey('100ko');
+        } else if (problemCode === 'GEN.L2.4') {
+            setResistorKey('100o');
+        } else if (problemCode === 'GEN.L2.5') {
+            setResistorKey('20o');
         } else if (
             problemCode === 'TFB.L1.1' ||
             problemCode === 'TFB.L1.2' ||
@@ -2426,7 +2474,12 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'DTR.L2.5' ||
                                 problemCode === 'DTR.L2.6' ||
                                 problemCode === 'DTR.L2.11' ||
-                                problemCode === 'DTR.L2.12',
+                                problemCode === 'DTR.L2.12' ||
+                                problemCode === 'GEN.L2.1' ||
+                                problemCode === 'GEN.L2.2' ||
+                                problemCode === 'GEN.L2.3' ||
+                                problemCode === 'GEN.L2.4' ||
+                                problemCode === 'GEN.L2.5',
                             fullDuration:
                                 (crossfade &&
                                     usesMasterSwitchSimulation(problemCode) &&
@@ -2442,7 +2495,12 @@ export default function CircuitWorkbench({ problemCode }) {
                                 problemCode === 'DTR.L2.5' ||
                                 problemCode === 'DTR.L2.6' ||
                                 problemCode === 'DTR.L2.11' ||
-                                problemCode === 'DTR.L2.12',
+                                problemCode === 'DTR.L2.12' ||
+                                problemCode === 'GEN.L2.1' ||
+                                problemCode === 'GEN.L2.2' ||
+                                problemCode === 'GEN.L2.3' ||
+                                problemCode === 'GEN.L2.4' ||
+                                problemCode === 'GEN.L2.5',
                             // DI.L3.6: ~2–2.5 s fade so live pot-drag steps stay readable
                             // when each move cancels/restarts the prior .tran.
                             readableCrossfade:
@@ -3453,10 +3511,11 @@ export default function CircuitWorkbench({ problemCode }) {
             <div
                 className={`${styles.paletteCard} ${styles.connectorCard}`}
             >
-                <button
-                    type="button"
-                    className={`${styles.paletteItem} ${styles.wireToolBtn} ${left <= 0 ? styles.paletteItemDisabled : ''}`}
-                    disabled={left <= 0}
+                <div
+                    className={`${styles.paletteItem} ${styles.wireToolBtn} ${left <= 0 ? styles.paletteItemDisabled : ''} ${wireToolArmed ? styles.wireToolArmed : ''}`}
+                    role="button"
+                    tabIndex={left <= 0 ? -1 : 0}
+                    aria-disabled={left <= 0}
                     onClick={() => {
                         if (left <= 0) return;
                         clearMoveSessionRef();
@@ -3473,6 +3532,13 @@ export default function CircuitWorkbench({ problemCode }) {
                                     ? 'დააჭირეთ პირველ პინს, შემდეგ მეორეს'
                                     : 'Click first pin, then the second'
                             );
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (left <= 0) return;
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.currentTarget.click();
                         }
                     }}
                 >
@@ -3523,7 +3589,7 @@ export default function CircuitWorkbench({ problemCode }) {
                               ? 'დააჭირეთ ჩასართავად'
                               : 'Click to arm'}
                     </span>
-                </button>
+                </div>
             </div>
         );
     };

@@ -108,6 +108,34 @@ public record TranScenario(
         return new TranScenario(0.005, 4.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
     }
 
+    /**
+     * GEN.L2.1 — complementary / fast blinker (~1–2 s period); ~12 s window.
+     */
+    public static TranScenario freeRunFastOscillator() {
+        return new TranScenario(0.02, 12.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
+    }
+
+    /**
+     * GEN.L2.2 / L2.4 — slow two-NPN blinker (~10 s period); ~40 s window.
+     */
+    public static TranScenario freeRunSlowOscillator() {
+        return new TranScenario(0.05, 40.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
+    }
+
+    /**
+     * GEN.L2.3 — mid-speed LED flasher (≥6 s period); ~24 s window.
+     */
+    public static TranScenario freeRunMediumOscillator() {
+        return new TranScenario(0.05, 24.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
+    }
+
+    /**
+     * GEN.L2.5 — motor reverse oscillator (~1 s flips); ~12 s window.
+     */
+    public static TranScenario freeRunMotorOscillator() {
+        return new TranScenario(0.02, 12.0, 0, 0, Set.of(), SwitchTimeline.CLOSED, "idle");
+    }
+
     public boolean pulsesRole(String role) {
         return switchTimeline == SwitchTimeline.PULSED
                 && role != null

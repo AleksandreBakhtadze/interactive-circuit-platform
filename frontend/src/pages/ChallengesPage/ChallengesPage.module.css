@@ -96,8 +96,6 @@
 .cardTop {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
 }
 
 .iconTile {
@@ -109,18 +107,6 @@
     border-radius: 12px;
     background: var(--card-icon-bg);
     border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
-}
-
-.diffBadge {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: lowercase;
-    padding: 5px 9px;
-    border-radius: 999px;
-    border: 1px solid;
-    white-space: nowrap;
 }
 
 .chapterTitle {

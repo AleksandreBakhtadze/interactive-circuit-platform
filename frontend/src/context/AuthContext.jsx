@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
-const AUTH_STORAGE_KEY = 'circuitlab_user';
+const AUTH_STORAGE_KEY = 'mazyconnect_user';
 
 function readStoredUser() {
     try {

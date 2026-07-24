@@ -899,6 +899,11 @@
     font: inherit;
 }
 
+.wireToolArmed {
+    outline: 2px solid var(--accent, #60c5f1);
+    outline-offset: 2px;
+}
+
 .wireToolHint {
     font-size: 0.6rem;
     color: var(--text-muted);

@@ -45,7 +45,7 @@ export const translations = {
         footer: 'ელექტრონიკის სასწავლო ნაკრები',
 
         reg_title: 'ანგარიშის შექმნა',
-        reg_sub: 'შემოუერთდი CircuitLab-ს და დაიწყე სწავლა',
+        reg_sub: 'შემოუერთდი MazyConnect-ს და დაიწყე სწავლა',
         reg_username: 'მომხმარებლის სახელი',
         reg_username_ph: 'მაგ. sparky99',
         reg_email: 'ელ-ფოსტა',
@@ -140,7 +140,7 @@ export const translations = {
         footer: 'Electronics learning kit',
 
         reg_title: 'Create Account',
-        reg_sub: 'Join CircuitLab and start learning today',
+        reg_sub: 'Join MazyConnect and start learning today',
         reg_username: 'Username',
         reg_username_ph: 'e.g. sparky99',
         reg_email: 'Email',

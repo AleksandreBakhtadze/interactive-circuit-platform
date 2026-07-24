@@ -25,7 +25,7 @@ export default function Navbar() {
   return (
       <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.inner}>
-          <Link to="/" className={styles.logo}>CircuitLab</Link>
+          <Link to="/" className={styles.logo}>MazyConnect</Link>
           <div className={styles.actions}>
             <Link to="/challenges" className={`${styles.navLink} ${location.pathname.startsWith('/challenges') ? styles.active : ''}`}>
               {t.nav_challenges}

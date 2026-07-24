@@ -230,9 +230,12 @@ public class SpiceGenerator {
                     double r1 = maxR * pos;           // wiper to left end
                     double r2 = maxR * (1.0 - pos);   // wiper to right end
 
-                    // Kit pot end-stop / protective floor (~50 Ω) — avoids a dead short.
-                    if (r1 < 50) r1 = 50;
-                    if (r2 < 50) r2 = 50;
+                    // Kit pot end-stop / protective floor — avoids a dead short.
+                    // TFB.L3.3 / L3.4 latch needs a harder OFF extreme so the 1 kΩ
+                    // positive-feedback path can be quenched at the rail.
+                    double potFloor = potEndStopOhms(problemCode);
+                    if (r1 < potFloor) r1 = potFloor;
+                    if (r2 < potFloor) r2 = potFloor;
 
                     String common_vr = nodes.get(0); // wiper
                     String left_vr   = nodes.get(1);
@@ -376,7 +379,7 @@ public class SpiceGenerator {
 
                 case "slide_switch" -> appendSlideSwitch(sb, id, nodes, comp);
 
-                case "variable_resistor" -> appendVariableResistor(sb, id, nodes, comp);
+                case "variable_resistor" -> appendVariableResistor(sb, id, nodes, comp, problemCode);
 
                 case "transistor" -> appendTransistor(sb, id, nodes, comp);
 
@@ -753,14 +756,23 @@ public class SpiceGenerator {
 
     private static void appendVariableResistor(
             StringBuilder sb, String id, List<String> nodes, Map<String, Object> comp) {
+        appendVariableResistor(sb, id, nodes, comp, null);
+    }
+
+    private static void appendVariableResistor(
+            StringBuilder sb,
+            String id,
+            List<String> nodes,
+            Map<String, Object> comp,
+            String problemCode) {
         String vrValue = (String) comp.get("value");
         double maxR = Double.parseDouble(vrValue);
         Object posObj = comp.get("position");
         double pos = posObj != null ? Double.parseDouble(posObj.toString()) : 0.5;
 
-        // Kit pot end-stop / protective floor (~50 Ω).
-        double r1 = Math.max(maxR * pos, 50);
-        double r2 = Math.max(maxR * (1.0 - pos), 50);
+        double potFloor = potEndStopOhms(problemCode);
+        double r1 = Math.max(maxR * pos, potFloor);
+        double r2 = Math.max(maxR * (1.0 - pos), potFloor);
 
         String wiper = nodes.get(0);
         String left = nodes.get(1);
@@ -770,6 +782,18 @@ public class SpiceGenerator {
                 .append(wiper).append(" ").append(left).append(" ").append(r1).append("\n");
         sb.append("R_").append(id).append("_R ")
                 .append(wiper).append(" ").append(right).append(" ").append(r2).append("\n");
+    }
+
+    /**
+     * Minimum ohms on either pot leg. Default ~50 Ω matches the kit end-stop.
+     * TFB latch challenges need a harder rail so 1 kΩ positive feedback can turn
+     * the lamp fully OFF at the extreme.
+     */
+    private static double potEndStopOhms(String problemCode) {
+        if ("TFB.L3.3".equals(problemCode) || "TFB.L3.4".equals(problemCode)) {
+            return 1.0;
+        }
+        return 50.0;
     }
 
     private static void appendTransistor(
@@ -905,24 +929,162 @@ public class SpiceGenerator {
         List<Map<String, Object>> components =
                 (List<Map<String, Object>>) data.get("components");
 
-        for (Map<String, Object> comp : components) {
-            if (!"variable_resistor".equals(comp.get("type"))) {
-                continue;
-            }
-            String role = (String) comp.get("role");
-            if (role == null || !positionsByRole.containsKey(role)) {
-                continue;
-            }
-            double pos = positionsByRole.get(role);
+        for (Map.Entry<String, Double> entry : positionsByRole.entrySet()) {
+            String wantRole = entry.getKey();
+            double pos = entry.getValue() != null ? entry.getValue() : 0.5;
             if (pos < 0) {
                 pos = 0;
             } else if (pos > 1) {
                 pos = 1;
             }
-            comp.put("position", pos);
+            boolean applied = false;
+            for (Map<String, Object> comp : components) {
+                if (!"variable_resistor".equals(comp.get("type"))) {
+                    continue;
+                }
+                String role = (String) comp.get("role");
+                if (!potRoleMatches(wantRole, role)) {
+                    continue;
+                }
+                comp.put("position", pos);
+                applied = true;
+            }
+            // Single-pot challenges use role "variable_resistor"; drafts with two
+            // counted pots may emit variable_resistor_1 only — still apply.
+            if (!applied && "variable_resistor".equals(wantRole)) {
+                List<Map<String, Object>> pots = new ArrayList<>();
+                for (Map<String, Object> comp : components) {
+                    if ("variable_resistor".equals(comp.get("type"))) {
+                        pots.add(comp);
+                    }
+                }
+                if (pots.size() == 1) {
+                    pots.get(0).put("position", pos);
+                } else if (pots.size() > 1) {
+                    for (Map<String, Object> pot : pots) {
+                        String role = (String) pot.get("role");
+                        if (role == null
+                                || "variable_resistor".equals(role)
+                                || "variable_resistor_1".equals(role)) {
+                            pot.put("position", pos);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         return mapper.writeValueAsString(data);
+    }
+
+    /** Set every potentiometer wiper to the same position (GEN multi-pot sweep). */
+    public static String applyUniformPotPosition(String json, double position) throws Exception {
+        double pos = position;
+        if (pos < 0) {
+            pos = 0;
+        } else if (pos > 1) {
+            pos = 1;
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return json;
+        }
+        for (Map<String, Object> comp : components) {
+            if ("variable_resistor".equals(comp.get("type"))) {
+                comp.put("position", pos);
+            }
+        }
+        return mapper.writeValueAsString(data);
+    }
+
+    private static boolean potRoleMatches(String wantRole, String actualRole) {
+        if (wantRole == null || actualRole == null) {
+            return false;
+        }
+        if (wantRole.equals(actualRole)) {
+            return true;
+        }
+        // Single-pot specs use "variable_resistor"; some boards emit _1 when two
+        // pots were counted. Do not map the bare key onto _2 (two-pot challenges).
+        return "variable_resistor".equals(wantRole)
+                && "variable_resistor_1".equals(actualRole);
+    }
+
+    /**
+     * TFB latch challenges need the pot as a voltage divider: wiper (pin A /
+     * nodes[0]) on the NPN base, track ends on the rails. Students often put the
+     * base on pin B or C (rheostat), which leaves the lamp stuck fully on. Rotate
+     * pot pins so whichever pot terminal shares a net with an NPN base becomes
+     * the wiper.
+     */
+    @SuppressWarnings("unchecked")
+    public static String remapPotWiperOntoNpnBase(String json) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> data = mapper.readValue(json, Map.class);
+        List<Map<String, Object>> components =
+                (List<Map<String, Object>>) data.get("components");
+        if (components == null) {
+            return json;
+        }
+
+        Set<String> npnBases = new HashSet<>();
+        for (Map<String, Object> comp : components) {
+            if (!"transistor".equals(comp.get("type"))) {
+                continue;
+            }
+            String subtype = (String) comp.get("subtype");
+            if (subtype == null || !subtype.startsWith("npn")) {
+                continue;
+            }
+            Object raw = comp.get("nodes");
+            if (raw instanceof List<?> nodes && !nodes.isEmpty() && nodes.get(0) != null) {
+                npnBases.add(nodes.get(0).toString());
+            }
+        }
+        if (npnBases.isEmpty()) {
+            return json;
+        }
+
+        boolean changed = false;
+        for (Map<String, Object> comp : components) {
+            if (!"variable_resistor".equals(comp.get("type"))) {
+                continue;
+            }
+            Object raw = comp.get("nodes");
+            if (!(raw instanceof List<?> nodeList) || nodeList.size() < 3) {
+                continue;
+            }
+            List<String> nodes = new ArrayList<>();
+            for (Object n : nodeList) {
+                nodes.add(n != null ? n.toString() : "");
+            }
+            int basePin = -1;
+            for (int i = 0; i < 3; i++) {
+                if (npnBases.contains(nodes.get(i))) {
+                    basePin = i;
+                    break;
+                }
+            }
+            if (basePin <= 0) {
+                // Already wiper-on-base, or base not on any pot pin.
+                continue;
+            }
+            // Rotate so the base-connected pin becomes nodes[0] (wiper).
+            List<String> rotated = new ArrayList<>(3);
+            rotated.add(nodes.get(basePin));
+            for (int i = 0; i < 3; i++) {
+                if (i != basePin) {
+                    rotated.add(nodes.get(i));
+                }
+            }
+            comp.put("nodes", rotated);
+            changed = true;
+        }
+        return changed ? mapper.writeValueAsString(data) : json;
     }
 
     /** Read wiper position (0..1) for the first pot with the given role. */

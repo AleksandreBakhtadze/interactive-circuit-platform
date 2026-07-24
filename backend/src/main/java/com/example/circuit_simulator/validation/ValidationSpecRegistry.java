@@ -94,6 +94,11 @@ public class ValidationSpecRegistry {
             Map.entry("DTR.L2.6", dtrL26()),
             Map.entry("DTR.L2.11", dtrL211()),
             Map.entry("DTR.L2.12", dtrL212()),
+            Map.entry("GEN.L2.1", genL21()),
+            Map.entry("GEN.L2.2", genL22()),
+            Map.entry("GEN.L2.3", genL23()),
+            Map.entry("GEN.L2.4", genL24()),
+            Map.entry("GEN.L2.5", genL25()),
             Map.entry("TFB.L1.1", tfbL11()),
             Map.entry("TFB.L1.2", tfbL12()),
             Map.entry("TFB.L2.5", tfbL25()),
@@ -6991,6 +6996,171 @@ public class ValidationSpecRegistry {
                         )
                 )
         );
+    }
+
+    /**
+     * GEN.L2.1 — free-run blinker with NPN + PNP; ~1–2 s period preferred.
+     * Switch off → dark; switch on → sustained oscillation (peak + dark + toggles).
+     */
+    private static ProblemValidationSpec genL21() {
+        return new ProblemValidationSpec(
+                "GEN.L2.1",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(new ValidationCheck("lamp", "current", "lt", 0.001))),
+                        new ValidationCase(
+                                "free_run_blink",
+                                "ჩამრთველი ჩართულია — ნათურა ციმციმებს",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "tran_current_abs_peak", "gt", 0.02),
+                                        new ValidationCheck(
+                                                "lamp", "tran_current_abs_min", "lt", 0.01),
+                                        new ValidationCheck(
+                                                "lamp", "tran_toggle_count", "gt", 1.5)),
+                                "idle")));
+    }
+
+    /**
+     * GEN.L2.2 — free-run blinker with two NPNs; ~10 s period preferred.
+     */
+    private static ProblemValidationSpec genL22() {
+        return new ProblemValidationSpec(
+                "GEN.L2.2",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ნათურა ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(new ValidationCheck("lamp", "current", "lt", 0.001))),
+                        new ValidationCase(
+                                "free_run_blink",
+                                "ჩამრთველი ჩართულია — ნათურა ნელა ციმციმებს",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "lamp", "tran_current_abs_peak", "gt", 0.02),
+                                        new ValidationCheck(
+                                                "lamp", "tran_current_abs_min", "lt", 0.01),
+                                        new ValidationCheck(
+                                                "lamp", "tran_toggle_count", "gt", 0.5)),
+                                "idle")));
+    }
+
+    /**
+     * GEN.L2.3 — two-NPN LED flasher (anti-parallel / mid-rail); ≥6 s period class.
+     * No switch-off case: LEDs hang on the mid-rail, so opening the master SPST
+     * does not fully darken them (that is a follow-up question in the brief).
+     */
+    private static ProblemValidationSpec genL23() {
+        return new ProblemValidationSpec(
+                "GEN.L2.3",
+                List.of(
+                        new ValidationCase(
+                                "free_run_blink",
+                                "შუქდიოდები მონაცვლეობით ციმციმებენ",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_min",
+                                                "lt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1", "tran_led_toggle_count", "gt", 0.5),
+                                        new ValidationCheck(
+                                                "led_2",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0005)),
+                                "idle")));
+    }
+
+    /**
+     * GEN.L2.4 — symmetric two-NPN LED multivibrator; ~10 s period.
+     */
+    private static ProblemValidationSpec genL24() {
+        return new ProblemValidationSpec(
+                "GEN.L2.4",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — შუქდიოდები ჩამქრალია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1", "forward_current", "lt", 0.0005),
+                                        new ValidationCheck(
+                                                "led_2", "forward_current", "lt", 0.0005))),
+                        new ValidationCase(
+                                "free_run_blink",
+                                "ჩამრთველი ჩართულია — შუქდიოდები სიმეტრიულად ციმციმებენ",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_1",
+                                                "tran_forward_current_min",
+                                                "lt",
+                                                0.0002),
+                                        new ValidationCheck(
+                                                "led_1", "tran_led_toggle_count", "gt", 0.5),
+                                        new ValidationCheck(
+                                                "led_2",
+                                                "tran_forward_current_peak",
+                                                "gt",
+                                                0.0005),
+                                        new ValidationCheck(
+                                                "led_2",
+                                                "tran_forward_current_min",
+                                                "lt",
+                                                0.0002)),
+                                "idle")));
+    }
+
+    /**
+     * GEN.L2.5 — two-NPN motor reverse oscillator; ~1 s direction flips.
+     */
+    private static ProblemValidationSpec genL25() {
+        return new ProblemValidationSpec(
+                "GEN.L2.5",
+                List.of(
+                        new ValidationCase(
+                                "switch_off",
+                                "ჩამრთველი გამორთულია — ძრავი გაჩერებულია",
+                                Map.of("switch", "open"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1", "current", "lt", 0.001))),
+                        new ValidationCase(
+                                "free_run_reverse",
+                                "ჩამრთველი ჩართულია — ძრავი მიმართულებას ცვლის",
+                                Map.of("switch", "closed"),
+                                List.of(
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_current_abs_peak",
+                                                "gt",
+                                                0.01),
+                                        new ValidationCheck(
+                                                "motor_1",
+                                                "tran_sign_flip_count",
+                                                "gt",
+                                                0.5)),
+                                "idle")));
     }
 
 }

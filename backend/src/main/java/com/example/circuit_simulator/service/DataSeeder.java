@@ -30,8 +30,7 @@ public class DataSeeder implements CommandLineRunner {
                 new Chapter(null, "TCP", "ტრანზისტორის და კონდენსატორის ერთობლივი გამოყენება", "Transistor & Capacitor", 11),
                 new Chapter(null, "DTR", "დარლინგტონის წყვილის და ორი კასკადის გამოყენება", "Darlington Pair", 12),
                 new Chapter(null, "TFB", "უკუკავშირი და ჰისტერეზისი", "Feedback & Hysteresis", 13),
-                new Chapter(null, "TDM", "ტრანზისტორის და მუდმივი დენის ძრავის ერთობლივი გამოყენება", "Transistor & DC Motor", 14),
-                new Chapter(null, "GEN", "ცვლადი სიგნალის გენერაცია", "Signal Generation", 15)
+                new Chapter(null, "TDM", "ტრანზისტორის და მუდმივი დენის ძრავის ერთობლივი გამოყენება", "Transistor & DC Motor", 14)
         );
 
         for (Chapter seed : chapters) {

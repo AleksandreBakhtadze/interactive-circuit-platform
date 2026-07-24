@@ -17,7 +17,7 @@ public class Chapter {
     private Long id;
 
     @Column(nullable = false, unique = true, length = 20)
-    private String code; // e.g. "ST", "LR", "GEN"
+    private String code; // e.g. "ST", "LR", "TDM"
 
     @Column(nullable = false, length = 200)
     private String titleKa; // Georgian title

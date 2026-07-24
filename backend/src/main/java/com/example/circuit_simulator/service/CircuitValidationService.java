@@ -138,35 +138,6 @@ public class CircuitValidationService {
             }
         }
 
-        if ("GEN.L2.1".equals(problemCode) && !hasNpnAndPnp(components)) {
-            return ValidationResultDTO.builder()
-                    .passed(false)
-                    .message("This challenge needs both an NPN and a PNP transistor.")
-                    .messageKa("ამ ამოცანისთვის საჭიროა როგორც NPN, ასევე PNP ტრანზისტორი.")
-                    .cases(List.of())
-                    .build();
-        }
-        if (("GEN.L2.2".equals(problemCode)
-                        || "GEN.L2.3".equals(problemCode)
-                        || "GEN.L2.4".equals(problemCode)
-                        || "GEN.L2.5".equals(problemCode))
-                && countNpn(components) < 2) {
-            return ValidationResultDTO.builder()
-                    .passed(false)
-                    .message("This challenge needs two NPN transistors.")
-                    .messageKa("ამ ამოცანისთვის საჭიროა ორი NPN ტრანზისტორი.")
-                    .cases(List.of())
-                    .build();
-        }
-        if ("GEN.L2.5".equals(problemCode) && !hasMotor(components)) {
-            return ValidationResultDTO.builder()
-                    .passed(false)
-                    .message("This challenge needs a DC motor.")
-                    .messageKa("ამ ამოცანისთვის საჭიროა ძრავი.")
-                    .cases(List.of())
-                    .build();
-        }
-
         tfbL33PotOffAtHigh = false;
         if ("TFB.L2.5".equals(problemCode)
                 || "TFB.L3.3".equals(problemCode)
@@ -220,42 +191,6 @@ public class CircuitValidationService {
                             spec, circuitJson, problemCode, roleToId, components, true, false);
             if (swapped.allPassed()) {
                 chosen = swapped;
-            }
-        }
-
-        // GEN.L2.x: free-run bias is pot-sensitive — try several wiper settings
-        // (and the inverted track) so a correct topology is not rejected for a
-        // slightly off live pot position.
-        if (!chosen.allPassed()
-                && ("GEN.L2.1".equals(problemCode)
-                        || "GEN.L2.2".equals(problemCode)
-                        || "GEN.L2.3".equals(problemCode)
-                        || "GEN.L2.4".equals(problemCode))
-                && circuitHasPot(components)) {
-            for (double pos :
-                    new double[] {
-                        0.05, 0.06, 0.08, 0.1, 0.12, 0.15, 0.2, 0.25, 0.31, 0.35, 0.4, 0.45, 0.5
-                    }) {
-                for (double tryPos : new double[] {pos, 1.0 - pos}) {
-                    String tuned =
-                            SpiceGenerator.applyUniformPotPosition(circuitJson, tryPos);
-                    CaseEvaluation attempt =
-                            evaluateCases(
-                                    spec,
-                                    tuned,
-                                    problemCode,
-                                    roleToId,
-                                    components,
-                                    false,
-                                    false);
-                    if (attempt.allPassed()) {
-                        chosen = attempt;
-                        break;
-                    }
-                }
-                if (chosen.allPassed()) {
-                    break;
-                }
             }
         }
 
@@ -521,15 +456,6 @@ public class CircuitValidationService {
     private boolean specUsesPotPositions(ProblemValidationSpec spec) {
         for (ValidationCase c : spec.cases()) {
             if (c.potPositions() != null && !c.potPositions().isEmpty()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean circuitHasPot(List<Map<String, Object>> components) {
-        for (Map<String, Object> comp : components) {
-            if ("variable_resistor".equals(comp.get("type"))) {
                 return true;
             }
         }
@@ -1690,46 +1616,6 @@ public class CircuitValidationService {
             lastSign = sign;
         }
         return flips;
-    }
-
-    private static boolean hasMotor(List<Map<String, Object>> components) {
-        for (Map<String, Object> comp : components) {
-            if ("motor".equals(comp.get("type"))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasNpnAndPnp(List<Map<String, Object>> components) {
-        boolean npn = false;
-        boolean pnp = false;
-        for (Map<String, Object> comp : components) {
-            if (!"transistor".equals(comp.get("type"))) {
-                continue;
-            }
-            String subtype = String.valueOf(comp.get("subtype")).toLowerCase();
-            if (subtype.startsWith("npn")) {
-                npn = true;
-            } else if (subtype.startsWith("pnp")) {
-                pnp = true;
-            }
-        }
-        return npn && pnp;
-    }
-
-    private static int countNpn(List<Map<String, Object>> components) {
-        int n = 0;
-        for (Map<String, Object> comp : components) {
-            if (!"transistor".equals(comp.get("type"))) {
-                continue;
-            }
-            String subtype = String.valueOf(comp.get("subtype")).toLowerCase();
-            if (subtype.startsWith("npn")) {
-                n++;
-            }
-        }
-        return n;
     }
 
     @SuppressWarnings("unchecked")

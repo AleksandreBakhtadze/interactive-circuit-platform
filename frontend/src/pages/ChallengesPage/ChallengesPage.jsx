@@ -56,11 +56,11 @@ export default function ChallengesPage() {
         <main className={styles.main}>
             <div className={styles.header}>
                 <h1 className={styles.title}>
-                    {lang === 'ka' ? 'თავები' : 'Chapters'}
+                    {lang === 'ka' ? 'თემები' : 'Chapters'}
                 </h1>
                 <p className={styles.sub}>
                     {lang === 'ka'
-                        ? 'აირჩიე თავი და დაიწყე ამოცანების ამოხსნა'
+                        ? 'აირჩიე თემა და დაიწყე ამოცანების ამოხსნა'
                         : 'Pick a topic and start solving'}
                 </p>
             </div>
@@ -105,14 +105,6 @@ export default function ChallengesPage() {
 
                             <div className={styles.cardBody}>
                                 <h3 className={styles.chapterTitle}>{title}</h3>
-                                <p className={styles.lessonCount}>
-                                    {total}{' '}
-                                    {lang === 'ka'
-                                        ? 'ამოცანა'
-                                        : total === 1
-                                          ? 'lesson'
-                                          : 'lessons'}
-                                </p>
                             </div>
                         </button>
                     );

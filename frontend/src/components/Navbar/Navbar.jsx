@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useLang } from '../../context/LangContext';
 import { useAuth } from '../../context/AuthContext';
 import styles from './Navbar.module.css';
@@ -7,20 +7,14 @@ import styles from './Navbar.module.css';
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { lang, setLang, t } = useLang();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
 
   return (
       <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ''}`}>
@@ -38,7 +32,6 @@ export default function Navbar() {
             </Link>
 
             {user ? (
-                <>
                   <Link
                     to="/account"
                     className={`${styles.userChip} ${location.pathname === '/account' || location.pathname === '/profile' ? styles.userChipActive : ''}`}
@@ -46,10 +39,6 @@ export default function Navbar() {
                   >
                     <span className={styles.userName}>{user.username}</span>
                   </Link>
-                  <button type="button" className={styles.btnGhost} onClick={handleLogout}>
-                    {t.nav_logout}
-                  </button>
-                </>
             ) : (
                 <>
                   <Link to="/login" className={styles.btnGhost}>{t.nav_login}</Link>

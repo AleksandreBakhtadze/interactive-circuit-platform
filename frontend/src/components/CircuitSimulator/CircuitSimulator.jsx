@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from 'react';
 import { useLang } from '../../context/LangContext';
 import { BOARD_COLS, BOARD_ROWS } from '../../constants/circuitGrid';
 import {
-    CONNECTOR_LENGTHS,
+    CONNECTOR_PALETTE_LENGTHS,
     connectorType,
     getFootprint,
     getPaletteForProblem,
@@ -136,7 +136,7 @@ export default function CircuitSimulator({ problemCode }) {
                     {lang === 'ka' ? 'გამტარები' : 'Connectors'}
                 </h3>
                 <div className={styles.wireGrid}>
-                    {CONNECTOR_LENGTHS.map((len) => {
+                    {CONNECTOR_PALETTE_LENGTHS.map((len) => {
                         const type = connectorType(len);
                         const def = connectorsPalette.find((p) => p.type === type);
                         if (!def) return null;

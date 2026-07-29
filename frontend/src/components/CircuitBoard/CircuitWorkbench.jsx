@@ -6,7 +6,7 @@ import { getComponentImage } from '../../constants/componentAssets';
 import {
     CAPACITOR_SPECS,
     capacitorType,
-    CONNECTOR_LENGTHS,
+    CONNECTOR_PALETTE_LENGTHS,
     connectorType,
     COMPONENT_TYPES,
     getCapacitorGroupItem,
@@ -3356,11 +3356,14 @@ export default function CircuitWorkbench({ problemCode }) {
         const rotation = getPaletteRotation(type);
         const label =
             lang === 'ka' ? connectorGroup.labelKa : connectorGroup.labelEn;
-        // Hide connector lengths that are not available in this palette (e.g. LAB removes 1-length).
-        const allowedLengths = CONNECTOR_LENGTHS.filter(
+        // Hide connector lengths that are not available in this palette (e.g. length 1 removed).
+        const lengthPool = connectorGroup.lengths?.length
+            ? connectorGroup.lengths
+            : CONNECTOR_PALETTE_LENGTHS;
+        const allowedLengths = lengthPool.filter(
             (n) => getConnectorMaxCount(palette, n) > 0
         );
-        const lengthsToShow = allowedLengths.length ? allowedLengths : CONNECTOR_LENGTHS;
+        const lengthsToShow = allowedLengths.length ? allowedLengths : lengthPool;
 
         return (
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>

@@ -159,21 +159,27 @@
     }
 }
 
-/* Free lab: keep board aligned with palette; avoid sticky clipping */
+/* Free lab: pin the board while the component palette scrolls */
 @media (min-width: 1100px) {
     .workbenchLab {
         align-items: start;
     }
 
-    .workbenchLab .stage {
+    .workbenchLab .palette {
         position: static;
         top: auto;
-        margin-top: 0;
         align-self: start;
     }
 
-    .workbenchLab .palette {
+    .workbenchLab .stage {
+        --lab-sticky-inset: max(56px, 7svh);
+        position: sticky;
+        /* Equal inset above/below so the pinned board sits centered */
+        top: var(--lab-sticky-inset);
+        margin-top: 0;
         align-self: start;
+        z-index: 2;
+        max-height: calc(100svh - (2 * var(--lab-sticky-inset)));
     }
 }
 

@@ -63,6 +63,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 18px;
+    align-items: stretch;
 }
 
 .card {
@@ -80,6 +81,9 @@
     color: inherit;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
     transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s;
+    height: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
 }
 
 .card:hover {
@@ -130,6 +134,7 @@
     flex-direction: column;
     gap: 6px;
     min-width: 0;
+    flex: 1;
 }
 
 .chapterTitle {
@@ -139,6 +144,8 @@
     color: var(--text-primary);
     line-height: 1.35;
     margin: 0;
+    /* Keep cards even when some titles wrap more lines */
+    min-height: calc(1.08rem * 1.35 * 4);
 }
 
 .lessonCount {

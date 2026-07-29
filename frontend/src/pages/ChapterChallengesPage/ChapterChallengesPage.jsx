@@ -44,7 +44,7 @@ export default function ChapterChallengesPage() {
             })
             .catch((err) => {
                 if (err.status === 404) {
-                    setError(lang === 'ka' ? 'თავი ვერ მოიძებნა' : 'Chapter not found');
+                    setError(lang === 'ka' ? 'თემა ვერ მოიძებნა' : 'Chapter not found');
                 } else if (err.message === 'request_failed') {
                     setError(
                         lang === 'ka'
@@ -81,7 +81,7 @@ export default function ChapterChallengesPage() {
         return (
             <main className={styles.main}>
                 <p className={styles.status}>
-                    {error || (lang === 'ka' ? 'თავი ვერ მოიძებნა' : 'Chapter not found')}
+                    {error || (lang === 'ka' ? 'თემა ვერ მოიძებნა' : 'Chapter not found')}
                 </p>
                 <p className={styles.hint}>
                     {lang === 'ka'
@@ -89,7 +89,7 @@ export default function ChapterChallengesPage() {
                         : 'Make sure the backend is running on port 8080 and restart it after code changes.'}
                 </p>
                 <Link to="/challenges" className={styles.backLink}>
-                    {lang === 'ka' ? '← თავებზე დაბრუნება' : '← Back to chapters'}
+                    {lang === 'ka' ? '← თემებზე დაბრუნება' : '← Back to chapters'}
                 </Link>
             </main>
         );
@@ -109,7 +109,7 @@ export default function ChapterChallengesPage() {
         <main className={styles.main}>
             <div className={styles.header}>
                 <Link to="/challenges" className={styles.backLink}>
-                    {lang === 'ka' ? '← თავები' : '← Chapters'}
+                    {lang === 'ka' ? '← თემები' : '← Chapters'}
                 </Link>
 
                 <div className={styles.headerRow}>

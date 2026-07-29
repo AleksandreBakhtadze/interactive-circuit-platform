@@ -3,6 +3,8 @@ import { getComponentImage } from './componentAssets';
 /** Footprint sizes: width × height in pin cells (columns × rows). */
 
 export const CONNECTOR_LENGTHS = [1, 2, 3, 4, 5, 6, 7];
+/** Lengths offered in challenge / lab palettes (1-hole jumpers removed). */
+export const CONNECTOR_PALETTE_LENGTHS = [2, 3, 4, 5, 6, 7];
 
 export function connectorType(length) {
     return `connector${length}`;
@@ -536,7 +538,9 @@ export const CONNECTOR_GROUP_PALETTE_ITEM = {
     labelKa: 'გამტარები',
     labelEn: 'Connectors',
     maxCountPerLength: 10,
-    lengths: CONNECTOR_LENGTHS,
+    lengths: CONNECTOR_PALETTE_LENGTHS,
+    // Hide 1-length jumpers everywhere this shared group is used.
+    maxCountByLength: { 1: 0 },
 };
 
 export const WIRE_GROUP_ID = 'wires';
@@ -578,6 +582,8 @@ export function getConnectorMaxCount(palette, length = null) {
     ) {
         return group.maxCountByLength[length];
     }
+    // Length-1 jumpers are not offered in palettes.
+    if (length === 1) return 0;
     return group.maxCountPerLength ?? 10;
 }
 

@@ -159,16 +159,20 @@
     }
 }
 
-/* Free lab: drop the board into the vertical middle of the viewport */
+/* Free lab: keep board aligned with palette; avoid sticky clipping */
 @media (min-width: 1100px) {
     .workbenchLab {
-        min-height: calc(100svh - 160px);
+        align-items: start;
     }
 
     .workbenchLab .stage {
-        margin-top: clamp(48px, 12vh, 130px);
-        position: sticky;
-        top: max(96px, calc(50svh - 200px));
+        position: static;
+        top: auto;
+        margin-top: 0;
+        align-self: start;
+    }
+
+    .workbenchLab .palette {
         align-self: start;
     }
 }
@@ -329,7 +333,6 @@
 .paletteCard {
     display: flex;
     flex-direction: column;
-    gap: 4px;
     width: var(--palette-card-w);
     box-sizing: border-box;
 }
@@ -348,6 +351,7 @@
 }
 
 .paletteItem {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -356,7 +360,7 @@
     flex: 1;
     min-height: var(--palette-item-h);
     height: var(--palette-item-h);
-    padding: 8px 8px 6px;
+    padding: 8px 8px 7px;
     width: 100%;
     box-sizing: border-box;
     background: rgba(17, 29, 53, 0.55);
@@ -366,7 +370,7 @@
     color: var(--text-primary);
     touch-action: none;
     user-select: none;
-    transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+    transition: border-color 0.15s, background 0.15s, opacity 0.15s, box-shadow 0.15s;
 }
 
 .paletteItem:hover {
@@ -470,40 +474,52 @@
     text-align: center;
     line-height: 1.2;
     width: 100%;
+    white-space: pre-line;
+    word-break: break-word;
 }
 
 .paletteCount {
     font-family: var(--font-mono);
     font-size: 0.65rem;
     color: var(--text-muted);
+    padding-right: 2.1rem;
 }
 
 .rotateBtn {
-    display: flex;
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    z-index: 3;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    width: 100%;
-    flex-shrink: 0;
-    padding: 4px 6px;
+    gap: 2px;
+    min-width: 2.15rem;
+    padding: 3px 5px;
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: 700;
-    color: #60c5f1;
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: 5px;
+    line-height: 1;
+    color: #8ed8f7;
+    background: rgba(8, 19, 36, 0.88);
+    border: 1px solid rgba(96, 197, 241, 0.38);
+    border-radius: 6px;
     cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(6px);
+    transition: color 0.15s, border-color 0.15s, background 0.15s, transform 0.12s;
 }
 
 .rotateBtn:hover {
+    color: #c8ecff;
     border-color: #60c5f1;
-    background: rgba(96, 197, 241, 0.1);
+    background: rgba(96, 197, 241, 0.16);
+    transform: scale(1.04);
 }
 
 .rotateDeg {
-    font-size: 0.62rem;
-    color: var(--text-muted);
+    font-size: 0.58rem;
+    color: rgba(157, 176, 204, 0.95);
 }
 
 .connectorLengthPicker {

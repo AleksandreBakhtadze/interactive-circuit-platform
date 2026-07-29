@@ -14,6 +14,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class ProblemService {
+    private static final Set<String> HIDDEN_PROBLEM_CODES = Set.of("ST.L1.6", "ST.L1.7");
+
     private final ProblemRepository problemRepository;
     private final ProblemCompletionService completionService;
 
@@ -33,6 +35,9 @@ public class ProblemService {
 
     public Problem getProblemByChapterAndSlug(String chapterCode, String slug) {
         String problemCode = chapterCode.toUpperCase() + "." + slug;
+        if (HIDDEN_PROBLEM_CODES.contains(problemCode.toUpperCase())) {
+            throw new RuntimeException("Problem not found with code: " + problemCode);
+        }
         return getProblemByCode(problemCode);
     }
 
@@ -67,7 +72,10 @@ public class ProblemService {
     public List<ProblemListItemDTO> getProblemListByChapterCode(
             String chapterCode, Long userId) {
         List<Problem> problems =
-                problemRepository.findAllByChapterCode(chapterCode.toUpperCase());
+                problemRepository.findAllByChapterCode(chapterCode.toUpperCase())
+                        .stream()
+                        .filter(p -> !HIDDEN_PROBLEM_CODES.contains(p.getCode().toUpperCase()))
+                        .toList();
         Set<Long> solvedIds = userId == null
                 ? Collections.emptySet()
                 : completionService.findSolvedProblemIds(

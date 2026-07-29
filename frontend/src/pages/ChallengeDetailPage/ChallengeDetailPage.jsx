@@ -15,6 +15,28 @@ function hasText(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
 
+function getDifficultyFromLevel(problemCode) {
+    const code = String(problemCode ?? '');
+    const match = code.match(/\.L([0-9])\./i);
+    const level = match?.[1];
+
+    // L1 → easy, L2 → medium, L3 → hard.
+    if (level === '1') {
+        return { key: 'easy', ka: 'მარტივი', en: 'easy', color: '#43d9a2' };
+    }
+    if (level === '2') {
+        return { key: 'medium', ka: 'საშუალო', en: 'medium', color: '#f5a524' };
+    }
+    if (level === '3') {
+        return { key: 'hard', ka: 'რთული', en: 'hard', color: '#f31260' };
+    }
+    // Any other levels (e.g. L4) are treated as hard for now.
+    if (level) {
+        return { key: 'hard', ka: 'რთული', en: 'hard', color: '#f31260' };
+    }
+    return null;
+}
+
 export default function ChallengeDetailPage() {
     const { chapterCode, problemSlug } = useParams();
     const { lang } = useLang();
@@ -90,6 +112,7 @@ export default function ChallengeDetailPage() {
     const usesSim = supportsSimulator(problem.code);
     const figures = getFiguresForProblem(problem.code);
     const quiz = getQuizForProblem(problem.code);
+    const derivedDifficulty = getDifficultyFromLevel(problem.code);
     const description = hasText(problem.description) ? problem.description.trim() : '';
     const hint = hasText(problem.hint) ? problem.hint.trim() : '';
     const questions =
@@ -112,9 +135,16 @@ export default function ChallengeDetailPage() {
                         </Link>
                         <div className={styles.titleRow}>
                             <span className={styles.eyebrow}>{problem.code}</span>
-                            {problem.difficulty && (
-                                <span className={styles.badge}>
-                                    {problem.difficulty}
+                            {derivedDifficulty && (
+                                <span
+                                    className={styles.badge}
+                                    style={{
+                                        '--badge-fg': derivedDifficulty.color,
+                                        '--badge-border': derivedDifficulty.color,
+                                        '--badge-bg': `${derivedDifficulty.color}18`,
+                                    }}
+                                >
+                                    {lang === 'ka' ? derivedDifficulty.ka : derivedDifficulty.en}
                                 </span>
                             )}
                         </div>

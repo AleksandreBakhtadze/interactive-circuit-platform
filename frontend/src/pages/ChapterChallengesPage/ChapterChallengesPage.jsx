@@ -96,9 +96,14 @@ export default function ChapterChallengesPage() {
     }
 
     const chapterTitle = lang === 'ka' ? chapter.titleKa : chapter.titleEn;
-    const solvedCount = problems.filter((p) => p.solved).length;
-    const totalCount = problems.length;
-    const diff = meta.difficultyInfo;
+    const visibleProblems =
+        chapter?.code === 'ST'
+            ? problems.filter(
+                  (p) => p.code !== 'ST.L1.6' && p.code !== 'ST.L1.7'
+              )
+            : problems;
+    const solvedCount = visibleProblems.filter((p) => p.solved).length;
+    const totalCount = visibleProblems.length;
 
     return (
         <main className={styles.main}>
@@ -118,16 +123,6 @@ export default function ChapterChallengesPage() {
                         <ChapterIcon name={meta.icon} color={meta.accent} />
                     </span>
                     <div>
-                        <span
-                            className={styles.diffBadge}
-                            style={{
-                                color: diff.color,
-                                borderColor: `${diff.color}55`,
-                                background: `${diff.color}18`,
-                            }}
-                        >
-                            {lang === 'ka' ? diff.ka : diff.en}
-                        </span>
                         <h1 className={styles.title}>{chapterTitle}</h1>
                         <p className={styles.sub}>
                             {user
@@ -142,7 +137,7 @@ export default function ChapterChallengesPage() {
                 </div>
             </div>
 
-            {problems.length === 0 ? (
+            {visibleProblems.length === 0 ? (
                 <p className={styles.empty}>
                     {lang === 'ka'
                         ? 'ამოცანები ჯერ არ არის დამატებული'
@@ -150,11 +145,11 @@ export default function ChapterChallengesPage() {
                 </p>
             ) : (
                 <ul className={styles.list} style={{ '--path-accent': meta.accent }}>
-                    {problems.map((problem, index) => {
+                    {visibleProblems.map((problem, index) => {
                         const solved = Boolean(problem.solved);
                         const isNext =
                             !solved &&
-                            index === problems.findIndex((p) => !p.solved);
+                            index === visibleProblems.findIndex((p) => !p.solved);
 
                         return (
                             <li key={problem.id}>

@@ -3055,6 +3055,18 @@ export default function CircuitWorkbench({ problemCode }) {
         }
     };
 
+    const renderPaletteRotateBtn = (type, rotation) => (
+        <button
+            type="button"
+            className={styles.rotateBtn}
+            title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
+            onClick={(e) => cyclePaletteRotation(type, e)}
+        >
+            ↻
+            <span className={styles.rotateDeg}>{rotation}°</span>
+        </button>
+    );
+
     const renderPreviewImg = (type, rotation) => {
         const img = getComponentImage(type);
         const rotated = rotationSteps(rotation) % 2 === 1;
@@ -3107,18 +3119,8 @@ export default function CircuitWorkbench({ problemCode }) {
                                 : 'drag'
                             : `×${left}`}
                     </span>
+                    {!isAccessory ? renderPaletteRotateBtn(item.type, rotation) : null}
                 </div>
-                {!isAccessory ? (
-                    <button
-                        type="button"
-                        className={styles.rotateBtn}
-                        title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                        onClick={(e) => cyclePaletteRotation(item.type, e)}
-                    >
-                        ↻
-                        <span className={styles.rotateDeg}>{rotation}°</span>
-                    </button>
-                ) : null}
             </div>
         );
     };
@@ -3168,17 +3170,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         {renderPreviewImg(type, rotation)}
                     </div>
                     <span className={styles.paletteCount}>×{left}</span>
+                    {renderPaletteRotateBtn(type, rotation)}
                 </div>
-
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
             </div>
         );
     };
@@ -3233,17 +3226,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         {renderPreviewImg(type, rotation)}
                     </div>
                     <span className={styles.paletteCount}>×{left}</span>
+                    {renderPaletteRotateBtn(type, rotation)}
                 </div>
-
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
             </div>
         );
     };
@@ -3293,17 +3277,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         {renderPreviewImg(type, rotation)}
                     </div>
                     <span className={styles.paletteCount}>×{left}</span>
+                    {renderPaletteRotateBtn(type, rotation)}
                 </div>
-
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
             </div>
         );
     };
@@ -3367,17 +3342,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         {renderPreviewImg(type, rotation)}
                     </div>
                     <span className={styles.paletteCount}>×{left}</span>
+                    {renderPaletteRotateBtn(type, rotation)}
                 </div>
-
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
             </div>
         );
     };
@@ -3390,6 +3356,11 @@ export default function CircuitWorkbench({ problemCode }) {
         const rotation = getPaletteRotation(type);
         const label =
             lang === 'ka' ? connectorGroup.labelKa : connectorGroup.labelEn;
+        // Hide connector lengths that are not available in this palette (e.g. LAB removes 1-length).
+        const allowedLengths = CONNECTOR_LENGTHS.filter(
+            (n) => getConnectorMaxCount(palette, n) > 0
+        );
+        const lengthsToShow = allowedLengths.length ? allowedLengths : CONNECTOR_LENGTHS;
 
         return (
             <div className={`${styles.paletteCard} ${styles.connectorCard}`}>
@@ -3405,7 +3376,7 @@ export default function CircuitWorkbench({ problemCode }) {
                             {lang === 'ka' ? 'სიგრძე' : 'Length'}
                         </span>
                         <div className={styles.connectorLengthOptions}>
-                            {CONNECTOR_LENGTHS.map((n) => (
+                            {lengthsToShow.map((n) => (
                                 <button
                                     key={n}
                                     type="button"
@@ -3427,17 +3398,8 @@ export default function CircuitWorkbench({ problemCode }) {
                         {renderPreviewImg(type, rotation)}
                     </div>
                     <span className={styles.paletteCount}>×{left}</span>
+                    {renderPaletteRotateBtn(type, rotation)}
                 </div>
-
-                <button
-                    type="button"
-                    className={styles.rotateBtn}
-                    title={lang === 'ka' ? 'შებრუნება 90°' : 'Rotate 90°'}
-                    onClick={(e) => cyclePaletteRotation(type, e)}
-                >
-                    ↻
-                    <span className={styles.rotateDeg}>{rotation}°</span>
-                </button>
             </div>
         );
     };

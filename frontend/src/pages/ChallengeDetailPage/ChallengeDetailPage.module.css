@@ -149,8 +149,9 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     padding: 4px 10px;
-    border: 1px solid var(--border-bright);
-    color: var(--accent-green);
+    border: 1px solid var(--badge-border, var(--border-bright));
+    color: var(--badge-fg, var(--accent-green));
+    background: var(--badge-bg, transparent);
 }
 
 .status,

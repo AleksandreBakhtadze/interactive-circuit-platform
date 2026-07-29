@@ -87,27 +87,32 @@ export default function ChallengesPage() {
                                 <span className={styles.iconTile}>
                                     <ChapterIcon name={meta.icon} color={meta.accent} />
                                 </span>
+                                <div className={styles.progressBlock}>
+                                    <ProgressRing
+                                        value={solved}
+                                        max={total || 1}
+                                        color={meta.accent}
+                                        size={48}
+                                        stroke={3.5}
+                                    />
+                                    <div className={styles.frac}>
+                                        <span className={styles.done}>{solved}</span>
+                                        <span className={styles.sep}>/</span>
+                                        <span className={styles.total}>{total}</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <h3 className={styles.chapterTitle}>{title}</h3>
-                            <p className={styles.lessonCount}>
-                                {total}{' '}
-                                {lang === 'ka' ? 'ამოცანა' : total === 1 ? 'lesson' : 'lessons'}
-                            </p>
-
-                            <div className={styles.cardBottom}>
-                                <ProgressRing
-                                    value={solved}
-                                    max={total || 1}
-                                    color={meta.accent}
-                                    size={42}
-                                    stroke={3.5}
-                                />
-                                <div className={styles.frac}>
-                                    <span className={styles.done}>{solved}</span>
-                                    <span className={styles.sep}>/</span>
-                                    <span className={styles.total}>{total}</span>
-                                </div>
+                            <div className={styles.cardBody}>
+                                <h3 className={styles.chapterTitle}>{title}</h3>
+                                <p className={styles.lessonCount}>
+                                    {total}{' '}
+                                    {lang === 'ka'
+                                        ? 'ამოცანა'
+                                        : total === 1
+                                          ? 'lesson'
+                                          : 'lessons'}
+                                </p>
                             </div>
                         </button>
                     );

@@ -72,9 +72,6 @@ export default function KitPage() {
                         <Link to="/challenges" className={styles.ctaPrimary}>
                             {t.hero_cta}
                         </Link>
-                        <a href="#wires" className={styles.ctaGhost}>
-                            {t.kit_jump_wires}
-                        </a>
                     </div>
                 </div>
             </header>

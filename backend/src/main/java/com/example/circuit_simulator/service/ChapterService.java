@@ -20,6 +20,7 @@ import java.util.Set;
 public class ChapterService {
 
     private static final Set<String> HIDDEN_CHAPTER_CODES = Set.of("TRL");
+    private static final Set<String> HIDDEN_PROBLEM_CODES = Set.of("ST.L1.6", "ST.L1.7");
 
     private final ChapterRepository chapterRepository;
     private final ProblemRepository problemRepository;
@@ -43,7 +44,7 @@ public class ChapterService {
         return chapterRepository.findAll()
                 .stream()
                 .filter(ch -> !isHiddenChapter(ch.getCode()))
-                .mapToLong(ch -> problemRepository.countByChapterId(ch.getId()))
+                .mapToLong(ch -> visibleProblemsByChapterCode(ch.getCode()).size())
                 .sum();
     }
 
@@ -62,11 +63,15 @@ public class ChapterService {
     }
 
     private boolean isChapterComplete(Long userId, Chapter chapter) {
-        long total = problemRepository.countByChapterId(chapter.getId());
+        List<Problem> visibleProblems = visibleProblemsByChapterCode(chapter.getCode());
+        long total = visibleProblems.size();
         if (total == 0) {
             return false;
         }
-        long solved = completionService.countSolvedInChapter(userId, chapter.getId());
+        Set<Long> solvedIds = completionService.findSolvedProblemIds(
+                userId,
+                visibleProblems.stream().map(Problem::getId).toList());
+        long solved = solvedIds.size();
         return solved >= total;
     }
 
@@ -91,7 +96,7 @@ public class ChapterService {
     public ChapterDetailDTO getChapterDetail(String code, Long userId) {
         String chapterCode = code.toUpperCase();
         ChapterDTO chapter = getChapterByCode(chapterCode, userId);
-        List<Problem> problems = problemRepository.findAllByChapterCode(chapterCode);
+        List<Problem> problems = visibleProblemsByChapterCode(chapterCode);
         Set<Long> solvedIds = userId == null
                 ? Collections.emptySet()
                 : completionService.findSolvedProblemIds(
@@ -111,8 +116,14 @@ public class ChapterService {
     }
 
     private ChapterDTO toChapterDto(Chapter ch, Long userId) {
-        long problemCount = problemRepository.countByChapterId(ch.getId());
-        long solvedCount = completionService.countSolvedInChapter(userId, ch.getId());
+        List<Problem> visibleProblems = visibleProblemsByChapterCode(ch.getCode());
+        long problemCount = visibleProblems.size();
+        long solvedCount = userId == null
+                ? 0
+                : completionService.findSolvedProblemIds(
+                        userId,
+                        visibleProblems.stream().map(Problem::getId).toList())
+                .size();
         return new ChapterDTO(
                 ch.getId(),
                 ch.getCode(),
@@ -122,5 +133,12 @@ public class ChapterService {
                 problemCount,
                 solvedCount
         );
+    }
+
+    private List<Problem> visibleProblemsByChapterCode(String chapterCode) {
+        return problemRepository.findAllByChapterCode(chapterCode.toUpperCase())
+                .stream()
+                .filter(p -> !HIDDEN_PROBLEM_CODES.contains(p.getCode().toUpperCase()))
+                .toList();
     }
 }

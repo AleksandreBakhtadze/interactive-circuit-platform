@@ -749,48 +749,7 @@ export const ST_L1_1_PALETTE = [
         labelEn: 'Lamp 6V',
         maxCount: 1,
     },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'გადამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.MOTOR,
-        labelKa: 'მოტორი',
-        labelEn: 'Motor',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.DIODE,
-        labelKa: 'დიოდი',
-        labelEn: 'Diode',
-        maxCount: 10,
-    },
-    {
-        type: COMPONENT_TYPES.RELAY,
-        labelKa: 'რელე',
-        labelEn: 'Relay',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.SLIDE_SWITCH,
-        labelKa: 'სლაიდერი',
-        labelEn: 'Slide Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.VAR_RESISTOR,
-        labelKa: 'ცვლადი რეზისტორი 10k',
-        labelEn: 'Var. Resistor 10k',
-        maxCount: 1,
-    },
     CONNECTOR_GROUP_PALETTE_ITEM,
-    WIRE_GROUP_PALETTE_ITEM,
-    RESISTOR_GROUP_PALETTE_ITEM,
-    CAPACITOR_GROUP_PALETTE_ITEM,
-    TRANSISTOR_GROUP_PALETTE_ITEM,
-    LED_GROUP_PALETTE_ITEM,
 ];
 
 /** Inventory for ST.L1.2 — two power supplies in series, button, lamp, connectors only. */
@@ -1515,7 +1474,7 @@ export const PR_L1_1_PALETTE = [
     {
         type: COMPONENT_TYPES.PHOTO_RESISTOR,
         labelKa: 'ფოტორეზისტორი',
-        labelEn: 'Photoresistor',
+        labelEn: 'Photo\nresistor',
         maxCount: 1,
     },
     {
@@ -6439,12 +6398,6 @@ export const LAB_PALETTE = [
         maxCount: 2,
     },
     {
-        type: COMPONENT_TYPES.RELAY,
-        labelKa: 'რელე',
-        labelEn: 'Relay',
-        maxCount: 1,
-    },
-    {
         type: COMPONENT_TYPES.LAMP,
         labelKa: 'ნათურა',
         labelEn: 'Lamp',
@@ -6459,7 +6412,7 @@ export const LAB_PALETTE = [
     {
         ...CONNECTOR_GROUP_PALETTE_ITEM,
         maxCountByLength: {
-            1: 8,
+            1: 0,
             2: 12,
             3: 6,
             4: 4,

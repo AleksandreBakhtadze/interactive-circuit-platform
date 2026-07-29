@@ -28,13 +28,6 @@ export const KIT_CATEGORIES = [
         descEn: 'Used to connect parts to each other on the board.',
         items: [
             {
-                id: 'c1',
-                image: '/components/connector1.svg',
-                nameKa: '1 კონტაქტიანი გამტარი',
-                nameEn: '1-contact conductor',
-                qty: 8,
-            },
-            {
                 id: 'c2',
                 image: '/components/connector2.svg',
                 nameKa: '2 კონტაქტიანი გამტარი',
@@ -320,12 +313,6 @@ export const KIT_CATEGORIES = [
                 badge: '#43d9a2',
                 detailKa: 'გაძლიერების კოეფიციენტი\n3000 - 10000',
                 detailEn: 'Current gain\n3000 - 10000',
-            },
-            {
-                id: 'relay',
-                image: '/components/relay.svg',
-                nameKa: 'რელე',
-                nameEn: 'Relay',
             },
         ],
     },

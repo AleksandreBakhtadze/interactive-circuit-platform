@@ -1,0 +1,90 @@
+.main {
+    min-height: 100svh;
+    background: var(--bg-primary);
+    padding: 88px clamp(24px, 5vw, 64px) 40px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image: radial-gradient(rgba(96, 197, 241, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+}
+
+.layout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 100%;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+.header {
+    max-width: 42rem;
+    flex-shrink: 0;
+}
+
+.eyebrow {
+    margin: 0 0 6px;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted, #8aa4b5);
+}
+
+.title {
+    margin: 0 0 6px;
+    font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-primary, #e8f1f7);
+}
+
+.sub {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--text-secondary, #a8c0cf);
+}
+
+.boardColumn {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.boardColumn > * {
+    width: 100%;
+    --board-v-offset: min(220px, calc(100svh * 0.24));
+}
+
+@media (min-width: 1100px) {
+    .boardColumn > * {
+        --board-v-offset: min(200px, calc(100svh * 0.22));
+        --board-h-gutter: calc(12vw + 18rem);
+        --pin-label-gutter: 1.2rem;
+    }
+}
+
+@media (max-width: 720px) {
+    .main {
+        padding: 80px 16px 32px;
+    }
+
+    .boardColumn {
+        align-items: flex-start;
+    }
+}

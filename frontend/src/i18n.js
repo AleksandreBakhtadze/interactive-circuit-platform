@@ -1,6 +1,7 @@
 export const translations = {
     ka: {
         nav_challenges: 'ამოცანები',
+        nav_lab: 'თავისუფალი ლაბორატორია',
         nav_kit: 'ნაკრები',
         nav_register: 'რეგისტრაცია',
         nav_login: 'შესვლა',
@@ -11,6 +12,9 @@ export const translations = {
         hero_sub: 'უსაფრთხო სასწავლო ნაკრები მოზარდებისთვის — ფერადი დეტალები, სიმბოლოები დაფებზე და წკაპებით აწყობა. აქვეა კურსი და სავარჯიშო ამოცანები, რომლითაც წრედების აგებას, ანალიზს და გამართვას ივარჯიშებ.',
         hero_cta: 'იხილე ამოცანები',
         hero_cta_kit: 'ნაკრების დეტალები',
+
+        lab_title: 'თავისუფალი ლაბორატორია',
+        lab_sub: 'ააწყვე ნებისმიერი წრედი ნაკრების ყველა დეტალით — რაოდენობები იგივეა, რაც ნაკრებში.',
 
         kit_eyebrow: 'ელექტრონიკის სასწავლო ნაკრები',
         kit_title: 'ნაკრების დეტალების',
@@ -96,6 +100,7 @@ export const translations = {
     },
     en: {
         nav_challenges: 'Challenges',
+        nav_lab: 'Free Lab',
         nav_kit: 'Kit',
         nav_register: 'Register',
         nav_login: 'Login',
@@ -106,6 +111,9 @@ export const translations = {
         hero_sub: 'A safe learning kit for teenagers — colour-coded parts with symbols on the boards, snap-together wiring, plus a course and exercises for building, reading, and fixing circuits.',
         hero_cta: 'Browse challenges',
         hero_cta_kit: 'Kit parts list',
+
+        lab_title: 'Free Lab',
+        lab_sub: 'Build any circuit with the full kit inventory — quantities match the physical parts list.',
 
         kit_eyebrow: 'Electronics learning kit',
         kit_title: 'Kit parts',

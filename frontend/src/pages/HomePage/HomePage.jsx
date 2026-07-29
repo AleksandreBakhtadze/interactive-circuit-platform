@@ -48,6 +48,7 @@ export default function HomePage() {
                     <p className={styles.sub}>{t.hero_sub}</p>
                     <div className={styles.ctaRow}>
                         <Link to="/challenges" className={styles.cta}>{t.hero_cta}</Link>
+                        <Link to="/lab" className={styles.ctaSecondary}>{t.lab_title}</Link>
                         <Link to="/kit" className={styles.ctaSecondary}>{t.hero_cta_kit}</Link>
                     </div>
                 </div>

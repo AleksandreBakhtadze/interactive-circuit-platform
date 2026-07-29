@@ -2,7 +2,7 @@ import { getComponentImage } from './componentAssets';
 
 /** Footprint sizes: width × height in pin cells (columns × rows). */
 
-export const CONNECTOR_LENGTHS = [2, 3, 4, 5, 6, 7];
+export const CONNECTOR_LENGTHS = [1, 2, 3, 4, 5, 6, 7];
 
 export function connectorType(length) {
     return `connector${length}`;
@@ -568,9 +568,16 @@ export function isConnectorGroupItem(item) {
     return item?.paletteDisplay === 'connectorGroup';
 }
 
-export function getConnectorMaxCount(palette) {
+export function getConnectorMaxCount(palette, length = null) {
     const group = palette?.find(isConnectorGroupItem);
     if (!group) return 0;
+    if (
+        length != null &&
+        group.maxCountByLength &&
+        group.maxCountByLength[length] != null
+    ) {
+        return group.maxCountByLength[length];
+    }
     return group.maxCountPerLength ?? 10;
 }
 
@@ -593,11 +600,14 @@ export function isResistorGroupItem(item) {
     return item?.paletteDisplay === 'resistorGroup';
 }
 
-export function getResistorMaxCount(palette) {
+export function getResistorMaxCount(palette, key = null) {
     const group = palette?.find(isResistorGroupItem);
     if (!group) return 0;
     // Prefer explicit total cap (e.g. DI.L1.4 / SW.L2.3: only one resistor).
     if (group.maxCount != null) return group.maxCount;
+    if (key != null && group.maxCountByKey && group.maxCountByKey[key] != null) {
+        return group.maxCountByKey[key];
+    }
     return group.maxCountPerValue ?? 10;
 }
 
@@ -691,6 +701,11 @@ export function getTransistorMaxCount(palette, type = null) {
         const direct = palette?.find((p) => p.type === type);
         if (direct?.maxCount != null) {
             return direct.maxCount;
+        }
+        const key = parseTransistorKey(type);
+        const group = palette?.find(isTransistorGroupItem);
+        if (key && group?.maxCountByKey && group.maxCountByKey[key] != null) {
+            return group.maxCountByKey[key];
         }
     }
     const group = palette?.find(isTransistorGroupItem);
@@ -5926,251 +5941,6 @@ export const TDM_L3_5_PALETTE = [
     },
 ];
 
-/** GEN.L2.1 — free-run blinker with NPN + PNP, capacitor feedback, optional pot. */
-export const GEN_L2_1_PALETTE = [
-    {
-        type: COMPONENT_TYPES.POWER_SUPPLY,
-        labelKa: 'კვების წყარო',
-        labelEn: 'Power Supply',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'ჩამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.VAR_RESISTOR,
-        labelKa: 'ცვლადი რეზისტორი 10k',
-        labelEn: 'Var. Resistor 10k',
-        maxCount: 1,
-    },
-    {
-        type: transistorType('q1'),
-        labelKa: 'NPN Q1',
-        labelEn: 'NPN Q1',
-        maxCount: 1,
-    },
-    {
-        type: transistorType('q2'),
-        labelKa: 'PNP Q2',
-        labelEn: 'PNP Q2',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.LAMP,
-        labelKa: 'ნათურა',
-        labelEn: 'Lamp',
-        maxCount: 1,
-    },
-    {
-        ...CAPACITOR_GROUP_PALETTE_ITEM,
-        maxCountPerValue: 2,
-    },
-    {
-        ...RESISTOR_GROUP_PALETTE_ITEM,
-        maxCount: 6,
-    },
-    CONNECTOR_GROUP_PALETTE_ITEM,
-    {
-        ...WIRE_GROUP_PALETTE_ITEM,
-        maxCount: 4,
-        colors: ['red', 'lightRed', 'black'],
-    },
-];
-
-/** GEN.L2.2 — free-run blinker with two NPNs; slower period (~10 s). */
-export const GEN_L2_2_PALETTE = [
-    {
-        type: COMPONENT_TYPES.POWER_SUPPLY,
-        labelKa: 'კვების წყარო',
-        labelEn: 'Power Supply',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'ჩამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.VAR_RESISTOR,
-        labelKa: 'ცვლადი რეზისტორი 10k',
-        labelEn: 'Var. Resistor 10k',
-        maxCount: 1,
-    },
-    {
-        type: transistorType('q1'),
-        labelKa: 'NPN Q1',
-        labelEn: 'NPN Q1',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.LAMP,
-        labelKa: 'ნათურა',
-        labelEn: 'Lamp',
-        maxCount: 1,
-    },
-    {
-        ...CAPACITOR_GROUP_PALETTE_ITEM,
-        maxCountPerValue: 2,
-    },
-    {
-        ...RESISTOR_GROUP_PALETTE_ITEM,
-        maxCount: 6,
-    },
-    CONNECTOR_GROUP_PALETTE_ITEM,
-    {
-        ...WIRE_GROUP_PALETTE_ITEM,
-        maxCount: 4,
-        colors: ['red', 'lightRed', 'black'],
-    },
-];
-
-/** GEN.L2.3 — two-NPN anti-parallel LED flasher; 10 µF only. */
-export const GEN_L2_3_PALETTE = [
-    {
-        type: COMPONENT_TYPES.POWER_SUPPLY,
-        labelKa: 'კვების წყარო',
-        labelEn: 'Power Supply',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'ჩამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.VAR_RESISTOR,
-        labelKa: 'ცვლადი რეზისტორი 10k',
-        labelEn: 'Var. Resistor 10k',
-        maxCount: 1,
-    },
-    {
-        type: transistorType('q1'),
-        labelKa: 'NPN Q1',
-        labelEn: 'NPN Q1',
-        maxCount: 2,
-    },
-    {
-        type: ledType('red'),
-        labelKa: 'LED წითელი',
-        labelEn: 'LED Red',
-        maxCount: 2,
-    },
-    {
-        ...CAPACITOR_GROUP_PALETTE_ITEM,
-        keys: ['10uf'],
-        maxCountPerValue: 2,
-    },
-    {
-        ...RESISTOR_GROUP_PALETTE_ITEM,
-        maxCount: 8,
-    },
-    CONNECTOR_GROUP_PALETTE_ITEM,
-    {
-        ...WIRE_GROUP_PALETTE_ITEM,
-        maxCount: 4,
-        colors: ['red', 'lightRed', 'black'],
-    },
-];
-
-/** GEN.L2.4 — symmetric two-NPN LED multivibrator; fixed paired parts. */
-export const GEN_L2_4_PALETTE = [
-    {
-        type: COMPONENT_TYPES.POWER_SUPPLY,
-        labelKa: 'კვების წყარო',
-        labelEn: 'Power Supply',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'ჩამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: COMPONENT_TYPES.VAR_RESISTOR,
-        labelKa: 'ცვლადი რეზისტორი 10k',
-        labelEn: 'Var. Resistor 10k',
-        maxCount: 2,
-    },
-    {
-        type: transistorType('q1'),
-        labelKa: 'NPN Q1',
-        labelEn: 'NPN Q1',
-        maxCount: 2,
-    },
-    {
-        type: ledType('red'),
-        labelKa: 'LED წითელი',
-        labelEn: 'LED Red',
-        maxCount: 2,
-    },
-    {
-        ...CAPACITOR_GROUP_PALETTE_ITEM,
-        keys: ['100uf'],
-        maxCountPerValue: 2,
-    },
-    {
-        ...RESISTOR_GROUP_PALETTE_ITEM,
-        keys: ['100o', '1ko', '5ko1'],
-        maxCount: 6,
-        maxCountPerValue: 2,
-    },
-    CONNECTOR_GROUP_PALETTE_ITEM,
-    {
-        ...WIRE_GROUP_PALETTE_ITEM,
-        maxCount: 4,
-        colors: ['red', 'lightRed', 'black'],
-    },
-];
-
-/** GEN.L2.5 — two-NPN motor reverse oscillator; no pots. */
-export const GEN_L2_5_PALETTE = [
-    {
-        type: COMPONENT_TYPES.POWER_SUPPLY,
-        labelKa: 'კვების წყარო',
-        labelEn: 'Power Supply',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.SWITCH,
-        labelKa: 'ჩამრთველი',
-        labelEn: 'Switch',
-        maxCount: 1,
-    },
-    {
-        type: transistorType('q1'),
-        labelKa: 'NPN Q1',
-        labelEn: 'NPN Q1',
-        maxCount: 2,
-    },
-    {
-        type: COMPONENT_TYPES.MOTOR,
-        labelKa: 'ძრავი',
-        labelEn: 'Motor',
-        maxCount: 1,
-    },
-    {
-        ...CAPACITOR_GROUP_PALETTE_ITEM,
-        maxCountPerValue: 2,
-    },
-    {
-        ...RESISTOR_GROUP_PALETTE_ITEM,
-        keys: ['20o', '100o', '1ko', '5ko1', '10ko', '100ko'],
-        maxCount: 8,
-    },
-    CONNECTOR_GROUP_PALETTE_ITEM,
-    {
-        ...WIRE_GROUP_PALETTE_ITEM,
-        maxCount: 4,
-        colors: ['red', 'lightRed', 'black'],
-    },
-];
-
 /**
  * Inventory for SW.L3.8 — two green LEDs; resistor divider + 3-way swap (same-color).
  */
@@ -6615,23 +6385,123 @@ export function getPaletteForProblem(problemCode) {
     if (problemCode === 'TDM.L3.5') {
         return TDM_L3_5_PALETTE;
     }
-    if (problemCode === 'GEN.L2.1') {
-        return GEN_L2_1_PALETTE;
-    }
-    if (problemCode === 'GEN.L2.2') {
-        return GEN_L2_2_PALETTE;
-    }
-    if (problemCode === 'GEN.L2.3') {
-        return GEN_L2_3_PALETTE;
-    }
-    if (problemCode === 'GEN.L2.4') {
-        return GEN_L2_4_PALETTE;
-    }
-    if (problemCode === 'GEN.L2.5') {
-        return GEN_L2_5_PALETTE;
+    if (problemCode === 'LAB') {
+        return LAB_PALETTE;
     }
     return null;
 }
+
+/**
+ * Free lab (/lab) — full kit inventory and quantities from kitInventory.js.
+ * No Submit validation; live simulation only.
+ */
+export const LAB_PALETTE = [
+    {
+        type: COMPONENT_TYPES.POWER_SUPPLY,
+        labelKa: 'კვების წყარო',
+        labelEn: 'Power Supply',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SWITCH,
+        labelKa: 'ჩამრთველი',
+        labelEn: 'Switch',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.BUTTON,
+        labelKa: 'ღილაკი',
+        labelEn: 'Button',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.SLIDE_SWITCH,
+        labelKa: 'გადამრთველი (SPDT)',
+        labelEn: 'Slide Switch',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.VAR_RESISTOR,
+        labelKa: 'ცვლადი რეზისტორი 10k',
+        labelEn: 'Var. Resistor 10k',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.PHOTO_RESISTOR,
+        labelKa: 'ფოტორეზისტორი',
+        labelEn: 'Photoresistor',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.DIODE,
+        labelKa: 'დიოდი',
+        labelEn: 'Diode',
+        maxCount: 2,
+    },
+    {
+        type: COMPONENT_TYPES.RELAY,
+        labelKa: 'რელე',
+        labelEn: 'Relay',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.LAMP,
+        labelKa: 'ნათურა',
+        labelEn: 'Lamp',
+        maxCount: 1,
+    },
+    {
+        type: COMPONENT_TYPES.MOTOR,
+        labelKa: 'ძრავი',
+        labelEn: 'Motor',
+        maxCount: 1,
+    },
+    {
+        ...CONNECTOR_GROUP_PALETTE_ITEM,
+        maxCountByLength: {
+            1: 8,
+            2: 12,
+            3: 6,
+            4: 4,
+            5: 2,
+            6: 1,
+            7: 1,
+        },
+    },
+    {
+        ...WIRE_GROUP_PALETTE_ITEM,
+        maxCount: 4,
+    },
+    {
+        ...RESISTOR_GROUP_PALETTE_ITEM,
+        maxCountByKey: {
+            '20o': 2,
+            '100o': 2,
+            '1ko': 4,
+            '5ko1': 2,
+            '10ko': 2,
+            '100ko': 2,
+            '510ko': 2,
+        },
+    },
+    {
+        ...CAPACITOR_GROUP_PALETTE_ITEM,
+        maxCountPerValue: 2,
+    },
+    {
+        ...LED_GROUP_PALETTE_ITEM,
+        maxCountPerColor: 2,
+    },
+    {
+        ...TRANSISTOR_GROUP_PALETTE_ITEM,
+        maxCountByKey: {
+            q1: 2,
+            q2: 2,
+            q3: 1,
+            q4: 1,
+        },
+    },
+];
 
 export function supportsSimulator(problemCode) {
     return (
@@ -6774,11 +6644,7 @@ export function supportsSimulator(problemCode) {
         problemCode === 'TDM.L2.4' ||
         problemCode === 'TDM.L2.8' ||
         problemCode === 'TDM.L3.5' ||
-        problemCode === 'GEN.L2.1' ||
-        problemCode === 'GEN.L2.2' ||
-        problemCode === 'GEN.L2.3' ||
-        problemCode === 'GEN.L2.4' ||
-        problemCode === 'GEN.L2.5'
+        problemCode === 'LAB'
     );
 }
 
@@ -6809,12 +6675,7 @@ export function usesTransientSimulation(problemCode) {
         problemCode === 'DTR.L2.5' ||
         problemCode === 'DTR.L2.6' ||
         problemCode === 'DTR.L2.11' ||
-        problemCode === 'DTR.L2.12' ||
-        problemCode === 'GEN.L2.1' ||
-        problemCode === 'GEN.L2.2' ||
-        problemCode === 'GEN.L2.3' ||
-        problemCode === 'GEN.L2.4' ||
-        problemCode === 'GEN.L2.5'
+        problemCode === 'DTR.L2.12'
     );
 }
 
@@ -6872,12 +6733,7 @@ export function usesMasterSwitchSimulation(problemCode) {
         problemCode === 'DTR.L2.5' ||
         problemCode === 'DTR.L2.6' ||
         problemCode === 'DTR.L2.11' ||
-        problemCode === 'DTR.L2.12' ||
-        problemCode === 'GEN.L2.1' ||
-        problemCode === 'GEN.L2.2' ||
-        problemCode === 'GEN.L2.3' ||
-        problemCode === 'GEN.L2.4' ||
-        problemCode === 'GEN.L2.5'
+        problemCode === 'DTR.L2.12'
     );
 }
 
@@ -6915,7 +6771,8 @@ export function usesCircuitValidation(problemCode) {
         problemCode !== 'DM.L3.14' &&
         problemCode !== 'DI.L3.5' &&
         problemCode !== 'PR.L3.6' &&
-        problemCode !== 'PR.L2.12'
+        problemCode !== 'PR.L2.12' &&
+        problemCode !== 'LAB'
     );
 }
 
@@ -7944,48 +7801,6 @@ const PROBLEM_REQUIRED_PARTS = {
         { type: transistorType('q3'), maxCount: 1 },
         { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
         { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
-    ],
-    'GEN.L2.1': [
-        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
-        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
-        { type: transistorType('q1'), maxCount: 1 },
-        { type: transistorType('q2'), maxCount: 1 },
-        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
-        { type: 'capacitor', maxCount: 1 },
-        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
-    ],
-    'GEN.L2.2': [
-        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
-        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
-        { type: transistorType('q1'), maxCount: 2 },
-        { type: COMPONENT_TYPES.LAMP, maxCount: 1 },
-        { type: 'capacitor', maxCount: 1 },
-        { type: COMPONENT_TYPES.RESISTOR, maxCount: 2 },
-    ],
-    'GEN.L2.3': [
-        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
-        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
-        { type: transistorType('q1'), maxCount: 2 },
-        { type: ledType('red'), maxCount: 2 },
-        { type: 'capacitor', maxCount: 1 },
-        { type: COMPONENT_TYPES.RESISTOR, maxCount: 3 },
-    ],
-    'GEN.L2.4': [
-        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
-        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
-        { type: COMPONENT_TYPES.VAR_RESISTOR, maxCount: 2 },
-        { type: transistorType('q1'), maxCount: 2 },
-        { type: ledType('red'), maxCount: 2 },
-        { type: 'capacitor', maxCount: 2 },
-        { type: COMPONENT_TYPES.RESISTOR, maxCount: 6 },
-    ],
-    'GEN.L2.5': [
-        { type: COMPONENT_TYPES.POWER_SUPPLY, maxCount: 2 },
-        { type: COMPONENT_TYPES.SWITCH, maxCount: 1 },
-        { type: transistorType('q1'), maxCount: 2 },
-        { type: COMPONENT_TYPES.MOTOR, maxCount: 1 },
-        { type: 'capacitor', maxCount: 2 },
-        { type: COMPONENT_TYPES.RESISTOR, maxCount: 4 },
     ],
 };
 

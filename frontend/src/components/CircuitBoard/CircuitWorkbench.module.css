@@ -159,6 +159,20 @@
     }
 }
 
+/* Free lab: drop the board into the vertical middle of the viewport */
+@media (min-width: 1100px) {
+    .workbenchLab {
+        min-height: calc(100svh - 160px);
+    }
+
+    .workbenchLab .stage {
+        margin-top: clamp(48px, 12vh, 130px);
+        position: sticky;
+        top: max(96px, calc(50svh - 200px));
+        align-self: start;
+    }
+}
+
 .palette {
     --palette-card-w: 96px;
     --palette-item-h: 104px;

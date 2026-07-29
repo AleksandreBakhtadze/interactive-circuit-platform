@@ -106,6 +106,7 @@
     aspect-ratio: 1082 / 757;
     min-width: 0;
     overflow: visible;
+    color-scheme: only light;
 }
 
 .boardImage {
@@ -116,6 +117,7 @@
     pointer-events: none;
     user-select: none;
     border-radius: 16px;
+    color-scheme: only light;
 }
 
 .dotLayer {

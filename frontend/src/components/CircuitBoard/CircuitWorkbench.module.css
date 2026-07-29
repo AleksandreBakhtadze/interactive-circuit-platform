@@ -599,6 +599,15 @@
     padding: var(--board-overhang, 28px);
     box-sizing: content-box;
     touch-action: none;
+    /* Component SVGs must not follow OS dark mode */
+    color-scheme: only light;
+}
+
+.boardHost img,
+.paletteItem img,
+.palettePreview img,
+.partInner img {
+    color-scheme: only light;
 }
 
 /* While dragging one part, ignore hits on other stacked parts */

@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: light dark;" version="1.1" width="109px" height="109px" viewBox="0 0 109 109">
+<svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: only light;" version="1.1" width="109px" height="109px" viewBox="0 0 109 109">
   <!-- Upright flashlight, rotated ~45° (points top-right like reference icon) -->
   <g transform="rotate(45, 54.5, 54.5)">
     <!-- Front glow (soft light halo) -->
-    <ellipse cx="54.5" cy="16" rx="16" ry="12" fill="#fff176" opacity="0.45" style="fill: light-dark(rgb(255, 241, 118), rgb(200, 170, 60));"/>
-    <ellipse cx="54.5" cy="14" rx="9" ry="7" fill="#fffde7" opacity="0.7" style="fill: light-dark(rgb(255, 253, 231), rgb(230, 210, 120));"/>
+    <ellipse cx="54.5" cy="16" rx="16" ry="12" fill="#fff176" opacity="0.45" style="fill: rgb(255, 241, 118);"/>
+    <ellipse cx="54.5" cy="14" rx="9" ry="7" fill="#fffde7" opacity="0.7" style="fill: rgb(255, 253, 231);"/>
 
     <!-- Light rays -->
-    <path d="M 54.5 6 L 54.5 14 M 47 10 L 41 4 M 62 10 L 68 4" fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round" style="stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <path d="M 54.5 6 L 54.5 14 M 47 10 L 41 4 M 62 10 L 68 4" fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round" style="stroke: rgb(26, 26, 26);"/>
 
     <!-- Bulb dome -->
-    <path d="M 43.5 22 A 11 11 0 0 1 65.5 22 Z" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" stroke-linejoin="round" style="fill: light-dark(rgb(248, 181, 0), rgb(200, 140, 0)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <path d="M 43.5 22 A 11 11 0 0 1 65.5 22 Z" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" stroke-linejoin="round" style="fill: rgb(248, 181, 0); stroke: rgb(26, 26, 26);"/>
     <!-- Bright lens highlight -->
-    <ellipse cx="54.5" cy="18" rx="5" ry="3.2" fill="#fff9c4" stroke="none" style="fill: light-dark(rgb(255, 249, 196), rgb(255, 240, 180));"/>
-    <ellipse cx="52" cy="17" rx="2" ry="1.2" fill="#ffffff" opacity="0.85" style="fill: light-dark(rgb(255, 255, 255), rgb(255, 255, 240));"/>
+    <ellipse cx="54.5" cy="18" rx="5" ry="3.2" fill="#fff9c4" stroke="none" style="fill: rgb(255, 249, 196);"/>
+    <ellipse cx="52" cy="17" rx="2" ry="1.2" fill="#ffffff" opacity="0.85" style="fill: rgb(255, 255, 255);"/>
 
     <!-- Front rim (thick) -->
-    <rect x="38" y="22" width="33" height="7" rx="1.5" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: light-dark(rgb(67, 67, 67), rgb(45, 45, 45)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <rect x="38" y="22" width="33" height="7" rx="1.5" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: rgb(67, 67, 67); stroke: rgb(26, 26, 26);"/>
 
     <!-- Reflector head (yellow trapezoid) -->
-    <path d="M 40 29 L 69 29 L 63 46 L 46 46 Z" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" stroke-linejoin="round" style="fill: light-dark(rgb(248, 181, 0), rgb(200, 140, 0)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <path d="M 40 29 L 69 29 L 63 46 L 46 46 Z" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" stroke-linejoin="round" style="fill: rgb(248, 181, 0); stroke: rgb(26, 26, 26);"/>
 
     <!-- Neck band -->
-    <rect x="40" y="46" width="29" height="5" rx="1" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: light-dark(rgb(67, 67, 67), rgb(45, 45, 45)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <rect x="40" y="46" width="29" height="5" rx="1" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: rgb(67, 67, 67); stroke: rgb(26, 26, 26);"/>
 
     <!-- Handle -->
-    <rect x="42" y="51" width="25" height="36" rx="5" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: light-dark(rgb(67, 67, 67), rgb(45, 45, 45)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <rect x="42" y="51" width="25" height="36" rx="5" fill="#434343" stroke="#1a1a1a" stroke-width="2.8" style="fill: rgb(67, 67, 67); stroke: rgb(26, 26, 26);"/>
 
     <!-- Slide switch housing -->
-    <rect x="64" y="62" width="9" height="17" rx="2.5" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" style="fill: light-dark(rgb(248, 181, 0), rgb(200, 140, 0)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <rect x="64" y="62" width="9" height="17" rx="2.5" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" style="fill: rgb(248, 181, 0); stroke: rgb(26, 26, 26);"/>
     <!-- Switch slider -->
-    <rect x="66" y="66" width="5" height="9" rx="1.5" fill="#434343" stroke="#1a1a1a" stroke-width="2" style="fill: light-dark(rgb(67, 67, 67), rgb(45, 45, 45)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
-    <path d="M 68.5 68.5 V 72.5" fill="none" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round" style="stroke: light-dark(rgb(26, 26, 26), rgb(200, 200, 200));"/>
+    <rect x="66" y="66" width="5" height="9" rx="1.5" fill="#434343" stroke="#1a1a1a" stroke-width="2" style="fill: rgb(67, 67, 67); stroke: rgb(26, 26, 26);"/>
+    <path d="M 68.5 68.5 V 72.5" fill="none" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round" style="stroke: rgb(26, 26, 26);"/>
 
     <!-- Tail cap -->
-    <rect x="47" y="87" width="15" height="7" rx="3.5" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" style="fill: light-dark(rgb(248, 181, 0), rgb(200, 140, 0)); stroke: light-dark(rgb(26, 26, 26), rgb(230, 230, 230));"/>
+    <rect x="47" y="87" width="15" height="7" rx="3.5" fill="#f8b500" stroke="#1a1a1a" stroke-width="2.8" style="fill: rgb(248, 181, 0); stroke: rgb(26, 26, 26);"/>
   </g>
 </svg>

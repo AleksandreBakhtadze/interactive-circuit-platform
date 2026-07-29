@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.example.circuit_simulator.CpL215UserTopologyTest
--------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.983 s -- in com.example.circuit_simulator.CpL215UserTopologyTest

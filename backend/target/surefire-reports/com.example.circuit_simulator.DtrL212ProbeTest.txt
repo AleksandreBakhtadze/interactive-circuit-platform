@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.example.circuit_simulator.DtrL212ProbeTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.344 s -- in com.example.circuit_simulator.DtrL212ProbeTest

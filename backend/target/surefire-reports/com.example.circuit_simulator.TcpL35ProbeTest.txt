@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.example.circuit_simulator.TcpL35ProbeTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.531 s -- in com.example.circuit_simulator.TcpL35ProbeTest

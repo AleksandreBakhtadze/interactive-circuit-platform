@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.example.circuit_simulator.TrL210UserCircuitTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.572 s -- in com.example.circuit_simulator.TrL210UserCircuitTest

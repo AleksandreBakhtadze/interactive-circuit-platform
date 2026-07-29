@@ -601,6 +601,7 @@
     touch-action: none;
     /* Component SVGs must not follow OS dark mode */
     color-scheme: only light;
+    forced-color-adjust: none;
 }
 
 .boardHost img,
@@ -608,6 +609,7 @@
 .palettePreview img,
 .partInner img {
     color-scheme: only light;
+    forced-color-adjust: none;
 }
 
 /* While dragging one part, ignore hits on other stacked parts */

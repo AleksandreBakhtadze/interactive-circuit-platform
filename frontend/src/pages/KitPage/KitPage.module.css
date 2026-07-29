@@ -298,6 +298,8 @@
     width: auto;
     height: auto;
     object-fit: contain;
+    color-scheme: only light;
+    forced-color-adjust: none;
 }
 
 .partImgBoard {
@@ -315,6 +317,8 @@
     max-height: 48px;
     width: auto;
     object-fit: contain;
+    color-scheme: only light;
+    forced-color-adjust: none;
 }
 
 .partMeta {

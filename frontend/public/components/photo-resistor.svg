@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: only light;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="325px" height="109px" viewBox="0 0 325 109">
+<svg xmlns="http://www.w3.org/2000/svg" style="background: transparent; background-color: transparent; color-scheme: only light;" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="325px" height="109px" viewBox="0 0 325 109"><style type="text/css"><![CDATA[svg{color-scheme:only light!important}*{color-scheme:only light!important}]]></style>
   <g transform="translate(0.5,0.5)">
     <!-- White base -->
     <rect x="30.24" y="21.6" width="263.52" height="64.8" rx="32.4" ry="32.4" fill="#ffffff" stroke="#808080" stroke-width="0.86" style="fill: rgb(255, 255, 255); stroke: rgb(128, 128, 128);"/>

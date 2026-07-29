@@ -107,6 +107,10 @@
     min-width: 0;
     overflow: visible;
     color-scheme: only light;
+    forced-color-adjust: none;
+    /* Solid light plate behind board.svg so OS dark filters can't tint empty pixels */
+    background: #e0f0ff;
+    border-radius: 16px;
 }
 
 .boardImage {
@@ -118,6 +122,7 @@
     user-select: none;
     border-radius: 16px;
     color-scheme: only light;
+    forced-color-adjust: none;
 }
 
 .dotLayer {

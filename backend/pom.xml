@@ -58,6 +58,12 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
+		<!-- Jackson YAML (problem catalog) -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+		</dependency>
+
 		<!-- Hypersistence Utils for JSONB -->
 		<dependency>
 			<groupId>io.hypersistence</groupId>

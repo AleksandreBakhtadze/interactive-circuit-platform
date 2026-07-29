@@ -1,0 +1,1292 @@
+chapter: VR
+problems:
+- code: VR.L1.10
+  title: ცვლადი რეზისტორი და ნათურა
+  displayOrder: 10
+  difficulty: beginner
+  description: |-
+    ააწყვეთ სურათზე მოცემული წრედი (ორი 3 ვ კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი და 6 ვ ნათურა).
+
+    გამოიყენეთ სიმულაცია და დააკვირდით:
+    • ცოცია შუა წერტილში და ჩამრთველით წრედის ჩართვისას;
+    • ცოციას გადაადგილებისას კვებასთან ჩართული პოლუსისკენ;
+    • ნათურის ძრავით ჩანაცვლების შემთხვევას (გონებაში ან სიმულაციით).
+
+    შემდეგ უპასუხეთ ქვემოთ მოცემულ ტესტის კითხვებს და დააჭირეთ შემოწმებას.
+  hint: |-
+    ცვლადი რეზისტორი ჩართეთ როგორც რეოსტატი: კვება ერთ პოლუსზე, ნათურა — ცოციას გავლით.
+    გაითვალისწინეთ: ნაკრების ცვლად რეზისტორს აქვს დაახლოებით 50 Ω დამცავი (ბოლო) წინაღობა — მინიმალურ პოზიციაზეც კი დენი შეზღუდულია.
+  questions: |-
+    1. რა მოხდება თუ ცოციას დავაყენებთ შუა წერტილში და ჩამრთველით ჩავრთავთ წრედს?
+    ა. ნათურა აინთება ძლიერად;
+    ბ. ნათურა აინთება სუსტად;
+    გ. ნათურა არ აინთება;
+
+    2. რა მოხდება თუ ცოციას გადავაადგილებთ კვებასთან ჩართული პოლუსისკენ?
+    ა. ნათურა არ აინთება;
+    ბ. ნათურა აინთება ძლიერად;
+    გ. ნათურა აინთება სუსტად;
+
+    3. რა მოხდება თუ ნათურას ჩავანაცვლებთ ძრავით?
+    ა. ძრავი არ დატრიალდება;
+    ბ. ძრავი დატრიალდება ნელა;
+    გ. ძრავი დატრიალდება ჩქარა;
+  methodology: "სავარჯიშოს მიზანია შეაფასონ ნაკრებში არსებული ცვლადი რეზისტორის მა\
+    ხასიათებლები და დარწმუნდნენ, რომ ამ ცვლადი რეზისტორის გამოყენებით ძლიერი დენის\
+    \ მიღწევა შეუძლებელია."
+- code: VR.L2.11
+  title: "ცვლადი რეზისტორი, ნათურა და შუქდიოდები"
+  displayOrder: 11
+  difficulty: beginner
+  description: |-
+    ააწყვეთ სურათზე მოცემული წრედი (ორი 3 ვ კვების წყარო, ჩამრთველი, ცვლადი რეზისტორი, მწვანე და წითელი შუქდიოდი, ნათურა და რეზისტორები).
+
+    გამოიყენეთ სიმულაცია და დააკვირდით:
+    • ცოცია შუა წერტილში და ჩამრთველით წრედის ჩართვისას;
+    • ცოციას ზევით გადაადგილებისას;
+    • ცოციას ქვევით გადაადგილებისას.
+
+    შემდეგ უპასუხეთ ქვემოთ მოცემულ ტესტის კითხვებს და დააჭირეთ შემოწმებას.
+  hint: |-
+    პირველი 1 kΩ რეზისტორის შემდეგ მწვანე შუქდიოდი და ცვლადი რეზისტორი (როგორც ძაბვის გამყოფი) პარალელურადაა.
+    ცოციიდან იკვებება წითელი შუქდიოდი და ნათურა — თითოეულს თავისი 1 kΩ რეზისტორი აქვს მიმდევრობით.
+  questions: |-
+    1. რა მოხდება თუ ცოციას დავაყენებთ შუა წერტილში და ჩამრთველით ჩავრთავთ წრედს?
+    ა. არც ერთი არ აინთება;
+    ბ. ნათურაც და შუქდიოდებიც აინთება;
+    გ. მხოლოდ შუქდიოდები აინთება;
+    დ. მხოლოდ მწვანე შუქდიოდი აინთება;
+    ე. მხოლოდ წითელი შუქდიოდი აინთება;
+
+    2. რა მოხდება თუ ცოციას გადავაადგილებთ ზევით?
+    ა. ნათურაც და შუქდიოდებიც აინთება;
+    ბ. მხოლოდ შუქდიოდები აინთება;
+    გ. მხოლოდ მწვანე შუქდიოდი აინთება;
+    დ. მხოლოდ ნათურა აინთება;
+    ე. მხოლოდ წითელი შუქდიოდი აინთება;
+
+    3. რა მოხდება თუ ცოციას გადავაადგილებთ ქვევით?
+    ა. არც ერთი არ აინთება;
+    ბ. მხოლოდ შუქდიოდები აინთება;
+    გ. მხოლოდ წითელი შუქდიოდი აინთება;
+    დ. მხოლოდ მწვანე შუქდიოდი აინთება;
+    ე. ნათურაც და შუქდიოდებიც აინთება;
+  methodology: სავარჯიშოს მიზანია შეაფასონ ნაკრებში არსებული ცვლადი რეზისტორის მახასიათებლები;
+    სამივე შემთხვევაში გამოთვალონ ნათურაში გამავალი დენი და წითელ შუქდიოდზე მოდებული
+    ძაბვა.
+- code: VR.L2.12
+  title: ცვალებადი ნათება დაწყვილებული ცვალადი რეზისტორებით
+  displayOrder: 12
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ორი ცვალადი რეზისტორი, ერთი წითელი შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ორივე ცვალადი რეზისტორის ცოცია დააყენეთ ერთმანეთის გასწვრივ;
+    თუ ჩამრთველით ჩართავთ წრედს, შუქდიოდი უნდა აინთოს;
+    თუ რომელიმე ცვალადი რეზისტორის ცოციას გადაადგილებთ, შუქდიოდის ნათება უნდა შეიცვალოს;
+    თუ ორივე ცვალადი რეზისტორის ცოციას გადაადგილებთ სინქრონულად, შუქდიოდის ნათება ამ შემთხვევაშიც უნდა შეიცვალოს;
+    როგორც ცალკე, ასევე დაწყვილებული ცვალადი რეზისტორების გადაადგილებისას შუქდიოდის ნათება უნდა იცვლებოდეს.
+  hint: |-
+    ორი ცვალადი რეზისტორი ისე გააერთიანეთ ერთმანეთთან, რომ თავისუფალი დაგრჩეთ ცოციას დაბოლოებები; ეს ორი დაბოლოება განიხილეთ როგორც შედგენილი რეზისტორის პოლუსები.
+    შუქდიოდი მიმდევრობით ჩართეთ მიღებულ შედგენილ რეზისტორთან.
+  questions: |-
+    ლურჯი შუქდიოდი ჩართეთ წრედში ისე, რომ ცვალადი რეზისტორების გადაადგილებისას მისი განათება არ იცვლებოდეს.
+    შეცვალეთ წრედი ისე, რომ ორივე ცოციას სინქრონულად გადაადგილებისას ერთ-ერთ ბოლოში შუქდიოდი ჩაქრეს.
+  methodology: "ამ და მომდევნო რამდენიმე ამოცანაში გამოყენებულია „დაწყვილებული ცვა\
+    ლადი რეზისტორები“ — ერთმანეთის გვერდიგვერდ, სიმეტრიულად დამაგრებული ორი ცვალად\
+    ი რეზისტორი, რომელთა ცოციები შეგვიძლია გადავაადგილოთ როგორც თანაბრად (სინქრონუ\
+    ლად), ასევე დამოუკიდებლად. ამდაგვარ ამოცანებში ძირითადად მოსაფიქრებელია, როგორ\
+    \ მიერთდება ეს ორი დაწყვილებული რეზისტორი ერთმანეთთან და შემდეგ როგორ ჩაისმება\
+    \ პირობების შესაბამისად წრედში."
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: switch_on_aligned
+      labelKa: "ჩამრთველი ჩართული, ცოციები გასწორებული — LED ანთებულია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: one_pot_moved
+      labelKa: ერთი ცოცია გადაადგილებული — ნათება იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.4
+      potPositions:
+        variable_resistor_1: 0.0
+        variable_resistor_2: 0.5
+    - label: other_pot_moved
+      labelKa: მეორე ცოციაც გადაადგილებული — ნათება ისევ იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.35
+      potPositions:
+        variable_resistor_1: 0.0
+        variable_resistor_2: 0.0
+    - label: both_synced
+      labelKa: ორივე ცოცია გადაადგილებული — ნათება იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.35
+      potPositions:
+        variable_resistor_1: 1.0
+        variable_resistor_2: 0.5
+- code: VR.L2.13
+  title: უცვლელი ნათება დაწყვილებული ცვალადი რეზისტორებით
+  displayOrder: 13
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ორი ცვალადი რეზისტორი, ერთი წითელი შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ორივე ცვალადი რეზისტორის ცოცია დააყენეთ ერთმანეთის გასწვრივ;
+    თუ ჩამრთველით ჩართავთ წრედს, შუქდიოდი უნდა აინთოს;
+    თუ რომელიმე ცვალადი რეზისტორის ცოციას გადაადგილებთ, შუქდიოდის ნათება უნდა შეიცვალოს;
+    თუ ორივე ცვალადი რეზისტორის ცოციას გადაადგილებთ სინქრონულად, შუქდიოდის ნათება არ უნდა შეიცვალოს;
+    დაწყვილებული ცვალადი რეზისტორების გადაადგილებისას შუქდიოდის ნათება უნდა იყოს უცვლელი, ცალ-ცალკე გადაადგილებისას კი უნდა იცვლებოდეს.
+  hint: "ცვალადი რეზისტორები ჩართეთ ერთმანეთის მიმდევრობით ისე, რომ სინქრონული გად\
+    აადგილებისას ერთის წინაღობა იზრდებოდეს, როცა მეორის მცირდება — ჯამური კი უცვლე\
+    ლი დარჩეს."
+  questions: |-
+    შეიცვლება თუ არა წრედის მუშაობის პრინციპი თუ შუქდიოდს და ჩამრთველს გავუცვლით ადგილს?
+    როგორ იმუშავებს წრედი თუ 1 kΩ რეზისტორის ნაცვლად გამოვიყენებთ გამტარს? რა დანიშნულება აქვს ამ რეზისტორს?
+  methodology: "თუ წინა სავარჯიშო უკვე შესრულებულია, საკმაოდ მარტივია ამ ამოცანის\
+    \ შედეგის მიღება — საკმარისია მხოლოდ ერთ ცვალად რეზისტორზე გამტარს შეუცვალონ პ\
+    ოზიცია და წრედი სწორად იმუშავებს. მნიშვნელოვანია, რომ კარგად აღიქვან ერთმანეთთ\
+    ან დაკავშირებული ცვალადი რეზისტორების წრედი და მიხვდნენ, რატომ რჩება შუქდიოდის\
+    \ ნათება უცვლელი."
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: switch_on_aligned
+      labelKa: "ჩამრთველი ჩართული, ცოციები გასწორებული — LED ანთებულია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: one_pot_moved
+      labelKa: ერთი ცოცია გადაადგილებული — ნათება იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.35
+      potPositions:
+        variable_resistor_1: 0.0
+        variable_resistor_2: 0.5
+    - label: other_pot_moved
+      labelKa: მეორე ცოციაც გადაადგილებული — ნათება ისევ იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.2
+      potPositions:
+        variable_resistor_1: 0.0
+        variable_resistor_2: 0.0
+    - label: both_synced
+      labelKa: ორივე ცოცია სინქრონულად გადაადგილებული — ნათება არ იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current
+        op: gt_ref:switch_on_aligned
+        value: 0.7
+      - role: led_1
+        metric: forward_current
+        op: lt_ref:switch_on_aligned
+        value: 1.3
+      potPositions:
+        variable_resistor_1: 1.0
+        variable_resistor_2: 0.0
+- code: VR.L2.15
+  title: ორი შუქდიოდის ნათება ორი ცვალადი რეზისტორით
+  displayOrder: 15
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ორი ცვალადი რეზისტორი, ორი წითელი შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    თუ ჩამრთველით ჩართავთ წრედს, ორივე შუქდიოდი უნდა აინთოს;
+    თუ პირველ ცვლად რეზისტორს გადაადგილებთ, ორივე შუქდიოდის ნათება უნდა შეიცვალოს — ორივე უნდა გაიზარდოს ან ორივე შემცირდეს;
+    თუ მეორე ცვლად რეზისტორს გადაადგილებთ ერთი მიმართულებით, პირველი შუქდიოდის ნათება უნდა იზრდებოდეს, როცა მეორის მცირდება;
+    თუ მეორე ცვლად რეზისტორს გადაადგილებთ მეორე მიმართულებით, პირველი შუქდიოდის ნათება უნდა მცირდებოდეს, როცა მეორის იზრდება;
+    ერთი ცვლადი რეზისტორი უნდა ცვლიდეს შუქდიოდების ნათების სიმძლავრეს, ხოლო მეორე რეზისტორი უნდა განსაზღვრავდეს, როგორ გადანაწილდება ეს სიმძლავრე შუქდიოდებზე.
+  hint: |-
+    გაიხსენეთ წინა ამოცანები: ერთი ცვლადი რეზისტორი ჩართეთ კვების წყაროს მიმდევრობით და მისი გავლით მოახდინეთ დენის შეზღუდვა.
+    მეორე ცვლადი რეზისტორი ჩართეთ შუქდიოდებს შორის და კვება მიაწოდეთ ცოციას გავლით.
+  questions: |-
+    გამოთვალეთ დაახლოებით რა სიდიდის დენი გაივლის შუქდიოდში, როდესაც ორივე რეზისტორის ცოცია მოთავსებულია ცენტრში.
+    შეცვალეთ წრედი ისე, რომ პირველი ცვლადი რეზისტორით, სიმძლავრის მაქსიმალური შემადგენლობის დროს, ორივე შუქდიოდი ჩაქრეს.
+  methodology: ეს სავარჯიშო ეხმარება განვლილი მასალის გახსნაში. ამოცანის პირობაში
+    მოცემული ყველა შემთხვევა უკვე გარჩეული და შესაბამისი წრედები აწყობილია — საჭიროა
+    მხოლოდ მათი გახსნა და განმარტება.
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      - role: led_2
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: switch_on_mid
+      labelKa: "ჩამრთველი ჩართული, ორივე ცოცია შუაში — ორივე შუქდიოდი ანთებულია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_2
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: leds
+        metric: current_ratio
+        op: lt
+        value: 4.0
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.5
+    - label: pot1_master_moved
+      labelKa: პირველი ცვლადი რეზისტორი — ორივე შუქდიოდის ნათება იცვლება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.35
+      - role: led_2
+        metric: forward_current
+        op: gt_ref:switch_on_mid
+        value: 1.25
+      potPositions:
+        variable_resistor_1: 0.0
+        variable_resistor_2: 0.5
+    - label: pot2_favor_led1
+      labelKa: მეორე ცვლადი რეზისტორი — პირველი შუქდიოდი ძლიერდება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 5.5E-4
+      - role: led_2
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 0.0
+    - label: pot2_favor_led2
+      labelKa: მეორე ცვლადი რეზისტორი — მეორე შუქდიოდი ძლიერდება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_2
+        metric: forward_current
+        op: gt
+        value: 5.5E-4
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor_1: 0.5
+        variable_resistor_2: 1.0
+- code: VR.L3.19
+  title: ანტიპარალელური შუქდიოდები ცვალადი რეზისტორით
+  displayOrder: 19
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ერთი ცვალადი რეზისტორი, ერთი წითელი და ერთი მწვანე შუქდიოდი, რეზისტორები და ორი კვების წყარო.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ცვალადი რეზისტორის ცოცია შუაში — შუქდიოდები ჩამქრალია;
+    ცოციას ერთი მიმართულებით გადაადგილება — მწვანე შუქდიოდი თანდათან ნათდება;
+    ცოციას მეორე მიმართულებით გადაადგილება — წითელი შუქდიოდი თანდათან ნათდება.
+  hint: "შუქდიოდები შებრუნებულ-პარალელურად ჩართეთ ერთმანეთთან. გამოიყენეთ კვების გ\
+    ადაბმის წერტილი — ცვალადი რეზისტორი ჩართეთ დელიტელად, ისე რომ ცოციის გადაადგილ\
+    ებისას ძაბვის პოლარობა შეიცვალოს შუქდიოდებზე."
+  questions: |-
+    გამოიყენეთ ჩამრთველი და ჩართეთ წრედში ისე, რომ გათიშული ჩამრთველის დროს არცერთი შუქდიოდი არ ანთდეს.
+
+    ახლა გამოიყენეთ შუქდიოდების პარალელური ჩართვა (არა ანტიპარალელური) და გადააკეთეთ ამოცანა ისე, რომ ცოციის შუა პოზიციაში ორივე შუქდიოდი ენთოს, ხოლო განაპირებში ერთ-ერთი მათგანი ძლიერდებოდეს, მეორე კი სუსტდებოდეს.
+  methodology: "ეს და მომდევნო ორი სავარჯიშო გათვლილია ანტიპარალელურად ჩართული ორი\
+    \ შუქდიოდის და ცვალადი რეზისტორის ერთობლივ გამოყენებაზე. მსგავსი ამოცანა გადამ\
+    რთველის გამოყენებით უკვე გაკეთებული აქვთ. სავარჯიშოს ძირითადი მიზანია კარგად ა\
+    ღიქვან შუქდიოდების ძაბვის ცვლილებასა და ცოციის გადაადგილებას შორის დამოკიდებულ\
+    ება — მიხვდნენ, რომ ცოციის გადაადგილებით შუქდიოდებზე ძაბვის პოლარობა იცვლება,\
+    \ ანუ მიიღება ცვალადი ძალა."
+  validation:
+    cases:
+    - label: pot_mid_both_off
+      labelKa: ცოცია შუაში — ორივე შუქდიოდი ჩამქრალია
+      checks:
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 3.0E-4
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 3.0E-4
+      potPositions:
+        variable_resistor: 0.5
+    - label: pot_one_end_green
+      labelKa: ცოცია ერთ ნაპირზე — მწვანე შუქდიოდი ანთებულია
+      checks:
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 3.0E-4
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: pot_other_end_red
+      labelKa: ცოცია მეორე ნაპირზე — წითელი შუქდიოდი ანთებულია
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 3.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L1.20
+  title: ანტიპარალელური შუქდიოდები ცვალადი რეზისტორით და ორი კვებით
+  displayOrder: 20
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ერთი ცვალადი რეზისტორი, ერთი წითელი და ერთი მწვანე შუქდიოდი, რეზისტორები და ორი კვების წყარო.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ცვალადი რეზისტორის ცოცია შუაში — შუქდიოდები ჩამქრალია;
+    ცოციას ერთი მიმართულებით გადაადგილება — მწვანე შუქდიოდი თანდათან ნათდება;
+    ცოციას მეორე მიმართულებით გადაადგილება — წითელი შუქდიოდი თანდათან ნათდება.
+
+    ეს არის წინა სავარჯიშოს ანალოგი იმ განსხვავებით, რომ კვების შეერთების წერტილი (კვების ნახევარი ძაბვა) არ უნდა გამოიყენოთ.
+  hint: ნახევარი ძაბვის მისაღებად გამოიყენეთ ორი ერთნაირი რეზისტორით მიღებული ძაბვის
+    გამყოფი. ანტიპარალელური შუქდიოდები ჩართეთ ცვალადი რეზისტორის ცოციასა და გამყოფის
+    შუა კვანძს შორის.
+  questions: |-
+    როგორ შეიცვალება წრედის მუშაობის პრინციპი თუ ორივე შუქდიოდს შემოვატრიალებთ?
+
+    როგორ შეიცვალება წრედის სამუშაოს პრინციპი თუ ორივე ძაბვის გამყოფ რეზისტორს თანაბრად გავზრდით?
+  methodology: "რადგან ამ სავარჯიშოში კვების ნახევარი ძაბვის გამოყენების თავისუფლე\
+    ბა არ აქვთ, დამატებით უნდა გამოიყენონ ძაბვის გამყოფი და რეზისტორებით უნდა მიიღ\
+    ონ კვების ნახევარი ძაბვა."
+  validation:
+    cases:
+    - label: pot_mid_both_off
+      labelKa: ცოცია შუაში — ორივე შუქდიოდი ჩამქრალია
+      checks:
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 3.0E-4
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 3.0E-4
+      potPositions:
+        variable_resistor: 0.5
+    - label: pot_one_end_green
+      labelKa: ცოცია ერთ ნაპირზე — მწვანე შუქდიოდი ანთებულია
+      checks:
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: pot_other_end_red
+      labelKa: ცოცია მეორე ნაპირზე — წითელი შუქდიოდი ანთებულია
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L3.22
+  title: შუქდიოდების RGB თანამიმდევრობით ანთება
+  displayOrder: 22
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ცვალებადი რეზისტორი, წითელი, მწვანე და ლურჯი შუქდიოდები, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ცოცია დააყენეთ ცვალადი რეზისტორის ერთ-ერთ განაპირა მხარეს;
+    ჩამრთველით ჩართვისას არცერთი შუქდიოდი არ უნდა აინთოს;
+    ცოციის თანაბარი გადაადგილებისას ჯერ წითელი, შემდეგ მწვანე და ბოლოს ლურჯი უნდა აინთოს;
+    ცოციის უკან დაბრუნებისას ჯერ ლურჯი ჩაქრება, შემდეგ მწვანე და ბოლოს წითელი.
+  hint: გაიხსენეთ რა ძაბვებზე ინთება თითოეული ფერის შუქდიოდი. ყველა შუქდიოდისთვის
+    გამოიყენეთ ინდივიდუალური დენის შემზღუდველი რეზისტორი და შეარჩიეთ შესაბამისი ნომინალები.
+    ცვალადი რეზისტორი გამოიყენეთ შუქდიოდებზე თანდათან მზარდი ძაბვის მისაწოდებლად.
+  questions: |-
+    გამოიყენეთ ღილაკი და შეცვალეთ წრედი ისე, რომ ცოციის ნებისმიერ მდგომარეობაში ღილაკის დაჭერით სამივე შუქდიოდი აინთოს.
+
+    გამოიყენეთ ღილაკი და შეცვალეთ წრედი ისე, რომ ცოციის ნებისმიერ მდგომარეობაში ღილაკის დაჭერით სამივე შუქდიოდი ჩაკრეს.
+
+    შეცვალეთ წრედი ისე, რომ ანთების წერტილები ცვალად რეზისტორზე თანაბრად იყოს გადანაწილებული: წითელი პირველ მესამედში, მწვანე შუაში, ლურჯი მესამე მესამედში.
+  methodology: "სავარჯიშოს ძირითადი მიზანია სწორად ჩართონ განსხვავებული ფერის შუქდ\
+    იოდები და ისე შეარჩიონ დენის შემზღუდველი რეზისტორები, რომ წითელმა არ შეუშალოს\
+    \ ხელი ლურჯის ანთებას. ყველა შუქდიოდი უნდა კვებოდეს ცვალადი რეზისტორის გავლით."
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული — ყველა შუქდიოდი ჩამქრალია
+      switchStates:
+        switch: open
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_pot_start
+      labelKa: "ჩამრთველი ჩართული, ცოცია დასაწყისში — არცერთი არ ანთება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_red_only
+      labelKa: ცოციის გადაადგილება — ჯერ წითელი ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 1.2E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 0.38
+    - label: switch_on_red_green
+      labelKa: ცოციის გადაადგილება — წითელი და მწვანე ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 5.0E-5
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 1.0E-4
+      potPositions:
+        variable_resistor: 0.58
+    - label: switch_on_all_rgb
+      labelKa: ცოცია მაქსიმუმზე — სამივე შუქდიოდი ნათლად ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 5.0E-4
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 5.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: gt
+        value: 2.5E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L4.23
+  title: შუქდიოდების BGR თანამიმდევრობით ანთება
+  displayOrder: 23
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ცვალებადი რეზისტორი, წითელი, მწვანე და ლურჯი შუქდიოდები, რეზისტორები და ორი კვების წყარო, ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    ცოცია დააყენეთ ცვალადი რეზისტორის ერთ-ერთ განაპირა მხარეს;
+    ჩამრთველით ჩართვისას არცერთი შუქდიოდი არ უნდა აინთოს;
+    ცოციის თანაბარი გადაადგილებისას ჯერ ლურჯი, შემდეგ მწვანე და ბოლოს წითელი უნდა აინთოს;
+    ცოციის უკან დაბრუნებისას ჯერ წითელი ჩაქრება, შემდეგ მწვანე და ბოლოს ლურჯი.
+
+    ეს არის წინა სავარჯიშოს მსგავსი ამოცანა იმ განსხვავებით, რომ შუქდიოდები უნდა აინთოს შებრუნებული თანამიმდევრობით.
+  hint: "ძირითადი სირთულე ისაა, რომ ჯერ უნდა აინთოს ლურჯი და ბოლოს წითელი. გამყოფი\
+    ს ზედა წერტილზე (უფრო მაღალ ძაბვაზე) ჩართეთ ლურჯი შუქდიოდი (1 kΩ), შუა წერტილზ\
+    ე — მწვანე (5.1 kΩ), ქვედა წერტილზე (უფრო დაბალ ძაბვაზე) — წითელი (10 kΩ). ეს\
+    \ საპირისპიროა წინა RGB ამოცანის შეერთების თანმიმდევრობას."
+  questions: "დამატებით გამოიყენეთ წითელი და ლურჯი შუქდიოდები და შეცვალეთ წრედი ის\
+    ე, რომ ცოციის გადაადგილებისას ორივე წითელი და ორივე ლურჯი შუქდიოდი აინთოს ერთდ\
+    როულად. რა ძაბვები ჩნდება ცოციაზე თითოეული ფერის ანთების მომენტში?"
+  methodology: ეს ამოცანა წინა სავარჯიშოსგან განსხვავდება შებრუნებული თანამიმდევრობით.
+    ძირითადი მიზანია დამატებითი ძაბვის გამყოფის გამოყენებით ინდივიდუალურად აირჩიონ
+    ძაბვის სხვაობა ყველა ფერის შუქდიოდისთვის და გამოიყენონ მინიმალური რაოდენობის რეზისტორი.
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული — ყველა შუქდიოდი ჩამქრალია
+      switchStates:
+        switch: open
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_pot_start
+      labelKa: "ჩამრთველი ჩართული, ცოცია დასაწყისში — არცერთი არ ანთება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      - role: led_blue
+        metric: forward_current
+        op: lt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_blue_only
+      labelKa: ცოციის გადაადგილება — ჯერ ლურჯი ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_blue
+        metric: forward_current
+        op: gt
+        value: 2.0E-5
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 8.0E-5
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 8.0E-5
+      potPositions:
+        variable_resistor: 0.42
+    - label: switch_on_blue_green
+      labelKa: ცოციის გადაადგილება — ლურჯი და მწვანე ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_blue
+        metric: forward_current
+        op: gt
+        value: 8.0E-5
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 8.0E-5
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 1.0E-6
+      potPositions:
+        variable_resistor: 0.62
+    - label: switch_on_all_bgr
+      labelKa: ცოცია მაქსიმუმზე — სამივე შუქდიოდი ნათლად ანთება
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_blue
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L2.6
+  title: VR.L2.6
+  displayOrder: 10000
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_mid
+      labelKa: "ჩამრთველი ჩართული, ცოცია შუაში — მინიმალური ნათება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 3.0E-4
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 0.0022
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_end_a
+      labelKa: ცოცია ერთ ნაპირზე — ნათება მომატებულია
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.0025
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.5
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_end_b
+      labelKa: ცოცია მეორე ნაპირზე — ნათება ისევ მომატებულია
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.0025
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: lt
+        value: 1.5
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L2.7
+  title: VR.L2.7
+  displayOrder: 10001
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_mid
+      labelKa: "ჩამრთველი ჩართული, ცოცია შუაში — მაქსიმალური ნათება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_end_a
+      labelKa: ცოცია ერთ ნაპირზე — ნათება მოიკლო და ჩაქრა
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_end_b
+      labelKa: ცოცია მეორე ნაპირზე — ნათება ისევ ჩაქრობილია
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L2.8
+  title: VR.L2.8
+  displayOrder: 10002
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_mid
+      labelKa: "ჩამრთველი ჩართული, ცოცია შუაში — მაქსიმალური ნათება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.002
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_end_a
+      labelKa: "ცოცია ერთ ნაპირზე — ნათება შემცირებულია, არ ქრება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 5.0E-4
+      - role: led_1
+        metric: forward_current_vs_prior
+        op: lt
+        value: 0.85
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_end_b
+      labelKa: "ცოცია მეორე ნაპირზე — ნათება ისევ შემცირებულია, არ ქრება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 5.0E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: lt
+        value: 1.5
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L2.9
+  title: VR.L2.9
+  displayOrder: 10003
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        slide_switch: left
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: left_pot_a
+      labelKa: "ჩამრთველი ჩართული, გადამრთველი A–B — LED ანთებულია"
+      switchStates:
+        slide_switch: left
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: left_pot_b
+      labelKa: გადამრთველი A–B — ცოციით ნათება იცვლება
+      switchStates:
+        slide_switch: left
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 1.0
+    - label: right_pot_b
+      labelKa: გადამრთველი A–C — იმავე ცოციაზე ნათება შეიცვალა (მიმართულება შებრუნებულია)
+      switchStates:
+        slide_switch: right
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 1.0
+    - label: right_pot_a
+      labelKa: გადამრთველი A–C — ცოციით ნათება ისევ იცვლება
+      switchStates:
+        slide_switch: right
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 0.0
+- code: VR.L1.1
+  title: VR.L1.1
+  displayOrder: 10004
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_pot_min
+      labelKa: "ჩამრთველი ჩართული, ცოცია ერთ ნაპირზე"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_pot_max
+      labelKa: "ჩამრთველი ჩართული, ცოცია მეორე ნაპირზე — ნათება იცვლება, არ ქრება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L1.2
+  title: VR.L1.2
+  displayOrder: 10005
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_bright
+      labelKa: "ჩამრთველი ჩართული, ცოცია — შუქდიოდი ანთებულია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_extinguished
+      labelKa: "ჩამრთველი ჩართული, ცოცია მეორე ნაპირზე — შუქდიოდი ჩაქრობილია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L1.3
+  title: VR.L1.3
+  displayOrder: 10006
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_mid
+      labelKa: "ჩამრთველი ჩართული, ცოცია შუაში — ორივე ანთებულია"
+      switchStates:
+        switch: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+      - role: leds
+        metric: current_ratio
+        op: lt
+        value: 4.0
+      potPositions:
+        variable_resistor: 0.5
+    - label: switch_on_red
+      labelKa: "ცოცია ერთ ნაპირზე — წითელი ძლიერდება, მწვანე სუსტდება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 0.0015
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 6.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_green
+      labelKa: "ცოცია მეორე ნაპირზე — მწვანე ძლიერდება, წითელი სუსტდება"
+      switchStates:
+        switch: closed
+      checks:
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 0.0015
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 6.0E-4
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L1.4
+  title: VR.L1.4
+  displayOrder: 10007
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_open_a
+      labelKa: "ჩამრთველი ჩართული, ღილაკი გაშვებული — LED ანთებულია"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_open_b
+      labelKa: "ღილაკი გაშვებული, ცოცია გადაადგილებული — ნათება არ იცვლება"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: lt
+        value: 1.35
+      potPositions:
+        variable_resistor: 1.0
+    - label: switch_on_button_pressed_bright
+      labelKa: ღილაკი დაჭერილი — ცოციით ნათება იცვლება (ძლიერი)
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.0015
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_pressed_dim
+      labelKa: "ღილაკი დაჭერილი, ცოცია მეორე ნაპირზე — ნათება შეიცვალა"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 1.0
+- code: VR.L1.5
+  title: VR.L1.5
+  displayOrder: 10008
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_open_a
+      labelKa: "ჩამრთველი ჩართული, ღილაკი გაშვებული — LED ანთებულია"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 2.0E-4
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_open_b
+      labelKa: ღილაკი გაშვებული — ცოციით ნათება იცვლება
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 1.5E-4
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: gt
+        value: 1.8
+      potPositions:
+        variable_resistor: 1.0
+    - label: switch_on_button_pressed_a
+      labelKa: "ღილაკი დაჭერილი — პოტი გადაილახება, LED ძლიერად ანათებს"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.0015
+      potPositions:
+        variable_resistor: 0.0
+    - label: switch_on_button_pressed_b
+      labelKa: "ღილაკი დაჭერილი, ცოცია გადაადგილებული — ნათება აღარ იცვლება"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.0015
+      - role: led_1
+        metric: forward_current_vs_prior_ratio
+        op: lt
+        value: 1.35
+      potPositions:
+        variable_resistor: 1.0

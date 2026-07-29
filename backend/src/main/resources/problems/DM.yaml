@@ -1,0 +1,622 @@
+chapter: DM
+problems:
+- code: DM.L1.1
+  title: ძრავის დატრიალება ღილაკით
+  displayOrder: 1
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off_button_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_off_button_pressed
+      labelKa: "ჩამრთველი გამორთული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: open
+        button_1: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_pressed
+      labelKa: "ჩამრთველი ჩართული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.01
+- code: DM.L2.2
+  title: ძრავის ბრუნვის აჩქარება გადამრთველით
+  displayOrder: 2
+  difficulty: beginner
+  validation:
+    cases:
+    - label: slide_left_slow
+      labelKa: გადამრთველი A–B — ძრავი ტრიალებს ნელა
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.18
+    - label: slide_right_fast
+      labelKa: გადამრთველი A–C — ძრავი ტრიალებს ჩქარა
+      switchStates:
+        slide_switch: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.15
+      - role: motor_1
+        metric: current
+        op: gt_ref:slide_left_slow
+        value: 1.5
+- code: DM.L2.3
+  title: ძრავის ბრუნვის აჩქარება გადამრთველით და ორი კვებით
+  displayOrder: 3
+  difficulty: beginner
+  validation:
+    cases:
+    - label: slide_left
+      labelKa: გადამრთველი A–B — ძრავი ტრიალებს
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.3
+    - label: slide_right_different
+      labelKa: გადამრთველი A–C — ბრუნვის სიჩქარე შესამჩნევად განსხვავებულია
+      switchStates:
+        slide_switch: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.3
+      - role: motor_1
+        metric: current_vs_prior_ratio
+        op: gt
+        value: 2.2
+- code: DM.L4.4
+  title: ძრავის შიდა წინაღობის გაზომვა
+  displayOrder: 4
+  difficulty: beginner
+- code: DM.L2.5
+  title: ძრავის გაჩერება ღილაკით
+  displayOrder: 5
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_running
+      labelKa: ჩამრთველი ჩართული — ძრავი ტრიალებს
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.02
+    - label: switch_on_button_stops
+      labelKa: "ჩამრთველი ჩართული, ღილაკი დაჭერილი — ძრავი გაჩერებულია"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+- code: DM.L2.6
+  title: ძრავის ბრუნვის მიმართულების შეცვლა გადამრთველით
+  displayOrder: 6
+  difficulty: beginner
+  validation:
+    cases:
+    - label: slide_left
+      labelKa: გადამრთველი A–B — ძრავი ტრიალებს
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+    - label: slide_right_reversed
+      labelKa: გადამრთველი A–C — ბრუნვის მიმართულება შეცვლილია
+      switchStates:
+        slide_switch: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current_reversed_vs_prior
+        op: gt
+        value: 0.5
+- code: DM.L2.7
+  title: ძრავის ბრუნვის მიმართულების შეცვლა გადამრთველით და ორი კვებით
+  displayOrder: 7
+  difficulty: beginner
+  validation:
+    cases:
+    - label: slide_left
+      labelKa: გადამრთველი A–B — ძრავი ტრიალებს
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+    - label: slide_right_reversed
+      labelKa: გადამრთველი A–C — ბრუნვის მიმართულება შეცვლილია
+      switchStates:
+        slide_switch: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current_reversed_vs_prior
+        op: gt
+        value: 0.5
+- code: DM.L2.8
+  title: ძრავის ბრუნვის მიმართულების შეცვლა ორი გადამრთველით
+  displayOrder: 8
+  difficulty: beginner
+  validation:
+    cases:
+    - label: both_left
+      labelKa: ორივე გადამრთველი A–B — ძრავი ტრიალებს
+      switchStates:
+        slide_switch_1: left
+        slide_switch_2: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.1
+    - label: both_right_reversed
+      labelKa: ორივე გადამრთველი A–C — მიმართულება შეცვლილია
+      switchStates:
+        slide_switch_1: right
+        slide_switch_2: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.1
+      - role: motor_1
+        metric: current_reversed_vs_prior
+        op: gt
+        value: 0.5
+    - label: mismatched_stop
+      labelKa: გადამრთველები განსხვავებულ პოზიციაზე — ძრავი გაჩერებულია
+      switchStates:
+        slide_switch_1: right
+        slide_switch_2: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: mismatched_stop_other
+      labelKa: გადამრთველები განსხვავებულ პოზიციაზე (სხვა წყვილი) — გაჩერებულია
+      switchStates:
+        slide_switch_1: left
+        slide_switch_2: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+- code: DM.L3.9
+  title: ძრავის ბრუნვის მიმართულების ინდიკატორი შუქდიოდით
+  displayOrder: 9
+  difficulty: beginner
+  validation:
+    cases:
+    - label: slide_left
+      labelKa: "გადამრთველი A–B — ძრავი ტრიალებს, ერთი შუქდიოდი ანთია"
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 1.0
+    - label: slide_right_reversed
+      labelKa: "გადამრთველი A–C — მიმართულება შეცვლილია, მეორე შუქდიოდი ანთია"
+      switchStates:
+        slide_switch: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current_reversed_vs_prior
+        op: gt
+        value: 0.5
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 1.0
+      - role: leds
+        metric: lit_set_changed
+        op: gt
+        value: 0.0
+    - label: slide_left_again
+      labelKa: გადამრთველი უკან A–B — პირველი მიმართულება და პირველი შუქდიოდი
+      switchStates:
+        slide_switch: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current_reversed_vs_prior
+        op: gt
+        value: 0.5
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 1.0
+      - role: leds
+        metric: lit_set_changed
+        op: gt
+        value: 0.0
+- code: DM.L2.10
+  title: ძრავის გაჩერების ინდიკატორი შუქდიოდით
+  displayOrder: 10
+  difficulty: beginner
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        motor_1: running
+        switch: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+    - label: running_led_off
+      labelKa: "ჩამრთველი ჩართული, ძრავი ტრიალებს — შუქდიოდი ჩამქრალი"
+      switchStates:
+        motor_1: running
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.01
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+    - label: stalled_led_on
+      labelKa: ძრავი მექანიკურად გაჩერებული — შუქდიოდი ანთებული
+      switchStates:
+        motor_1: stalled
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.08
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 0.001
+    - label: running_again_led_off
+      labelKa: ძრავი ისევ ტრიალებს — შუქდიოდი ჩამქრალი
+      switchStates:
+        motor_1: running
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.01
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+- code: DM.L3.11
+  title: ძრავის სამუშაო და გაჩერების ინდიკატორები შუქდიოდებით
+  displayOrder: 11
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ძრავი, ერთი წითელი და ერთი მწვანე შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    თუ ჩამრთველით ჩართავთ წრედს, ძრავი უნდა დატრიალდეს და აინთოს მხოლოდ მწვანე შუქდიოდი;
+    თუ მბრუნავ ძრავას თითით მექანიკურად გავაჩერებთ, მწვანე უნდა ჩაქრეს და წითელი უნდა აინთოს;
+    თუ ძრავას გავათავისუფლებთ და ის ხელახლა დატრიალდება, ისევ მწვანე უნდა აინთოს და წითელი ჩაქრეს.
+
+    მწვანე შუქდიოდი უნდა გვანიშნებდეს, რომ ძრავი ტრიალებს, ხოლო წითელი შუქდიოდი — რომ ძრავი გაჩერებულია.
+  hint: |-
+    გამოიყენეთ წინა ამოცანის შედეგი და წრედში მოძებნეთ ადგილი, სადაც ძრავის გაჩერებისას ძაბვა მცირდება;
+    მწვანე შუქდიოდის ასანთებად გამოიყენეთ ძრავზე მოდებული ძაბვა — მწვანე შუქდიოდი რეზისტორის გავლით ჩართეთ ძრავის პარალელურად.
+  questions: |-
+    რამდენად შეძლებთ, რომ მწვანე შუქდიოდი აანთოთ ძალიან სუსტად?
+    დაახლოებით რა ძაბვა იქნება მოდებული ძრავზე, თუ მწვანე შუქდიოდი ანათებს ძალიან სუსტად?
+    წრედი ააწყვეთ ისე, რომ მწვანე და წითელი შუქდიოდები ერთდროულად არ აინთოს.
+  methodology: ეს წინა სავარჯიშოს მსგავსი ამოცანაა; ამ შემთხვევაში უნდა გამოიყენონ
+    ორი შუქდიოდი და სწორად შეარჩიონ/ჩართონ შუქდიოდებისთვის საჭირო რეზისტორები.
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        motor_1: running
+        switch: open
+      checks:
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+    - label: running_green_on
+      labelKa: ძრავი ტრიალებს — მხოლოდ მწვანე ანთია
+      switchStates:
+        motor_1: running
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.01
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 0.001
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+    - label: stalled_red_on
+      labelKa: ძრავი გაჩერებული — მხოლოდ წითელი ანთია
+      switchStates:
+        motor_1: stalled
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: led_red
+        metric: forward_current
+        op: gt
+        value: 0.001
+      - role: led_green
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+    - label: running_again_green_on
+      labelKa: "ძრავი ისევ ტრიალებს — მწვანე ანთია, წითელი ჩამქრალი"
+      switchStates:
+        motor_1: running
+        switch: closed
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.01
+      - role: led_green
+        metric: forward_current
+        op: gt
+        value: 0.001
+      - role: led_red
+        metric: forward_current
+        op: lt
+        value: 5.0E-4
+- code: DM.L2.13
+  title: ძრავის ან ნათურის არჩევა და სიმძლავრის ცვლა
+  displayOrder: 13
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ძრავი, ნათურა, ორი გადამრთველი, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    თუ ჩამრთველით ჩართავთ წრედს, ნათურა უნდა აინთოს და ძრავი არ უნდა დატრიალდეს;
+    თუ გადავრთავთ პირველ გადამრთველს, ნათურის ნათებამ უნდა მოიმატოს;
+    შემდეგ თუ გადავრთავთ მეორე გადამრთველს, ნათურა უნდა ჩაქრეს და ძრავი უნდა დატრიალდეს ჩქარა;
+    შემდეგ თუ პირველ გადამრთველს უკან დავაბრუნებთ, ძრავის ბრუნვის სიჩქარე უნდა შემცირდეს;
+    შემდეგ თუ მეორე გადამრთველს უკან დავაბრუნებთ, ძრავი უნდა გაჩერდეს და ნათურა უნდა აინთოს სუსტად.
+
+    ერთი გადამრთველით უნდა იცვლებოდეს ძრავის ბრუნვის სიჩქარე ან ნათურის ნათება, ხოლო მეორე გადამრთველით უნდა ხდებოდეს ნათურის ან ძრავის არჩევა.
+  hint: |-
+    გამოიყენეთ კვების შეერთების წერტილი და წრედში დატვირთვას ერთი გადამრთველით მიაწოდეთ ან კვების სრული ძაბვა, ან მისი ნახევარი;
+    მეორე გადამრთველი წრედში ჩართეთ ისე, რომ კვება მიეწოდოს ან ნათურას, ან ძრავას.
+  questions: |-
+    გამოიყენეთ წითელი და მწვანე შუქდიოდები და წრედი შეცვალეთ ისე, რომ ნათურასთან ერთად აინთოს მხოლოდ წითელი შუქდიოდი, ძრავთან ერთად კი — მხოლოდ მწვანე შუქდიოდი;
+    დამატებით გამოიყენეთ რეზისტორი და წრედი შეცვალეთ ისე, რომ როცა ძრავი დატრიალდება ჩქარა, აინთოს სუსტად, და როცა დატრიალდება ნელა — სრულად ჩაქრეს.
+  methodology: არ არის რთული სავარჯიშო წინა ამოცანებთან შედარებით; ეხმარება უკვე მიღებული
+    შედეგების გამეორებაში და გადამრთველების პრაქტიკულ გამოყენებაში.
+  validation:
+    cases:
+    - label: half_lamp
+      labelKa: "ჩამრთველი ჩართული — ნათურა სუსტად, ძრავი გაჩერებული"
+      switchStates:
+        slide_switch_2: right
+        switch: closed
+        slide_switch_1: left
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.03
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.1
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: full_lamp
+      labelKa: პირველი გადამრთველი — ნათურის ნათება მომატებულია
+      switchStates:
+        slide_switch_2: right
+        switch: closed
+        slide_switch_1: right
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.08
+      - role: lamp
+        metric: current_vs_prior
+        op: gt
+        value: 1.5
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: full_motor
+      labelKa: "მეორე გადამრთველი — ძრავი ჩქარა, ნათურა ჩამქრალი"
+      switchStates:
+        slide_switch_2: left
+        switch: closed
+        slide_switch_1: right
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.15
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: half_motor
+      labelKa: პირველი უკან — ძრავის სიჩქარე შემცირებულია
+      switchStates:
+        slide_switch_2: left
+        switch: closed
+        slide_switch_1: left
+      checks:
+      - role: motor_1
+        metric: current
+        op: gt
+        value: 0.04
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.18
+      - role: motor_1
+        metric: current_vs_prior_ratio
+        op: gt
+        value: 1.5
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: half_lamp_again
+      labelKa: "მეორე უკან — ნათურა სუსტად, ძრავი გაჩერებული"
+      switchStates:
+        slide_switch_2: right
+        switch: closed
+        slide_switch_1: left
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.03
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.1
+      - role: motor_1
+        metric: current
+        op: lt
+        value: 0.001
+- code: DM.L3.14
+  title: მბრუნავი ძრავით დენის გენერაცია I
+  displayOrder: 14
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ძრავი, ორი კვების წყარო; ასევე შეგიძლიათ გამოიყენოთ ნაკრებში არსებული თქვენთვის უკვე ნაცნობი ნებისმიერი დეტალები.
+
+    ააწყვეთ წრედი, რომლის საშუალებითაც ვიზუალურად დავინახავთ, როგორ გარდაქმნის მუდმივი დენის ძრავი მექანიკურ ენერგიას ელექტრულ ენერგიად.
+
+    შედეგისთვის შეგიძლიათ უკვე ნასწავლი დეტალებიდან გამოიყენოთ ნებისმიერი ტიპის და რაოდენობის დეტალები.
+  hint: |-
+    გამოიყენეთ ძრავის ინერციული ბრუნვა კვების შეწყვეტის შემდეგ — კვების გამორთვის შემდეგ ძრავი მცირე ხნით ინერციით მაინც აგრძელებს ბრუნვას;
+    მოიფიქრეთ, ნაკრებში არსებული დეტალებით როგორ შეიძლება გაგრძელდეს გენერირებული დენის ინდიკაცია.
+  questions: |-
+    რომელი შუქდიოდის გამოყენება ჯობია ამ ამოცანაში — წითლის, ლურჯის თუ მწვანის? რატომ?
+    თეორიულად, როგორ შეგვიძლია გავზარდოთ შუქდიოდის ნათების ხანგრძლივობა კვების გათიშვის შემდეგ?
+  methodology: "ეს სავარჯიშო განსხვავდება წინა ამოცანებისგან, რადგან მოითხოვს არას\
+    ტანდარტული გადაწყვეტების მიღებას — კარგი საშუალებაა ცოდნისა და უნარების შესაფა\
+    სებლად: რამდენად კარგად ესმით დეტალების მუშაობის პრინციპი და რამდენად შეუძლიათ\
+    \ არსებული რესურსებით საჭირო შედეგის მიღწევა. ეხმარება მუდმივი დენის ძრავის მუ\
+    შაობის პრინციპის უკეთ გაგებაში."

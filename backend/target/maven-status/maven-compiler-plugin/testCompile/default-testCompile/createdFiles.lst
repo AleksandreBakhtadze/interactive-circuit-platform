@@ -7,6 +7,7 @@ com/example/circuit_simulator/CircuitSimulatorApplicationTests.class
 com/example/circuit_simulator/TfbL25HysteresisProbeTest.class
 com/example/circuit_simulator/TdmValidationTest.class
 com/example/circuit_simulator/CapacitorValidationTest.class
+com/example/circuit_simulator/catalog/ProblemCatalogLoaderTest.class
 com/example/circuit_simulator/SlideSwitchValidationTest.class
 com/example/circuit_simulator/DtrValidationTest.class
 com/example/circuit_simulator/TfbL33UserCircuitTest.class

@@ -34,6 +34,7 @@
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/service/ChapterService.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/repository/ProblemCompletionRepository.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/simulation/TranScenario.java
+/home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/catalog/ProblemCatalog.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/repository/CircuitRepository.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/controller/ComponentController.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/validation/ValidationSpecRegistry.java
@@ -45,6 +46,7 @@
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/model/Circuit.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/validation/ValidationCase.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/controller/ChapterController.java
+/home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/catalog/ChapterCatalogFile.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/controller/SimulationController.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/service/ProblemDataSeeder.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/service/SimulationService.java
@@ -54,6 +56,7 @@
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/service/UserService.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/config/WebConfig.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/dto/ProblemListItemDTO.java
+/home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/catalog/ProblemCatalogLoader.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/model/SimulationResult.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/simulation/TranSpiceBuild.java
 /home/lela/interactive-circuit-platform/backend/src/main/java/com/example/circuit_simulator/service/ComponentService.java

@@ -1,0 +1,791 @@
+chapter: ST
+problems:
+- code: ST.L1.1
+  title: ნათურის ანთება ღილაკით
+  displayOrder: 1
+  difficulty: beginner
+  validation:
+    cases:
+    - label: button_pressed
+      labelKa: ღილაკი დაჭერილი
+      switchStates:
+        button_1: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.01
+    - label: button_released
+      labelKa: ღილაკი არ არის დაჭერილი
+      switchStates:
+        button_1: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+- code: ST.L1.2
+  title: ნათურის ანთება ღილაკით და ორი კვების წყაროთი
+  displayOrder: 2
+  difficulty: beginner
+  description: "გამოიყენეთ მხოლოდ შემდეგი დეტალები: ღილაკი, ნათურა, ორი კვების წყა\
+    რო და გამტარები. ააწყვეთ წრედი, რომელიც იმუშავებს ასე: თუ ღილაკს დავაწვებით, ნ\
+    ათურა უნდა აინთოს; თუ ღილაკს ავუშვებთ, ნათურა უნდა ჩაქრეს. ეს არის წინა სავარჯ\
+    იშოს მსგავსი ამოცანა იმ განსხავავებით, რომ ერთი კვების წყაროს ნაცვლად უნდა გამ\
+    ოიყენოთ ორი. წრედის აწყობის შემდეგ, აღწერეთ რა შეიცვალა წინა ამოცანასთან შედარ\
+    ებით და რამ გამოიწვია ეს ცვლილება?"
+  hint: ერთი კვების წყაროს დადებითი პოლუსი მიაერთეთ მეორე კვების წყაროს უარყოფით პოლუსს.
+    ნათურის ასანთებად გამოიყენეთ დარჩენილი თავისუფალი პოლუსები.
+  questions: |-
+    როგორ იმუშავებს წრედი თუ ნათურას ჩავრთავთ კვების წყაროებს შორის?
+    როგორ იმუშავებს წრედი თუ კვებების მერთების თანამიმდევრობას შევცვლით — ერთი კვების დადებით პოლუსს მივაერთებთ მეორე კვების დადებითს? ახსენით რატომ?
+  methodology: "ამ სავარჯიშოში პირველად უნდა გამოიყენონ მიმდევრობით ჩართული ორი კვ\
+    ების წყარო. ნათურის ნათების მომატებით პრაქტიკულად უნდა ნახონ, რომ ორი კვების წ\
+    ყაროს ძაბვა იკრიბება და ჯამური ძაბვა იზრდება."
+  validation:
+    cases:
+    - label: button_pressed
+      labelKa: ღილაკი დაჭერილი
+      switchStates:
+        button_1: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.01
+    - label: button_released
+      labelKa: ღილაკი არ არის დაჭერილი
+      switchStates:
+        button_1: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+- code: ST.L1.3
+  title: ნათურის ანთება ღილაკით და ჩამრთველით
+  displayOrder: 3
+  difficulty: beginner
+  description: "გამოიყენეთ მხოლოდ შემდეგი დეტალები: ღილაკი, ნათურა, ჩამრთველი, ერთ\
+    ი კვების წყარო და გამტარები. ააწყვეთ წრედი, რომელიც იმუშავებს ასე: წრედის აწყო\
+    ბის შემდეგ, თუ მხოლოდ ჩამრთველით ჩართავთ წრედს (ღილაკის გარეშე), ნათურა არ უნდ\
+    ა აინთოს; თუ ღილაკს დავაწვებით, ნათურა უნდა აინთოს; თუ ღილაკს ავუშვებთ, ნათურა\
+    \ უნდა ჩაქრეს. ამოცანაში დამატებით უნდა გამოიყენოთ ჩამრთველი — აწყობის პროცესშ\
+    ი ის გამორთული უნდა იყოს; დარწმუნდების შემდეგ, რომ წრედი სწორად არის აწყობილი\
+    , შეგიძლიათ ჩართოთ."
+  hint: წრედში დენმა უნდა გაიაროს ჩამრთველის გავლით. ჩამრთველი ჩართეთ ღილაკამდე (საშუალო
+    თავაური — კვების დადებითი პოლუსის მხრიდან).
+  questions: |-
+    შეიცვლება თუ არა წრედის სამუშაო პრინციპი თუ ღილაკს და ჩამრთველს გავუცვლით ადგილები?
+    შეიცვლება თუ არა წრედის სამუშაო პრინციპი თუ ბუნებრივად შემოვატრიალებთ?
+  methodology: ამ სავარჯიოiათი უნდა გაეცნონ ჩამრთველის პრაქტიკულ გამოყენებას. წრედის
+    აწყობის დროს ჩამრთველი გამორთული უნდა იყოს; სასურველია მიერთოთ კვების დადებით
+    პოლუსთან და ჩართოთ მხოლოდ აწყობის დასრულებისა და შემოწმების შემდეგ.
+  validation:
+    cases:
+    - label: switch_off_button_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_off_button_pressed
+      labelKa: "ჩამრთველი გამორთული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: open
+        button_1: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_pressed
+      labelKa: "ჩამრთველი ჩართული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.01
+- code: ST.L2.4
+  title: ნათურის ანთება ორი ღილაკით
+  displayOrder: 4
+  difficulty: beginner
+  description: "გამოიყენეთ მხოლოდ შემდეგი დეტალები: ორი ღილაკი, ნათურა, ჩამრთველი\
+    , ორი კვების წყარო და გამტარები. ააწყვეთ წრედი, რომელიც იმუშავებს ასე: წრედის\
+    \ აწყობის შემდეგ, თუ ჩამრთველით ჩართავთ წრედს, ნათურა არ უნდა აინთოს; ნათურა უ\
+    ნდა აინთოს მხოლოდ მაშინ, როდესაც ერთდროულად დავაჭერით ორივე ღილაკს; თუ დავაჭერ\
+    ით მხოლოდ ერთ ღილაკს, ნათურა არ უნდა აინთოს."
+  hint: "ღილაკები ერთმანეთის მიმართ ჩართეთ ისე, რომ მათში დენის ნაკადმა გაიაროს მხ\
+    ოლოდ მაშინ, როდესაც ორივე მათგანს დავაჭერით. ჩამრთველი, ღილაკები და ნათურა ჩარ\
+    თეთ მიმდევრობით."
+  questions: |-
+    ნათურა რომ მოვათავსოთ ღილაკებს შორის, შეიცვლება თუ არა წრედის მუშაობის პრინციპი?
+    ჩამრთველი რომ მოვათავსოთ კვების წყაროებს შორის, შეიცვლება თუ არა წრედის მუშაობის პრინციპი?
+  methodology: "ეს სავარჯიშო უფრო ლოგიკური ამოცანაა: უნდა მიხვდეთ, რომ წრედი იკვრე\
+    ბა მხოლოდ მაშინ, როდესაც ორივე ღილაკია ჩართული. განიხილეთ შემთხვევა, როდესაც ჩ\
+    ამრთველია ჩართული კვებებს შორის — ასე წრედი უფრო კომპაქტური გამოდის."
+  validation:
+    cases:
+    - label: switch_off_both_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_both_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button1_only
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button2_only
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_both_pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.01
+- code: ST.L1.5
+  title: ნათურის ნათების შემცირება
+  displayOrder: 5
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ნათურა, რეზისტორი, ჩამრთველი და ორი კვების წყარო.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩავრთავთ ჩამრთველს, ნათურა უნდა აინთოს;
+
+    დააკვირდით როგორი სიმძლავრით ანათებს ნათურა. დამატებით გამოიყენეთ ერთი რეზისტორი და წრედი გადააკეთეთ ისე, რომ
+    ჩართვის შემდეგ ნათურის ნათება იყოს უფრო მცირე — ანუ რეზისტორის გამოყენებით ნათურა უფრო სუსტად უნდა ანათებდეს.
+  hint: "ორი კვების წყაროს (6V) შემთხვევაში ნათურა მოიხმარს დაახლოებით 0.25A დენს\
+    . შეაფასეთ, რომელი რეზისტორით შეგიძლიათ მასში გამავალი დენის შემცირება ისე, რო\
+    მ ნათურა ბოლომდე არ ჩაქრეს."
+  questions: |-
+    დამოკიდებულია თუ არა ნათურის ნათება იმაზე, თუ სად განვათავსებთ რეზისტორს — ნათურამდე თუ ნათურის შემდეგ?
+    როგორ შეიცვლის ნათურის ნათება თუ რეზისტორს მიმდევრობით ჩავურთავთ კიდევ ერთ რეზისტორს?
+    როგორ შეიცვლება ნათურის ნათება თუ რეზისტორს პარალელურად ჩავურთავთ კიდევ ერთ რეზისტორს?
+  methodology: "სავარჯიშოს მიზანია რეზისტორის მუშაობის პრაქტიკული შემოწმება, რეზის\
+    ტორების მიმდევრობითი და პარალელური ჩართვის შედეგების ნახვა. შეფასდეს, რომ ნათუ\
+    რის შემთხვევაში დაახლოებით 100Ω-ზე მაღალი წინაღობის გამოყენებას ხშირად აზრი აღ\
+    არ აქვს (ნათურა შეიძლება ძალიან დაბნელდეს)."
+  validation:
+    cases:
+    - label: switch_off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+      checks:
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_dimmed
+      labelKa: ჩამრთველი ჩართული (ნათება შემცირებულია)
+      switchStates:
+        switch: closed
+      checks:
+      - role: lamp
+        metric: current
+        op: gt
+        value: 0.01
+      - role: lamp
+        metric: current
+        op: lt
+        value: 0.2
+- code: ST.L1.6
+  title: კვების წყაროს მოკლე ჩართვის შემთხვევები
+  displayOrder: 6
+  difficulty: beginner
+- code: ST.L1.7
+  title: შუქდიოდის გამოყენების მაგალითები
+  displayOrder: 7
+  difficulty: beginner
+- code: ST.L1.8
+  title: წითელი შუქდიოდის ანთება ღილაკით
+  displayOrder: 8
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები: ღილაკი, წითელი შუქდიოდი, რეზისტორი, ერთი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდი არ უნდა აინთოს;
+    თუ ღილაკს დავაჭერთ, შუქდიოდი უნდა აინთოს;
+    თუ ღილაკს ავუშვებთ, შუქდიოდი უნდა ჩაქრეს.
+
+    გაითვალისწინეთ: შუქდიოდს აქვს პოლარობა და არასწორი მიმართულებით ჩართვისას ის არ აინთება.
+  hint: "გამოიყენეთ წინა ამოცანის გამოცდილება: ღილაკი, რეზისტორი და შუქდიოდი ჩართე\
+    თ მიმდევრობით. დარწმუნდით, რომ შუქდიოდი სწორ პოლარობით არის ჩართული."
+  questions: |-
+    როგორ იმუშავებს წრედი, თუ წითელ შუქდიოდს შევცვლით ჯერ მწვანით, შემდეგ ლურჯ შუქდიოდით?
+    როგორ შეიცვლება შუქდიოდის ნათება თუ გამოვიყენებთ 5.1kΩ, 10kΩ, 100kΩ, 500kΩ რეზისტორებს?
+  methodology: "სავარჯიშო ეხმარება შუქდიოდის გამოყენების შესწავლაში: სწორად უნდა შ\
+    ეარჩიოთ რეზისტორი და სწორი პოლარობით ჩართოთ შუქდიოდი."
+  validation:
+    cases:
+    - label: switch_off_button_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_off_button_pressed
+      labelKa: "ჩამრთველი გამორთული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: open
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_pressed
+      labelKa: "ჩამრთველი ჩართული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.003
+- code: ST.L2.9
+  title: წითელი და მწვანე შუქდიოდების ანთება ღილაკით და ჩამრთველით
+  displayOrder: 9
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ღილაკი, ერთი წითელი და ერთი მწვანე შუქდიოდი, რეზისტორი, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდები არ უნდა აინთოს;
+    თუ ღილაკს დავაწვებით, ორივე შუქდიოდი უნდა აინთოს;
+    თუ ღილაკს ავუშვებთ, ორივე შუქდიოდი უნდა ჩაქრეს.
+  hint: |-
+    ღილაკის და რეზისტორის გავლით დენის ნაკადმა უნდა გაიაროს ორივე შუქდიოდში;
+    ღილაკი, რეზისტორი და შუქდიოდები ჩართეთ ერთმანეთის მიმდევრობით.
+  questions: |-
+    როგორ აინთება შუქდიოდები თუ წითელ შუქდიოდს ჩავრთავთ შებრუნებით?
+    როგორ შეიცვლება შუქდიოდების ნათება თუ ორი კვების წყაროს ნაცვლად გამოვიყენებთ მხოლოდ ერთს? ახსენით რატომ?
+    როგორ აინთება შუქდიოდები თუ წითელ და მწვანე შუქდიოდებს ჩავრთავთ პარალელურად? ახსენით რატომ?
+  methodology: "სავარჯიშოში პირველად იყენებენ განსხვავებულ შუქდიოდებს. თუ შუქდიოდე\
+    ბი ჩართეს პარალელურად, მწვანე არ აინთება და უნდა ახსნან მიზეზი; მიმდევრობითი ჩ\
+    ართვისას უნდა ახსნან, რატომ არ იმუშავებს მხოლოდ ერთ კვების წყაროზე."
+  validation:
+    cases:
+    - label: switch_off_button_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+      - role: led_2
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_off_button_pressed
+      labelKa: "ჩამრთველი გამორთული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: open
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+      - role: led_2
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკი არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+      - role: led_2
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button_pressed
+      labelKa: "ჩამრთველი ჩართული, ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+      - role: led_2
+        metric: forward_current
+        op: gt
+        value: 0.001
+- code: ST.L2.10
+  title: შუქდიოდის ანთება მხოლოდ ორი ღილაკით
+  displayOrder: 10
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ორი ღილაკი, ერთი წითელი შუქდიოდი, რეზისტორი, ერთი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდი არ უნდა აინთოს;
+    თუ პირველ ღილაკს დავაწვებით, შუქდიოდი არ უნდა აინთოს;
+    თუ მეორე ღილაკს დავაწვებით, შუქდიოდი არ უნდა აინთოს;
+    შუქდიოდი უნდა აინთოს მხოლოდ მაშინ, როდესაც დავაწვებით ორივე ღილაკს ერთდროულად.
+  hint: |-
+    გამოიყენეთ ამოცანა „ნათურის ანთება ორი ღილაკით“ და ნათურა ჩაანაცვლეთ შუქდიოდით;
+    ღილაკები, რეზისტორი და შუქდიოდი ჩართეთ მიმდევრობით.
+  questions: |-
+    შეიცვლება თუ არა წრედის მუშაობის პრინციპი თუ ერთ ღილაკს და შუქდიოდს გავუცვლით ადგილებს?
+    შეიცვლება თუ არა წრედის მუშაობის პრინციპი თუ ორ ნებისმიერ დეტალს (შუქდიოდი, რეზისტორი, ღილაკები) გავუცვლით ადგილებს? ახსენით რატომ?
+  methodology: ნათურით ამდაგვარი სავარჯიშო უკვე შესრულებული აქვთ; უნდა გაიმეორონ წინა
+    ამოცანის შედეგი და ნათურა სწორად ჩაანაცვლონ შუქდიოდით და რეზისტორით. დაეხმარებათ
+    მიმდევრობითი ჩართვის მუშაობის პრინციპის გარკვევაში.
+  validation:
+    cases:
+    - label: switch_off_both_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_both_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button1_only
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button2_only
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_both_pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+- code: ST.L2.11
+  title: შუქდიოდის ანთება ერთ-ერთი ღილაკით
+  displayOrder: 11
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ორი ღილაკი, ერთი წითელი შუქდიოდი, რეზისტორი, ერთი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდი არ უნდა აინთოს;
+    თუ დავაწვებით ერთ-ერთ ღილაკს მაინც, შუქდიოდი უნდა აინთოს;
+    თუ დავაწვებით ორივე ღილაკს, შუქდიოდი უნდა აინთოს.
+  hint: |-
+    ღილაკები ჩართეთ ისე, რომ თითოეულმა მათგანმა დამოუკიდებლად მიაწოდოს დენის ნაკადი შუქდიოდს;
+    ღილაკები ჩართეთ ერთმანეთის პარალელურად და მათ მიმდევრობით ჩართეთ შუქდიოდი.
+  questions: |-
+    შეიცვლება თუ არა წრედის მუშაობის პრინციპი თუ ერთ ღილაკს და შუქდიოდს გავუცვლით ადგილებს?
+    წრედი გადააკეთეთ ისე, რომ ერთის ნაცვლად ინთებოდეს ორი წითელი შუქდიოდი.
+  methodology: "სავარჯიშო ეხმარება პარალელური ჩართვის მუშაობის პრინციპის გარკვევაშ\
+    ი, ასევე აჩვევს წრედში შუქდიოდების სწორად გამოყენებას."
+  validation:
+    cases:
+    - label: switch_off_both_open
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_both_open
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: led_1
+        metric: current
+        op: lt
+        value: 0.001
+    - label: switch_on_button1_only
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+    - label: switch_on_button2_only
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+    - label: switch_on_both_pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: led_1
+        metric: forward_current
+        op: gt
+        value: 0.001
+- code: ST.L2.12
+  title: მწვანე და ლურჯი შუქდიოდის ანთება ერთ-ერთი ღილაკით
+  displayOrder: 12
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ორი ღილაკი, ერთი მწვანე და ერთი ლურჯი შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდები არ უნდა აინთოს;
+    თუ დავაწვებით ერთ-ერთ ღილაკს მაინც, შუქდიოდები უნდა აინთოს;
+    თუ დავაწვებით ორივე ღილაკს, შუქდიოდები უნდა აინთოს.
+
+    ეს არის წინა სავარჯიშოს მსგავსი ამოცანა იმ განსხვავებით, რომ წითელი შუქდიოდის ნაცვლად უნდა ავანთოთ მწვანე და ლურჯი შუქდიოდები.
+  hint: წითელი შუქდიოდის ნაცვლად მიმდევრობით ჩართეთ ლურჯი და მწვანე შუქდიოდები.
+  questions: |-
+    როგორ იმუშავებს წრედი თუ ორი კვების წყაროს ნაცვლად გამოვიყენებთ მხოლოდ ერთს? ახსენით რატომ?
+    გადააკეთეთ წრედი ისე, რომ შუქდიოდები ინთებოდეს მხოლოდ ორივე ღილაკზე დაჭერის დროს.
+  methodology: "სავარჯიშო ეხმარება წინა მასალის გახსენებაში და განსხვავებული ფერის\
+    \ შუქდიოდების პრაქტიკულ გამოყენებაში. განსხვავებული ფერის შუქდიოდების გამო უნდ\
+    ა გამოიყენონ მიმდევრობითი ჩართვა, ან გამოიყენონ ორი რეზისტორი დამოუკიდებლად ორ\
+    ივე შუქდიოდისთვის."
+  validation:
+    cases:
+    - label: Switch off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: "Switch on, both buttons open"
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: Only first button pressed
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+    - label: Only second button pressed
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+    - label: Both buttons pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+- code: ST.L2.13
+  title: წითელი და ლურჯი შუქდიოდის ანთება ორი ღილაკით
+  displayOrder: 13
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ორი ღილაკი, ერთი წითელი და ერთი ლურჯი შუქდიოდი, რეზისტორები, ერთი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდები არ უნდა აინთოს;
+    თუ დავაწვებით პირველ ღილაკს, უნდა აინთოს წითელი შუქდიოდი;
+    თუ დავაწვებით მეორე ღილაკს, უნდა აინთოს ლურჯი შუქდიოდი;
+    თუ დავაწვებით ორივე ღილაკს, ორივე შუქდიოდი უნდა აინთოს.
+
+    წინა ამოცანებისგან განსხვავებით ღილაკებმა ერთმანეთისგან დამოუკიდებლად უნდა აანთონ თავისი შუქდიოდი.
+  hint: "ერთი ღილაკი, რეზისტორი და შუქდიოდი ჩართეთ მიმდევრობით; ააწყვეთ მეორე ასეთ\
+    ივე ნაკრები და ჩართეთ პირველის პარალელურად."
+  questions: |-
+    გადააკეთეთ წრედი ისე, რომ ერთ-ერთ ღილაკზე დაჭერისას ინთებოდეს ორივე შუქდიოდი.
+    გადააკეთეთ წრედი ისე, რომ ლურჯი შუქდიოდი ინთებოდეს ბევრად უფრო ძლიერად, ვიდრე წითელი.
+  methodology: "ამ სავარჯიშოში წრედი შედგება ორი ერთმანეთისგან სრულად დამოუკიდებელ\
+    ი ნაწილისგან, რომელთაც აერთიანებს მხოლოდ საერთო კვების წყარო. ამდაგვარი ამოცან\
+    ა ეხმარება მოიფიქრონ და ააწყონ ისეთი წრედი, სადაც ერთდროულად არის როგორც მიმდე\
+    ვრობითი, ასევე პარალელური ჩართვები."
+  validation:
+    cases:
+    - label: Switch off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: "Switch on, both buttons open"
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: Only first button pressed
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 1.0
+    - label: Only second button pressed
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 1.0
+    - label: Both buttons pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+- code: ST.L2.14
+  title: მწვანეების და ლურჯების ანთება ორი ღილაკით
+  displayOrder: 14
+  difficulty: beginner
+  description: |-
+    გამოიყენეთ მხოლოდ შემდეგი დეტალები:
+    ორი ღილაკი, ორი მწვანე და ორი ლურჯი შუქდიოდი, რეზისტორები, ორი კვების წყარო და ჩამრთველი.
+
+    ააწყვეთ წრედი, რომელიც იმუშავებს ასე:
+    წრედის აწყობის შემდეგ თუ ჩართავთ ჩამრთველს, შუქდიოდები არ უნდა აინთოს;
+    თუ დავაწვებით პირველ ღილაკს, უნდა აინთოს მწვანე შუქდიოდები;
+    თუ დავაწვებით მეორე ღილაკს, უნდა აინთოს ლურჯი შუქდიოდები;
+    თუ დავაწვებით ორივე ღილაკს, ოთხივე შუქდიოდი უნდა აინთოს.
+  hint: გამოიყენეთ წინა ამოცანის შედეგი და თითო შუქდიოდი ჩაანაცვლეთ ორი მიმდევრობით
+    ჩართული შუქდიოდით.
+  questions: |-
+    ჩამრთველი რომ გადავიტანოთ კვების წყაროებს შორის, შეიცვლება თუ არა წრედის მუშაობის პრინციპი?
+    გადააკეთეთ წრედი ისე, რომ ორი კვების წყაროს ნაცვლად იმუშაოს მხოლოდ ერთზე.
+  methodology: "წინა სავარჯიშოებთან შედარებით ამ ამოცანაში გამოყენებულია უფრო მეტი\
+    \ დეტალები; შესაბამისად დაფის სივრცე უნდა გამოიყენონ უფრო ოპტიმალურად, შეეცადო\
+    ნ წრედი გამოვიდეს მაქსიმალურად კომპაქტური და არ გამოიყენონ რბილი გამტარები."
+  validation:
+    cases:
+    - label: Switch off
+      labelKa: ჩამრთველი გამორთული
+      switchStates:
+        switch: open
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: "Switch on, both buttons open"
+      labelKa: "ჩამრთველი ჩართული, ღილაკები არ არის დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 0.0
+    - label: Only first button pressed
+      labelKa: ჩართულია მხოლოდ პირველი ღილაკი
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: open
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+    - label: Only second button pressed
+      labelKa: ჩართულია მხოლოდ მეორე ღილაკი
+      switchStates:
+        switch: closed
+        button_1: open
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 2.0
+    - label: Both buttons pressed
+      labelKa: "ჩამრთველი ჩართული, ორივე ღილაკი დაჭერილი"
+      switchStates:
+        switch: closed
+        button_1: closed
+        button_2: closed
+      checks:
+      - role: leds
+        metric: lit_count
+        op: eq
+        value: 4.0

@@ -1,8 +1,13 @@
 package com.example.circuit_simulator.validation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 import java.util.Map;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record ValidationCase(
         String label,
         String labelKa,
@@ -14,6 +19,15 @@ public record ValidationCase(
         Map<String, Double> priorPotPositions,
         Map<String, String> priorSwitchStates
 ) {
+    public ValidationCase {
+        switchStates = switchStates != null ? switchStates : Map.of();
+        checks = checks != null ? checks : List.of();
+        potPositions = potPositions != null ? potPositions : Map.of();
+        lightLevels = lightLevels != null ? lightLevels : Map.of();
+        priorPotPositions = priorPotPositions != null ? priorPotPositions : Map.of();
+        priorSwitchStates = priorSwitchStates != null ? priorSwitchStates : Map.of();
+    }
+
     /** DC steady-state case (default for ST problems). */
     public ValidationCase(
             String label,
@@ -94,5 +108,4 @@ public record ValidationCase(
                 priorPotPositions != null ? priorPotPositions : Map.of(),
                 Map.of());
     }
-
 }
